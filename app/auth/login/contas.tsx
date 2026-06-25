@@ -1,80 +1,61 @@
-import React, { useState } from "react";
+import { router } from "expo-router";
+import React from "react";
 import {
   Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { PageFlow } from "../../../components/PageFlow";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [nome, setNome] = useState("");
-
+export default function LoginSocialScreen() {
   return (
     <View style={styles.container}>
-      {/* Voltar */}
-      <TouchableOpacity style={styles.backButton}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
         <Text style={styles.backText}>‹</Text>
       </TouchableOpacity>
 
-      {/* Logo */}
       <Image
-        source={require("../../assets/images/download (1).jpg")}
+        source={require("../../../assets/images/logo.jpg")}
         style={styles.logo}
         resizeMode="contain"
       />
 
-      {/* Título */}
-      <Text style={styles.title}>
-        Título exemplo
-      </Text>
+      <Text style={styles.title}>Título exemplo</Text>
 
-      {/* Subtítulo */}
       <Text style={styles.subtitle}>
         Loren loren loren loren loren loren{"\n"}
         loren loren loren loren loren{"\n"}
         loren loren loren loren.
       </Text>
 
-      {/* Campo Google */}
-      <View style={styles.inputContainer}>
+      <TouchableOpacity style={styles.socialButton}>
         <Image
-          source={require("../../assets/images/google.png")}
+          source={require("../../../assets/images/google.png")}
           style={styles.icon}
         />
 
-        <TextInput
-          placeholder="Loren loren loren"
-          placeholderTextColor="#9A8F8F"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-        />
-      </View>
+        <Text style={styles.socialText}>Entrar com Google</Text>
+      </TouchableOpacity>
 
-      {/* Campo Usuário */}
-      <View style={styles.inputContainer}>
+      <TouchableOpacity style={styles.socialButton}>
         <Image
-          source={require("../../assets/images/favicon.png")}
-          style={styles.icon}
-        />
+          source={require("../../../assets/images/facebook.png")}
+          style={styles.icon}/>  
+        <Text style={styles.socialText}>Entrar com Facebook</Text>
+      </TouchableOpacity>
 
-        <TextInput
-          placeholder="Loren loren loren"
-          placeholderTextColor="#9A8F8F"
-          value={nome}
-          onChangeText={setNome}
-          style={styles.input}
-        />
-      </View>
-
-      {/* Rodapé */}
       <Text style={styles.footerText}>
         Não tem conta?{" "}
-        <Text style={styles.bold}>Crie uma!</Text>
+        <Text
+          style={styles.bold}
+          onPress={() => router.push("../cadastro")}> Crie uma! </Text> {/* Função para levar o usuário para a página cadastro */}
       </Text>
+      <PageFlow total={4} currentIndex={0} />
     </View>
   );
 }
@@ -84,13 +65,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F4F4F4",
     alignItems: "center",
-    paddingTop: 40,
+    justifyContent: "center",
     paddingHorizontal: 25,
+    paddingBottom: 80,
   },
 
   backButton: {
     position: "absolute",
-    top: 40,
+    top: 45,
     left: 25,
     width: 35,
     height: 35,
@@ -101,18 +83,18 @@ const styles = StyleSheet.create({
   },
 
   backText: {
-    fontSize: 22,
+    fontSize: 24,
+    lineHeight: 24,
     color: "#9A9A9A",
   },
 
   logo: {
     width: 120,
     height: 120,
-    marginTop: 80,
   },
 
   title: {
-    marginTop: 20,
+    marginTop: 22,
     fontSize: 30,
     fontWeight: "bold",
     color: "#8A8080",
@@ -126,26 +108,27 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  inputContainer: {
+  socialButton: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#D9D9D9",
     borderRadius: 30,
-    marginTop: 20,
-    paddingHorizontal: 15,
+    marginTop: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
 
   icon: {
     width: 24,
     height: 24,
+    resizeMode: "contain",
   },
 
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingLeft: 10,
+  socialText: {
+    paddingLeft: 12,
     color: "#6E6666",
+    fontWeight: "600",
   },
 
   footerText: {
