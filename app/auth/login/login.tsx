@@ -10,10 +10,29 @@ import {
 } from "react-native";
 import { PageFlow } from "../../../components/PageFlow";
 
+//import supabase
+import { supabase } from "../../../lib/supabase";
+
+
+
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  async function login() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: senha,
+  });
+
+  if (error) {
+    console.log(error.message);
+    return;
+  }
+
+  router.push("/onboarding/comeco");
+}
 
   return (
     <View style={styles.container}>
@@ -64,7 +83,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.botao}>
+      <TouchableOpacity style={styles.botao} onPress={login}>
         <Text style={styles.botaoTexto}>Entrar</Text>
       </TouchableOpacity>
 
