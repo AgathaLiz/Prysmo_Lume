@@ -34,7 +34,7 @@ export default function Home() {
 
   const slide = slides[index];
 
-//Quando o usuário ele aperta o último próximo, ele vai levar para a pagina de login 
+//Quando o usuário aperta o último próximo, ele vai levar para a pagina de login 
   function nextSlide() {
     if (index === slides.length - 1) {
       router.push("../auth/login/contas");
