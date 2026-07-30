@@ -17,6 +17,9 @@ import {
   View
 } from "react-native";
 
+//import do subase
+import { supabase } from "../../lib/supabase";
+
 // nomes dos objetos que vão guardar as informações
 export default function CadastroScreen() {
   const [nome, setNome] = useState("");
@@ -55,8 +58,14 @@ function emailValido(valor: string) {
   return /\S+@\S+\.\S+/.test(valor);
 }
 
-// Função para verificar o formulário
-function validarFormulario() {
+//formatar data
+function formatarData(data: string) {
+  const [dia, mes, ano] = data.split("/");
+  return `${ano}-${mes}-${dia}`;
+}
+
+//cadastrar usuario
+async function cadastrarUsuario() {
   const novosErros = {
     nome: "",
     nascimento: "",
@@ -66,50 +75,42 @@ function validarFormulario() {
     confirmarSenha: "",
   };
 
-  if (!nome.trim()) {
-    novosErros.nome = "Preencha o nome";
-  }
+  //Validar os campos
 
-  if (!nascimento.trim()) {
-    novosErros.nascimento = "Preencha a data";
-  } else if (nascimento.length < 10) {
-    novosErros.nascimento = "Data incompleta";
-  }
+  if (!nome.trim()) novosErros.nome = "Preencha o nome";
+  if (!nascimento.trim()) novosErros.nascimento = "Preencha a data";
+  if (!telefone.trim()) novosErros.telefone = "Preencha o telefone";
+  if (!email.trim()) novosErros.email = "Preencha o e-mail";
+  if (!senha.trim()) novosErros.senha = "Preencha a senha";
+  if (senha !== confirmarSenha) novosErros.confirmarSenha = "Senhas diferentes";
 
-  if (!telefone.trim()) {
-    novosErros.telefone = "Preencha o telefone";
-  } else if (telefone.length < 15) {
-    novosErros.telefone = "Telefone incompleto";
-  }
-
-  if (!email.trim()) {
-    novosErros.email = "Preencha o e-mail";
-  } else if (!emailValido(email)) {
-    novosErros.email = "E-mail inválido";
-  }
-
-  if (!senha.trim()) {
-    novosErros.senha = "Preencha a senha";
-  } else if (senha.length < 6) {
-    novosErros.senha = "Mínimo de 6 caracteres";
-  }
-
-  if (!confirmarSenha.trim()) {
-    novosErros.confirmarSenha = "Repita a senha";
-  } else if (senha !== confirmarSenha) {
-    novosErros.confirmarSenha = "As senhas são diferentes";
-  }
-
-  // Verificar se o campo do formulário foi preenchido, se não, uma mensagem em vermelho vai aparecer, pedindo pro usuário preencher
   setErros(novosErros);
 
   const temErro = Object.values(novosErros).some((erro) => erro !== "");
+  if (temErro) return;
 
-  if (temErro) {
+  // Chama o Supabase
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: senha,
+  });
+
+  if (error) {
+    console.log(error.message);
     return;
   }
 
-// Se o cadastro foi feito com sucesso, automaticamnete o usuário é jogado para o login (futuramente ele vai ser jogado pra tela inicial)
+  // Salva dados extras na tabela
+  await supabase.from("usuario").insert([
+    {
+      auth_user_id: data.user?.id,
+      nome_completo: nome,
+      telefone: telefone,
+      data_nascimento: formatarData(nascimento),
+    },
+  ]);
+
+  // sucesso
   router.push("/auth/login/login");
 }
 
@@ -133,7 +134,7 @@ function validarFormulario() {
 
 {/* Campos para preencher do formulário */}
       <View style={styles.row}>
-  <View style={[styles.inputWrapper, styles.halfInput]}>
+      <View style={[styles.inputWrapper, styles.halfInput]}>
     <User size={18} color="#8C8484" style={styles.icon} />
     <TextInput
       placeholder="Nome"
@@ -218,8 +219,9 @@ function validarFormulario() {
   </View>
 </View>
 
+  {/* BOTÃO PARA CONCLUIR CADASTRO */}
       {/* Botão que conclui o envio do formulário */}
-      <TouchableOpacity style={styles.button} onPress={validarFormulario}>
+      <TouchableOpacity style={styles.button} onPress={cadastrarUsuario}>
   <Text style={styles.buttonText}>CONCLUIR</Text>
 </TouchableOpacity>
       

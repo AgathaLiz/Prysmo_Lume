@@ -10,10 +10,31 @@ import {
 } from "react-native";
 import { PageFlow } from "../../../components/PageFlow";
 
+//import supabase
+import { supabase } from "../../../lib/supabase";
+
+
+
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erroLogin, setErroLogin] = useState("");
+
+  async function login() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: senha,
+  });
+
+  if (error) {
+    setErroLogin("E-mail ou senha incorretos");
+    return;
+  }
+
+
+  router.push("/onboarding/comeco");
+}
 
   return (
     <View style={styles.container}>
@@ -56,6 +77,12 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
+      
+        {erroLogin !== "" &&(
+          <Text style={styles.erro}>{erroLogin}</Text>
+        )}
+
+
       <View style={styles.links}>
         <Text style={styles.linkClaro}>lembrar senha</Text>
 
@@ -64,7 +91,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.botao}>
+      <TouchableOpacity style={styles.botao} onPress={login}>
         <Text style={styles.botaoTexto}>Entrar</Text>
       </TouchableOpacity>
 
@@ -169,5 +196,13 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     color: "#8C8484",
+  },
+
+  erro: {
+    color : "#D32F2F",
+    textAlign : "center",
+    marginTop: 10,
+    marginBottom :10,
+    fontSize: 14,
   },
 });

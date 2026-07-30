@@ -1,3 +1,4 @@
+import { signInWithFacebook, signInWithGoogle } from "@/services/authService";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -33,7 +34,7 @@ export default function LoginSocialScreen() {
         loren loren loren loren.
       </Text>
 
-      <TouchableOpacity style={styles.socialButton}>
+      <TouchableOpacity style={styles.socialButton}  onPress={signInWithGoogle}>
         <Image
           source={require("../../../assets/images/google.png")}
           style={styles.icon}
@@ -42,7 +43,7 @@ export default function LoginSocialScreen() {
         <Text style={styles.socialText}>Entrar com Google</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.socialButton}>
+      <TouchableOpacity style={styles.socialButton} onPress={signInWithFacebook}>
         <Image
           source={require("../../../assets/images/facebook.png")}
           style={styles.icon}/>  
