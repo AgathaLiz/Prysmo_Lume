@@ -36,6 +36,20 @@ export default function LoginScreen() {
   router.push("/onboarding/comeco");
 }
 
+  async function login() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: senha,
+  });
+
+  if (error) {
+    console.log(error.message);
+    return;
+  }
+
+  router.push("/onboarding/comeco");
+}
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
