@@ -19,11 +19,11 @@ export default function TabLayout() {
       <StatusBar style="auto" />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "white",
+          tabBarActiveTintColor: "#D9D9D9",
           tabBarStyle: {
             position: "absolute",
             display: "flex",
-            backgroundColor: "#DFDFDF",
+            backgroundColor: "#D9D9D9",
             borderTopWidth: 0,
             borderBottomWidth: 0,
             height: 60,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     height: 44,
   },
   activeCircle: {
-    backgroundColor: "gray",
+    backgroundColor: "white",
     borderRadius: 30,
   },
 });
