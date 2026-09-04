@@ -1,12 +1,6 @@
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import React, { useState } from "react";
-import {
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PageFlow } from "../../components/PageFlow";
 
 // São os slides do começo, com a imagem, o titulo e o subtitulo (frase)
@@ -34,7 +28,7 @@ export default function Home() {
 
   const slide = slides[index];
 
-//Quando o usuário aperta o último próximo, ele vai levar para a pagina de login 
+  //Quando o usuário aperta o último próximo, ele vai levar para a pagina de login
   function nextSlide() {
     if (index === slides.length - 1) {
       router.push("../auth/login/contas");
@@ -49,7 +43,7 @@ export default function Home() {
     setIndex(index - 1);
   }
 
-//Aqui é a estilização dos slides
+  //Aqui é a estilização dos slides
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -59,15 +53,18 @@ export default function Home() {
 
         <Text style={styles.subtitle}>{slide.subtitle}</Text>
 
-{/* Funcionalidade dos botões */}
+        {/*Criando um link direto para a tela inicial para facilitar o desenvolvimento*/}
+        <Link href="/pages/tela_inicial">Ir pra tela inicial</Link>
+
+        {/* Funcionalidade dos botões */}
         <TouchableOpacity style={styles.button} onPress={nextSlide}>
           <Text style={styles.buttonText}>
             {index === slides.length - 1 ? "Começar" : "Próximo"}
           </Text>
         </TouchableOpacity>
       </View>
-      
-{/* Onde fica a barrinha de progresso */}
+
+      {/* Onde fica a barrinha de progresso */}
       <PageFlow
         total={4}
         currentIndex={index}
@@ -86,18 +83,18 @@ const styles = StyleSheet.create({
   },
 
   content: {
-  flex: 1,
-  alignItems: "center",
-  justifyContent: "center",
-  paddingBottom: 130,
-},
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 130,
+  },
 
   image: {
-  width: 150,
-  height: 150,
-  resizeMode: "contain",
-  marginBottom: 22,
-},
+    width: 150,
+    height: 150,
+    resizeMode: "contain",
+    marginBottom: 22,
+  },
 
   title: {
     fontSize: 30,
@@ -114,15 +111,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
- button: {
-  marginTop: 28,
-  width: "85%",
-  backgroundColor: "#D9D9D9",
-  borderRadius: 18,
-  paddingVertical: 16,
-  alignItems: "center",
-  justifyContent: "center",
-},
+  button: {
+    marginTop: 28,
+    width: "85%",
+    backgroundColor: "#D9D9D9",
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   buttonText: {
     textAlign: "center",

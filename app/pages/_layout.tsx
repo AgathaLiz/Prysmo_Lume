@@ -26,7 +26,7 @@ export default function TabLayout() {
             backgroundColor: "#D9D9D9",
             borderTopWidth: 0,
             borderBottomWidth: 0,
-            height: 60,
+            height: 70,
             justifyContent: "center",
           },
           tabBarShowLabel: false,
