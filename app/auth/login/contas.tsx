@@ -15,31 +15,28 @@ export default function LoginSocialScreen() {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.back()}
+        onPress={() => router.push("/onboarding/comeco")}
       >
         <Text style={styles.backText}>‹</Text>
       </TouchableOpacity>
 
-      <Image
-        source={require("../../../assets/images/logo.jpg")}
-        style={styles.logo}
-        resizeMode="contain"
-      />
 
-      <Text style={styles.title}>Título exemplo</Text>
+      <View style={styles.imagePlaceholder}>
+        <Image
+          source={require("../../../assets/images/logo.jpg")}
+          style={styles.placeholderIcoon}
+          resizeMode="contain"
+        />
+      </View>
+      
 
-      <Text style={styles.subtitle}>
-        Loren loren loren loren loren loren{"\n"}
-        loren loren loren loren loren{"\n"}
-        loren loren loren loren.
-      </Text>
+      <Text style={styles.title}>Como deseja entrar?</Text>
 
       <TouchableOpacity style={styles.socialButton}  onPress={signInWithGoogle}>
         <Image
           source={require("../../../assets/images/google.png")}
           style={styles.icon}
         />
-
         <Text style={styles.socialText}>Entrar com Google</Text>
       </TouchableOpacity>
 
@@ -50,12 +47,27 @@ export default function LoginSocialScreen() {
         <Text style={styles.socialText}>Entrar com Facebook</Text>
       </TouchableOpacity>
 
-      <Text style={styles.footerText}>
-        Não tem conta?{" "}
-        <Text
-          style={styles.bold}
-          onPress={() => router.push("../cadastro")}> Crie uma! </Text> {/* Função para levar o usuário para a página cadastro */}
-      </Text>
+      <TouchableOpacity
+        style={styles.socialButton}
+        onPress={() => router.push("../login/login")}
+      >
+        <Image
+          source={require("../../../assets/images/facebook.png")}
+          style={styles.icon}
+        />
+        <Text style={styles.socialText}>Fazer Login</Text>
+      </TouchableOpacity>
+
+      <View style={styles.cadastroCard}>
+
+        <Text style={styles.footerText}>Ainda não tem uma conta?</Text>
+        <TouchableOpacity
+          style={styles.cadastroButton}
+          onPress={() => router.push("../cadastro")}>
+          <Text style={styles.cadastroText}>Se Cadastrar</Text>
+        </TouchableOpacity>
+      </View>
+
       <PageFlow total={4} currentIndex={0} />
     </View>
   );
@@ -84,30 +96,34 @@ const styles = StyleSheet.create({
   },
 
   backText: {
-    fontSize: 24,
+    fontSize: 25,
     lineHeight: 24,
     color: "#9A9A9A",
   },
 
-  logo: {
-    width: 120,
-    height: 120,
+  imagePlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#e0e0e0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  placeholderIcoon: {
+    width: 32,
+    height: 32,
+    opacity: 0.5,
   },
 
   title: {
     marginTop: 22,
     fontSize: 30,
     fontWeight: "bold",
+    textAlign: "center",
     color: "#8A8080",
   },
 
-  subtitle: {
-    marginTop: 15,
-    textAlign: "center",
-    color: "#8A8080",
-    fontSize: 14,
-    lineHeight: 20,
-  },
 
   socialButton: {
     width: "100%",
@@ -118,6 +134,11 @@ const styles = StyleSheet.create({
     marginTop: 18,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    shadowColor: "#353435",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   icon: {
@@ -130,15 +151,45 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     color: "#6E6666",
     fontWeight: "600",
+    fontSize: 15,
+  },
+
+   cadastroCard: {
+    width: "70%",
+    marginTop: 25,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   footerText: {
-    marginTop: 25,
-    fontSize: 11,
+    marginTop: 5,
+    fontSize: 15,
     color: "#9A8F8F",
   },
 
-  bold: {
+ cadastroButton: {
+    marginTop: 10,
+    backgroundColor: "#D9D9D9",
+    borderRadius: 20,
+    paddingHorizontal: 22,
+    paddingVertical: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  cadastroText: {
+    fontSize: 14,
     fontWeight: "bold",
     color: "#6E6666",
   },

@@ -13,8 +13,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  ScrollView,
 } from "react-native";
+
+import { PageFlow } from "../../components/PageFlow";
 
 //import do subase
 import { supabase } from "../../lib/supabase";
@@ -114,7 +117,7 @@ async function cadastrarUsuario() {
 }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* mascote + Balão */}
       <View style={styles.topContainer}>
         <TouchableOpacity style={styles.photoBox}>
@@ -126,7 +129,7 @@ async function cadastrarUsuario() {
 
         <TouchableOpacity style={styles.messageBox}>
           <Text style={styles.messageText}>
-            Clique para preencher as informações
+            Insira seus dados pessoais para criar uma conta!
           </Text>
         </TouchableOpacity>
       </View>
@@ -221,18 +224,17 @@ async function cadastrarUsuario() {
   {/* BOTÃO PARA CONCLUIR CADASTRO */}
       {/* Botão que conclui o envio do formulário */}
       <TouchableOpacity style={styles.button} onPress={cadastrarUsuario}>
-  <Text style={styles.buttonText}>CONCLUIR</Text>
+  <Text style={styles.buttonText}>Entrar</Text>
 </TouchableOpacity>
       
       {/* Botão para levar a página de login */}
-    <View style={styles.footer}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push("/auth/login/login")}>
-        <Text style={styles.backText}>←</Text>
-      </TouchableOpacity>
-    </View>
-    </View>
+        <PageFlow
+            total={4}
+            currentIndex={1}
+            showBack
+            onBack={() => router.push("/auth/login/contas")}
+          />
+    </ScrollView>
   );
 }
 
@@ -240,8 +242,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F4F4F4",
+  },
+
+  scrollContent: {
     paddingHorizontal: 25,
-    paddingTop: 70,
+    paddingTop: 60,
+    paddingBottom: 100,   // espaço extra no final pra não cortar o último campo
+    
   },
 
   topContainer: {
@@ -275,11 +282,12 @@ const styles = StyleSheet.create({
   messageText: {
     textAlign: "center",
     color: "#666",
-    fontSize: 12,
+    fontSize: 15,
   },
+
   errorText: {
   color: "#C04B4B",
-  fontSize: 11,
+  fontSize: 15,
   marginTop: -10,
   marginBottom: 10,
   marginLeft: 15,
@@ -296,6 +304,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     marginBottom: 15,
+    fontSize: 14,
+    // efeito de sombra "pra dentro" via bordas
+    borderWidth: 1.5,
+    borderTopColor: "#B8B8B8",
+    borderLeftColor: "#B8B8B8",
+    borderBottomColor: "#FFFFFF",
+    borderRightColor: "#FFFFFF",
   },
 
   halfInput: {
@@ -307,11 +322,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#D9D9D9",
     borderRadius: 35,
     paddingVertical: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
   },
 
   buttonText: {
     textAlign: "center",
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#555",
   },
@@ -336,8 +356,11 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 20,
   },
+
 inputWrapper: {
   position: "relative",
+  width: "100%",
+  fontSize: 14,
 },
 
 icon: {

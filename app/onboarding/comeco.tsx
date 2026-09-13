@@ -119,11 +119,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
 
   buttonText: {
     textAlign: "center",
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#8C8484",
   },

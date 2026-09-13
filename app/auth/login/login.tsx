@@ -19,9 +19,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [erroLogin, setErroLogin] = useState("");
+  const [erroLogin, setErroLogin] = useState("");const [continuarConectado, setContinuarConectado] = useState(false);
 
-  async function login() {
+  async function Login() {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password: senha,
@@ -36,19 +36,7 @@ export default function LoginScreen() {
   router.push("/onboarding/comeco");
 }
 
-  async function login() {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: senha,
-  });
 
-  if (error) {
-    console.log(error.message);
-    return;
-  }
-
-  router.push("/onboarding/comeco");
-}
 
   return (
     <View style={styles.container}>
@@ -58,20 +46,23 @@ export default function LoginScreen() {
           style={styles.logo}
         />
 
-        <Text style={styles.titulo}>Título exemplo</Text>
+        <Text style={styles.titulo}>Login</Text>
 
         <Text style={styles.subtitulo}>
-          Lorem lorem lorem lorem lorem
+          Insira os dados da sua conta Lume
         </Text>
       </View>
 
-      <TextInput
-        placeholder="Email"
-        placeholderTextColor="#8C8484"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor="#8C8484"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+        />
+      </View>
+      
 
       <View style={styles.senhaContainer}>
         <TextInput
@@ -98,14 +89,23 @@ export default function LoginScreen() {
 
 
       <View style={styles.links}>
-        <Text style={styles.linkClaro}>lembrar senha</Text>
 
-        <TouchableOpacity>
-          <Text style={styles.linkEscuro}>esqueceu?</Text>
+        <TouchableOpacity
+          style={styles.continuarConectadoRow}
+          onPress={() => setContinuarConectado(!continuarConectado)}>
+          
+          <View 
+          style={[styles.continuarConectadoBox, continuarConectado && styles.continuarConectadoAtivo,]}>
+          </View>
+          <Text style={styles.continuarConectadoTexto}>Continuar conectado?</Text>
+          </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push("../cadastro")}>
+          <Text style={styles.linkEscuro}>Criar conta?</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.botao} onPress={login}>
+      <TouchableOpacity style={styles.botao} onPress={Login}>
         <Text style={styles.botaoTexto}>Entrar</Text>
       </TouchableOpacity>
 
@@ -113,7 +113,7 @@ export default function LoginScreen() {
         total={4}
         currentIndex={1}
         showBack
-        onBack={() => router.back()}
+        onBack={() => router.push("../login/contas")}
       />
     </View>
   );
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
 
   titulo: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: "bold",
     color: "#8C8484",
     marginTop: 14,
@@ -152,13 +152,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  input: {
+  inputContainer: {
     backgroundColor: "#D9D9D9",
     borderRadius: 30,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 16,
     marginBottom: 15,
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingLeft: 12,
     color: "#6E6666",
+    fontSize: 20,
   },
 
   senhaContainer: {
@@ -167,12 +180,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
   },
 
   senhaInput: {
     flex: 1,
     paddingVertical: 16,
     color: "#6E6666",
+    fontSize: 20,
+    
   },
 
   icon: {
@@ -188,26 +208,54 @@ const styles = StyleSheet.create({
     marginBottom: 38,
   },
 
-  linkClaro: {
+  continuarConectadoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  continuarConectadoBox: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#A5A5A5",
+    marginRight: 6,
+  },
+
+  continuarConectadoAtivo: {
+    backgroundColor: "#A5A5A5",
+  },
+
+    continuarConectadoTexto: {
     color: "#A5A5A5",
-    fontSize: 12,
+    fontSize: 15,
+  },
+
+   linkClaro: {
+    color: "#A5A5A5",
+    fontSize: 15,
   },
 
   linkEscuro: {
     color: "#7A7272",
     fontWeight: "600",
-    fontSize: 12,
+    fontSize: 15,
   },
 
   botao: {
     backgroundColor: "#D9D9D9",
     borderRadius: 18,
     paddingVertical: 18,
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
 
   botaoTexto: {
     textAlign: "center",
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#8C8484",
   },
