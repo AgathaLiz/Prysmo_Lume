@@ -4,6 +4,8 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { PageFlow } from "../../components/PageFlow";
 
+
+
 export default function BemVindoScreen() {
   return (
     <View style={styles.container}>

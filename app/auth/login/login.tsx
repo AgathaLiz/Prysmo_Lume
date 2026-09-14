@@ -33,7 +33,7 @@ export default function LoginScreen() {
   }
 
 
-  router.push("/onboarding/comeco");
+  router.push("/auth/tela_preferencias");
 }
 
 

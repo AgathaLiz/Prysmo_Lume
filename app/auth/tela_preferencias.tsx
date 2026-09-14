@@ -10,6 +10,9 @@ import {
     View
 } from "react-native";
 
+//import do subase
+import { supabase } from "../../lib/supabase";
+
 
 export default function TelaPreferencias() {
     const [modoEscuro, setModoEscuro] = useState(false);
@@ -17,9 +20,52 @@ export default function TelaPreferencias() {
     const [tamanhoFonte, setTamanhoFonte] = useState<"P" | "M" | "G">("M");
     const [dropdownAberto, setDropdownAberto] = useState(false);
 
-    const tamanhosPx = {P: "24px." , M:"30px.", G:"40px."};
+    const tamanhosPx = {P: 24 , M:30, G: 40};
 
-    function salvarPreferencias() {
+;
+    
+
+    async function salvarPreferencias() {
+      const {data: { user} } = await supabase.auth.getUser()
+
+      if(!user) {
+        console.log("Usuário não autenticado");
+        return;
+      }
+
+      //Buscar p usuário_id interno a partir do auth_user_id
+      const { data: usuarioData, error: usuarioError} = await supabase
+      .from("usuario")
+      .select("usuario_id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+      if(usuarioError || !usuarioData) {
+        console.log("Usuário não encontrado:", usuarioError?.message);
+        return;
+      }
+
+      console.log("auth user id:", user.id);
+      console.log("usuario encontrado:", usuarioData);
+      console.log("erro na busca:", usuarioError);
+
+      //inseri na tabela
+      const {error} = await supabase.from("usuario_acessibilidade_settings").upsert({
+        usuario_id: usuarioData.usuario_id,
+        tamanho_fonte: tamanhosPx[tamanhoFonte],
+        modo_escuro: modoEscuro,
+        audio_descricao: audioDescricao,
+      },
+        {onConflict: "usuario_id"}
+      );
+
+      if (error) {
+        console.log(error.message);
+        return;
+      }
+
+      // sucesso
+        router.push("/onboarding/bemvindo");
         console.log({modoEscuro, audioDescricao, tamanhoFonte});
     }
 
@@ -82,7 +128,7 @@ export default function TelaPreferencias() {
           </View>
 
           <TouchableOpacity style={styles.dropdown} onPress={() => setDropdownAberto(!dropdownAberto)}>
-            <Text style={styles.dropdownTexto}>{tamanhosPx[tamanhoFonte]}</Text>
+            <Text style={styles.dropdownTexto}>{tamanhosPx[tamanhoFonte]}px.</Text>
             <MaterialCommunityIcons name={dropdownAberto ? "chevron-up" : "chevron-down"} size={20} color="#848080"></MaterialCommunityIcons>
           </TouchableOpacity>
         </View>
