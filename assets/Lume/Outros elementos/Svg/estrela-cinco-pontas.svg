@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="432.09"
+   height="429.00601"
+   viewBox="0 0 114.32381 113.50784"
+   version="1.1"
+   id="svg17226"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="estrela-cinco-pontas.svg"
+   inkscape:export-filename="..\Png\estrela-cinco-pontas.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview17228"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="114.19774"
+     inkscape:cy="253.85133"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs17223" />
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path16866-1-5"
+       style="fill:#ffe169;fill-opacity:1;stroke:none;stroke-width:7.96075;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       d="m 57.164159,0 -1.84e-4,0.00440019 C 36.998872,1.1432059 41.978354,21.757099 34.517224,29.838345 28.695951,34.698451 1.3601808,35.349842 0.00535369,49.959237 -0.34134145,65.770415 16.252239,62.317956 20.180823,77.978661 c 3.82173,9.881058 -8.919402,27.169999 4.044351,34.174419 11.872959,5.81297 21.040946,-8.87626 32.910693,-9.29626 0.0204,0.004 0.04088,-0.001 0.05748,-0.002 v 0 c 11.869706,0.42 21.037729,15.10923 32.910632,9.29623 12.963821,-7.00442 0.22249,-24.293379 4.044371,-34.174465 3.928606,-15.660661 20.52219,-12.208222 20.17546,-28.01938 C 112.96899,35.347646 85.633262,34.696263 79.811968,29.836177 72.350862,21.754887 77.330344,1.1410178 57.165223,0.0022161 Z"
+       inkscape:label="Estrela"
+       sodipodi:nodetypes="ccccccccccccccc" />
+  </g>
+</svg>

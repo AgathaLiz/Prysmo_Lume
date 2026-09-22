@@ -41,16 +41,17 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
+        <View style={styles.textoContainer}>
+          <Text style={styles.titulo}>Login</Text>
+          <Text style={styles.subtitulo}>
+            Insira os dados da sua conta Lume
+          </Text>
+        </View>
+
         <Image
-          source={require("../../../assets/images/logo.jpg")}
+          source={require("../../../assets/Lume/Mimi/Png/mimi-pra-esquerda.png")}
           style={styles.logo}
         />
-
-        <Text style={styles.titulo}>Login</Text>
-
-        <Text style={styles.subtitulo}>
-          Insira os dados da sua conta Lume
-        </Text>
       </View>
 
       <View style={styles.inputContainer}>
@@ -129,13 +130,20 @@ const styles = StyleSheet.create({
   },
 
   logoContainer: {
-    alignItems: "center",
-    marginBottom: 35,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 35,
   },
 
+  textoContainer: {
+    flex: 1,
+    paddingRight: 10,
+},
+
   logo: {
-    width: 90,
-    height: 90,
+    width: 140,
+    height: 200,
     resizeMode: "contain",
   },
 
@@ -143,7 +151,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "bold",
     color: "#8C8484",
-    marginTop: 14,
+    
   },
 
   subtitulo: {

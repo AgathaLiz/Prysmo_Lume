@@ -21,10 +21,10 @@ export default function LoginSocialScreen() {
       </TouchableOpacity>
 
 
-      <View style={styles.imagePlaceholder}>
+      <View style={styles.ilustracaoBox}>
         <Image
-          source={require("../../../assets/images/logo.jpg")}
-          style={styles.placeholderIcoon}
+          source={require("../../../assets/Lume/Capa do app/Png/capa-app-roxa.png")}
+          style={styles.ilustracao}
           resizeMode="contain"
         />
       </View>
@@ -101,23 +101,27 @@ const styles = StyleSheet.create({
     color: "#9A9A9A",
   },
 
-  imagePlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#e0e0e0",
+  ilustracaoBox: {
+    width: 200,
+    height: 150,
+    borderRadius: 130,
+    marginTop: 60,
+    marginBottom: 0,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
-
-  placeholderIcoon: {
-    width: 32,
-    height: 32,
-    opacity: 0.5,
+  
+  ilustracao: {
+    width: "60%",
+    height: "76%",
+    alignSelf: "center",
+    borderRadius: 10,
+    
   },
 
   title: {
-    marginTop: 22,
+    marginTop: 0,
     fontSize: 30,
     fontWeight: "bold",
     textAlign: "center",
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#D9D9D9",
     borderRadius: 30,
-    marginTop: 18,
+    marginTop: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     shadowColor: "#353435",

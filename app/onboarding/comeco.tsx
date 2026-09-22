@@ -78,7 +78,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4F4F4",
+    backgroundColor: "#FFD651",
     paddingHorizontal: 25,
   },
 

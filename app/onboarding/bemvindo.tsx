@@ -1,7 +1,14 @@
 import { router } from "expo-router";
 import { Image as ImageIcon } from "lucide-react-native";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { PageFlow } from "../../components/PageFlow";
 
 
@@ -10,8 +17,10 @@ export default function BemVindoScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.desenhoBox}>
-        <ImageIcon size={40} color="#B5B5B5" />
-        <Text style={styles.desenhoTexto}>Desenho</Text>
+        <Image
+          source={require("../../assets/Lume/Mimi/Png/mimi-voando.png")}
+          style={styles.logo}
+          />
       </View>
 
       <Text style={styles.titulo}>Bem Vindo (a)</Text>
@@ -30,18 +39,22 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
 
+  logo: {
+    width: 250,
+    height: 300,
+    resizeMode: "contain",
+    transform: [
+    { rotate: "340deg" },   // gira (graus, com "deg")
+  
+  ],
+  },
+
   desenhoBox: {
     alignItems: "center",
     justifyContent: "center",
   },
 
-  desenhoTexto: {
-    marginTop: 12,
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#8A8080",
-  },
-
+ 
   titulo: {
     fontSize: 30,
     fontWeight: "bold",

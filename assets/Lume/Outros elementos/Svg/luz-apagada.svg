@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="113.484mm"
+   height="113.484mm"
+   viewBox="0 0 113.484 113.484"
+   version="1.1"
+   id="svg29790"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="LuzApagada.svg"
+   inkscape:export-filename="LuzApagada.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview29792"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.5625561"
+     inkscape:cx="165.43406"
+     inkscape:cy="203.51269"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs29787" />
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g50583-6-5-9-7"
+       inkscape:label="Lampada estrela (apagada/sem ofensiva)"
+       transform="matrix(5.6312264,3.7301002,-3.7301006,5.6312268,-821.40021,-1011.479)">
+      <path
+         id="path48518-1-0-14-1"
+         style="opacity:1;fill:#b8b8b1;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         inkscape:transform-center-x="2.9266665e-06"
+         d="m 673.37501,383.75 c -5.85615,0 -10.45281,13.01531 -14.59375,17.15625 -4.14094,4.14092 -17.15625,8.73758 -17.15625,14.59375 0,5.85615 13.01533,10.45281 17.15625,14.59375 1.81098,1.81097 4.26953,7.90429 5.55078,7.9043 0,0 5.74791,9.25195 9.04297,9.25195 3.29494,-6e-5 9.04297,-9.25195 9.04297,-9.25195 1.28129,1e-5 3.73981,-6.09333 5.55078,-7.9043 4.14094,-4.14094 17.15625,-8.73761 17.15625,-14.59375 -2e-5,-5.85617 -13.01529,-10.45284 -17.15625,-14.59375 C 683.82783,396.76531 679.23119,383.75 673.37501,383.75 Z"
+         inkscape:label="Bulbo"
+         transform="matrix(0.22058048,-0.14611157,0.14611157,0.22058048,-13.522965,66.788734)" />
+      <path
+         id="path48574-7-8-6-8"
+         style="opacity:1;fill:#3e3e3b;fill-opacity:1;stroke:none;stroke-width:3.40023;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 197.0123,66.335955 c 1.86013,0.952291 2.80299,1.090651 3.34652,0.719518 0.55373,-0.355705 0.79413,-1.277835 0.64288,-3.362082 l -1.9947,1.321282 z"
+         inkscape:label="Base" />
+      <g
+         id="g56728-2-8-4"
+         inkscape:label="Cristal luminoso">
+        <path
+           id="path33984-0-0-5-71-0-4"
+           style="fill:#131312;fill-opacity:1;stroke:none;stroke-width:3.66035;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+           d="m 194.87304,58.781356 c -0.15289,0.12023 -0.15075,1.692535 -0.0411,1.85896 0.11131,0.167235 1.57997,0.790956 1.73124,0.685 0.15658,-0.09794 0.15517,-1.693571 0.0446,-1.861301 -0.11133,-0.167245 -1.57998,-0.790955 -1.73124,-0.684997 -7.7e-4,7.38e-4 -0.003,0.0013 -0.004,0.0024 z"
+           inkscape:label="amarelo" />
+      </g>
+      <path
+         style="opacity:1;fill:#64645d;fill-opacity:1;stroke:none;stroke-width:6.51301;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 242.24698,251.90167 -1.25193,-0.63115 c 0,0 -0.0525,0.73381 -0.017,1.21862 l 0.83622,-0.11851 0.0807,0.6829 1.13859,-0.10202 -0.80199,-0.22615 z"
+         id="path77075"
+         sodipodi:nodetypes="cccccccc"
+         inkscape:label="Rachado"
+         transform="matrix(0.68578593,0,0,0.68578593,29.500095,-113.05242)" />
+      <g
+         id="g50229-0-1-0-5"
+         inkscape:label="Pernas"
+         transform="matrix(1.1313634,0,0,1.1313634,-26.14215,-8.540395)">
+        <path
+           style="fill:#3e3e3b;fill-opacity:1;stroke:none;stroke-width:0.0662864;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+           d="m 198.25312,65.514038 c 0,0 -0.93589,-0.827255 -0.79868,-1.220547 0.10381,-0.288704 0.19575,-0.652299 -0.0555,-0.972265 l 0.19265,-0.130849 c 0.28817,0.216704 0.35147,0.588943 0.16903,1.183135 -0.0188,0.09293 -0.0282,0.160812 0.78724,0.945326 z"
+           id="path33900-5-6-1-5-4-4"
+           sodipodi:nodetypes="ccccccc" />
+        <path
+           style="fill:#3e3e3b;fill-opacity:1;stroke:none;stroke-width:0.0662864;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+           d="m 199.76011,64.515818 c 0,0 -0.39665,-1.184445 -0.81231,-1.211519 -0.30633,-0.01703 -0.67698,-0.0742 -0.87359,-0.430362 l -0.19564,0.126347 c 0.0871,0.349873 0.40519,0.553361 1.02348,0.617155 0.0929,0.01894 0.15907,0.03676 0.56335,1.093627 z"
+           id="path33900-5-6-4-4-9-8-3"
+           sodipodi:nodetypes="ccccccc" />
+      </g>
+      <path
+         id="path33902-2-9-9-3-20-3"
+         style="fill:#3e3e3b;fill-opacity:1;stroke:none;stroke-width:0.074994;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 196.93197,61.882065 c -0.52138,0.37566 -0.85798,0.735679 -0.85798,0.735679 0,0 0.0458,0.395744 0.50431,0.802046 0,0 0.46888,-0.150678 1.03808,-0.50447 0.54779,-0.3861 0.86945,-0.759077 0.86945,-0.759077 -0.19525,-0.580724 -0.54178,-0.777223 -0.54178,-0.777223 0,0 -0.4628,0.169516 -1.01208,0.503045 z"
+         inkscape:label="Caixa" />
+    </g>
+  </g>
+</svg>
