@@ -71,16 +71,16 @@ const styles = StyleSheet.create({
   },
 
   dot: {
-    width: 5,
-    height: 5,
+    width: 10,
+    height: 10,
     borderRadius: 10,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#303030",
     marginHorizontal: 4,
   },
 
   activeDot: {
     width: 58,
-    height: 3,
+    height: 10,
   },
 });
 

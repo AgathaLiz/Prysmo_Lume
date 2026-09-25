@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import {
   Calendar,
   Lock,
@@ -6,6 +7,7 @@ import {
   Phone,
   User,
 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Image,
@@ -118,11 +120,26 @@ async function cadastrarUsuario() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.imagemContainer}>
+                  <Image
+                    source={require("../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
+                    style={styles.imagemFundo}
+                    resizeMode="cover"
+                  />
+                </View>
+      {/* Botão para levar a página de login */}
+       <TouchableOpacity
+          style={styles.botaoVoltar}
+          onPress={() => router.push("../auth/login/contas")}
+        >
+          <ChevronLeft size={25} color="#303030" />
+        </TouchableOpacity>
+
       {/* mascote + Balão */}
       <View style={styles.topContainer}>
-        <TouchableOpacity style={styles.photoBox}>
+        <TouchableOpacity >
                     <Image
-                        source={require("../../assets/images/logo.jpg")}
+                        source={require("../../assets/Lume/Mimi/Png/mimi-ensinando.png")}
                         style={styles.photoBox}
                     />
                 </TouchableOpacity>
@@ -137,10 +154,10 @@ async function cadastrarUsuario() {
 {/* Campos para preencher do formulário */}
       <View style={styles.row}>
       <View style={[styles.inputWrapper, styles.halfInput]}>
-    <User size={18} color="#8C8484" style={styles.icon} />
+    <User size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Nome"
-      placeholderTextColor="#8C8484"
+      placeholderTextColor="#303030"
       value={nome}
       onChangeText={setNome}
       style={[styles.input, styles.inputWithIcon]}
@@ -149,10 +166,10 @@ async function cadastrarUsuario() {
   </View>
 
   <View style={[styles.inputWrapper, styles.halfInput]}>
-    <Calendar size={18} color="#8C8484" style={styles.icon} />
+    <Calendar size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Nascimento"
-      placeholderTextColor="#8C8484"
+      placeholderTextColor="#303030"
       value={nascimento}
       keyboardType="numeric"
       maxLength={10}
@@ -166,10 +183,10 @@ async function cadastrarUsuario() {
 </View>
 
 <View style={styles.inputWrapper}>
-  <Phone size={18} color="#8C8484" style={styles.icon} />
+  <Phone size={20} color="#303030" style={styles.icon} />
   <TextInput
     placeholder="Telefone"
-    placeholderTextColor="#8C8484"
+    placeholderTextColor="#303030"
     value={telefone}
     keyboardType="phone-pad"
     maxLength={15}
@@ -182,10 +199,10 @@ async function cadastrarUsuario() {
 </View>
 
 <View style={styles.inputWrapper}>
-  <Mail size={18} color="#8C8484" style={styles.icon} />
+  <Mail size={20} color="#303030" style={styles.icon} />
   <TextInput
     placeholder="E-mail"
-    placeholderTextColor="#8C8484"
+    placeholderTextColor="#303030"
     value={email}
     onChangeText={setEmail}
     keyboardType="email-address"
@@ -197,10 +214,10 @@ async function cadastrarUsuario() {
 
 <View style={styles.row}>
   <View style={[styles.inputWrapper, styles.halfInput]}>
-    <Lock size={18} color="#8C8484" style={styles.icon} />
+    <Lock size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Criar senha"
-      placeholderTextColor="#8C8484"
+      placeholderTextColor="#303030"
       secureTextEntry
       value={senha}
       onChangeText={setSenha}
@@ -209,10 +226,10 @@ async function cadastrarUsuario() {
   </View>
 
   <View style={[styles.inputWrapper, styles.halfInput]}>
-    <Lock size={18} color="#8C8484" style={styles.icon} />
+    <Lock size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Repetir senha"
-      placeholderTextColor="#8C8484"
+      placeholderTextColor="#303030"
       secureTextEntry
       value={confirmarSenha}
       onChangeText={setConfirmarSenha}
@@ -223,17 +240,18 @@ async function cadastrarUsuario() {
 
   {/* BOTÃO PARA CONCLUIR CADASTRO */}
       {/* Botão que conclui o envio do formulário */}
-      <TouchableOpacity style={styles.button} onPress={cadastrarUsuario}>
-  <Text style={styles.buttonText}>Entrar</Text>
-</TouchableOpacity>
+      <TouchableOpacity  onPress={cadastrarUsuario}>
+          <LinearGradient
+              colors={["#FFD651", "#D987FF"]}
+              start={{x:0, y:0}}
+              end={{x:1, y:1}}
+              style={styles.button}>
+              <Text style={styles.buttonText}>Entrar</Text>
+            </LinearGradient>
+        </TouchableOpacity>
       
-      {/* Botão para levar a página de login */}
-        <PageFlow
-            total={4}
-            currentIndex={1}
-            showBack
-            onBack={() => router.push("/auth/login/contas")}
-          />
+      
+        <PageFlow total={4} currentIndex={1} />
     </ScrollView>
   );
 }
@@ -251,16 +269,34 @@ const styles = StyleSheet.create({
     
   },
 
+  imagemContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: "hidden", 
+  },
+
+    imagemFundo: {
+      width: "100%",
+      height: "100%",
+      transform: [
+      { scale: 1.3 },
+      { translateY: -40 },
+      ],
+  },
+
   topContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 60,
+    marginBottom: 10,
   },
 
   photoBox: {
-    width: 70,
-    height: 70,
-    backgroundColor: "#D9D9D9",
+    marginTop: 20,
+    width: 120,
+    height: 180,
     borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
@@ -273,20 +309,27 @@ const styles = StyleSheet.create({
   messageBox: {
     flex: 1,
     marginLeft: 15,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#FFE169",
     borderRadius: 30,
     paddingVertical: 18,
     paddingHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
 
   messageText: {
     textAlign: "center",
-    color: "#666",
-    fontSize: 15,
+    color: "#303030",
+    fontSize: 20,
+    fontFamily:"Poppins_600SemiBold",
   },
 
   errorText: {
   color: "#C04B4B",
+  fontFamily:"Poppins_600SemiBold",
   fontSize: 15,
   marginTop: -10,
   marginBottom: 10,
@@ -299,18 +342,21 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#FFFFFF",
+    height: 62,
     borderRadius: 30,
     paddingHorizontal: 20,
     paddingVertical: 16,
     marginBottom: 15,
-    fontSize: 14,
-    // efeito de sombra "pra dentro" via bordas
-    borderWidth: 1.5,
-    borderTopColor: "#B8B8B8",
-    borderLeftColor: "#B8B8B8",
-    borderBottomColor: "#FFFFFF",
-    borderRightColor: "#FFFFFF",
+    fontSize: 16,
+    fontFamily:"Poppins_600SemiBold",
+    color:"#303030",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
+   
   },
 
   halfInput: {
@@ -319,21 +365,22 @@ const styles = StyleSheet.create({
 
   button: {
     marginTop: 25,
+    marginBottom: 10,
     backgroundColor: "#D9D9D9",
     borderRadius: 35,
     paddingVertical: 18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 4,
   },
 
   buttonText: {
     textAlign: "center",
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#555",
+    fontSize: 30,
+    fontFamily: "Poppins_800ExtraBold",
+    color: "#303030",
   },
 
   footer: {
@@ -343,24 +390,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  backButton: {
-    width: 40,
+  botaoVoltar: {
+   width: 60,
     height: 40,
-    backgroundColor: "#D9D9D9",
     borderRadius: 10,
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 20,
-  },
-
-  backText: {
-    fontSize: 20,
+    marginTop: "auto",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
 
 inputWrapper: {
   position: "relative",
   width: "100%",
   fontSize: 14,
+  
 },
 
 icon: {
@@ -368,10 +417,12 @@ icon: {
   left: 15,
   top: 16,
   zIndex: 1,
+  marginTop: 5,
 },
 
 inputWithIcon: {
   paddingLeft: 45,
+  color: "#303030",
 },
 
 });

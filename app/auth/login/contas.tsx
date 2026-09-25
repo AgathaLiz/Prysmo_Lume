@@ -1,5 +1,6 @@
 import { signInWithFacebook, signInWithGoogle } from "@/services/authService";
 import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import {
   Image,
@@ -13,14 +14,14 @@ import { PageFlow } from "../../../components/PageFlow";
 export default function LoginSocialScreen() {
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push("/onboarding/comeco")}
-      >
-        <Text style={styles.backText}>‹</Text>
-      </TouchableOpacity>
-
-
+          <View style={styles.imagemContainer}>
+            <Image
+              source={require("../../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
+              style={styles.imagemFundo}
+              resizeMode="cover"
+            />
+          </View>
+      
       <View style={styles.ilustracaoBox}>
         <Image
           source={require("../../../assets/Lume/Capa do app/Png/capa-app-roxa.png")}
@@ -34,7 +35,7 @@ export default function LoginSocialScreen() {
 
       <TouchableOpacity style={styles.socialButton}  onPress={signInWithGoogle}>
         <Image
-          source={require("../../../assets/images/google.png")}
+          source={require("../../../assets/images/google_icon.png")}
           style={styles.icon}
         />
         <Text style={styles.socialText}>Entrar com Google</Text>
@@ -42,7 +43,7 @@ export default function LoginSocialScreen() {
 
       <TouchableOpacity style={styles.socialButton} onPress={signInWithFacebook}>
         <Image
-          source={require("../../../assets/images/facebook.png")}
+          source={require("../../../assets/images/facebook_icon.png")}
           style={styles.icon}/>  
         <Text style={styles.socialText}>Entrar com Facebook</Text>
       </TouchableOpacity>
@@ -52,7 +53,7 @@ export default function LoginSocialScreen() {
         onPress={() => router.push("../login/login")}
       >
         <Image
-          source={require("../../../assets/images/facebook.png")}
+          source={require("../../../assets/images/user_icon.png")}
           style={styles.icon}
         />
         <Text style={styles.socialText}>Fazer Login</Text>
@@ -62,9 +63,15 @@ export default function LoginSocialScreen() {
 
         <Text style={styles.footerText}>Ainda não tem uma conta?</Text>
         <TouchableOpacity
-          style={styles.cadastroButton}
           onPress={() => router.push("../cadastro")}>
-          <Text style={styles.cadastroText}>Se Cadastrar</Text>
+             <LinearGradient
+              colors={["#FFD651", "#D987FF"]}
+              start={{x:0, y:0}}
+              end={{x:1, y:1}}
+              style={styles.cadastroButton}>
+              <Text style={styles.cadastroText}>Se Cadastrar</Text>
+            </LinearGradient>
+          
         </TouchableOpacity>
       </View>
 
@@ -76,27 +83,32 @@ export default function LoginSocialScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4F4F4",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 25,
     paddingBottom: 80,
   },
+    imagemContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: "hidden", 
+  },
 
-  backButton: {
-    position: "absolute",
-    top: 45,
-    left: 25,
-    width: 35,
-    height: 35,
-    borderRadius: 18,
-    backgroundColor: "#E0E0E0",
-    justifyContent: "center",
-    alignItems: "center",
+    imagemFundo: {
+      width: "100%",
+      height: "100%",
+      transform: [
+      { scale: 1.3 },
+      { translateY: -40 },
+      ],
   },
 
   backText: {
     fontSize: 25,
+    fontFamily:"Poppins_600SemiBold",
     lineHeight: 24,
     color: "#9A9A9A",
   },
@@ -123,9 +135,9 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 0,
     fontSize: 30,
-    fontWeight: "bold",
+    fontFamily: "Poppins_800ExtraBold",
     textAlign: "center",
-    color: "#8A8080",
+    color: "#303030",
   },
 
 
@@ -133,28 +145,28 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#FFFFFF",
     borderRadius: 30,
-    marginTop: 10,
+    marginTop: 15,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 20,
     shadowColor: "#353435",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
 
   icon: {
-    width: 24,
+    width: 30,
     height: 24,
     resizeMode: "contain",
   },
 
   socialText: {
     paddingLeft: 12,
-    color: "#6E6666",
-    fontWeight: "600",
+    color: "#303030",
+    fontFamily:"Poppins_600SemiBold",
     fontSize: 15,
   },
 
@@ -168,7 +180,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -176,7 +188,8 @@ const styles = StyleSheet.create({
   footerText: {
     marginTop: 5,
     fontSize: 15,
-    color: "#9A8F8F",
+    fontFamily:"Poppins_600SemiBold",
+    color: "#303030",
   },
 
  cadastroButton: {
@@ -187,14 +200,16 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
 
   cadastroText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#6E6666",
+    fontSize: 20,
+    fontFamily: "Poppins_800ExtraBold",
+    color: "#303030",
   },
+
+  
 });

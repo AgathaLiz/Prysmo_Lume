@@ -1,13 +1,15 @@
 import { PageFlow } from "@/components/PageFlow";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import {
     StyleSheet,
     Switch,
     Text,
     TouchableOpacity,
-    View
+    View,
+    Image
 } from "react-native";
 
 //import do subase
@@ -18,7 +20,7 @@ export default function TelaPreferencias() {
     const [modoEscuro, setModoEscuro] = useState(false);
     const [audioDescricao, setAudioDescricao] = useState(false);
     const [tamanhoFonte, setTamanhoFonte] = useState<"P" | "M" | "G">("M");
-    const [dropdownAberto, setDropdownAberto] = useState(false);
+    
 
     const tamanhosPx = {P: 24 , M:30, G: 40};
 
@@ -65,18 +67,25 @@ export default function TelaPreferencias() {
       }
 
       // sucesso
-        router.push("/onboarding/bemvindo");
+        router.push("/onboarding/bem_vindo");
         console.log({modoEscuro, audioDescricao, tamanhoFonte});
     }
 
   return (
     <View style={styles.container}>
+      <View style={styles.imagemContainer}>
+          <Image
+              source={require("../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
+              style={styles.imagemFundo}
+              resizeMode="cover"
+            />
+        </View>
 
         <Text style={styles.tituloPrincipal}>
           Preferências
         </Text>
 
-        <Text style={styles.textosMenores}>Personalize para seu maior conforto</Text>
+        
           
           {/*caixa de acessibilidade*/}
         <View style={styles.acessibilidadeBox}>
@@ -85,8 +94,9 @@ export default function TelaPreferencias() {
                 <Switch
                 value={modoEscuro}
                 onValueChange={setModoEscuro}
-                trackColor={{ false: "#d9d9d9", true: "#b5b5b5"}}
-                thumbColor={"#FFFFFF"}></Switch>
+                trackColor={{ false: "#d9d9d9", true: "#FFEB9C"}}
+                thumbColor={modoEscuro ? "#303030" : "#303030"}
+                ios_backgroundColor="#303030"></Switch>
             </View>
 
          <View style={styles.linhaPreferencia}>
@@ -94,8 +104,9 @@ export default function TelaPreferencias() {
           <Switch
             value={audioDescricao}
             onValueChange={setAudioDescricao}
-            trackColor={{ false: "#D9D9D9", true: "#B5B5B5" }}
-            thumbColor="#FFFFFF"
+            trackColor={{ false: "#D9D9D9", true: "#FFEB9C" }}
+            thumbColor={modoEscuro ? "#303030" : "#303030"}
+            ios_backgroundColor="#303030"
           />
         </View>
 
@@ -127,15 +138,18 @@ export default function TelaPreferencias() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.dropdown} onPress={() => setDropdownAberto(!dropdownAberto)}>
-            <Text style={styles.dropdownTexto}>{tamanhosPx[tamanhoFonte]}px.</Text>
-            <MaterialCommunityIcons name={dropdownAberto ? "chevron-up" : "chevron-down"} size={20} color="#848080"></MaterialCommunityIcons>
-          </TouchableOpacity>
+          
         </View>
 
         {/* Botão Salvar*/}
-        <TouchableOpacity style={styles.botaoSalvar} onPress={salvarPreferencias}>
-          <Text style={styles.textoSalvar}>Salvar</Text>
+        <TouchableOpacity  onPress={salvarPreferencias}>
+          <LinearGradient
+            colors={["#FFD651", "#D987FF"]}
+            start={{x:0, y:0}}
+            end={{x:1, y:1}}
+            style={styles.botaoSalvar}>
+            <Text style={styles.textoSalvar}>Salvar</Text>
+          </LinearGradient>
         </TouchableOpacity>
           
          <PageFlow
@@ -151,23 +165,35 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     height: "100%",
-    backgroundColor: "white",
     alignItems: "center",
-    paddingTop: 50,
-    color: "#8A8080",
+    paddingTop: 100,
+  },
+
+  imagemContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: "hidden", 
+  },
+
+    imagemFundo: {
+      width: "100%",
+      height: "100%",
+      transform: [
+      { scale: 1.3 },
+      { translateY: -40 },
+      ],
   },
 
   tituloPrincipal: {
-    fontSize: 30, 
-    color: "#8A8080", 
-    fontWeight: "bold", 
+    fontSize: 35, 
+    color: "#303030", 
+    fontFamily: "Poppins_800ExtraBold",
   },
 
-  textosMenores: {
-    color: "#8A8080",
-    marginBottom: 10,
-    fontSize: 15,
-  },
+ 
 
    acessibilidadeBox: {
     justifyContent: "space-between",
@@ -191,9 +217,9 @@ const styles = StyleSheet.create({
   },
 
   labelPreferencia: {
-    color: "#8A8080",
-    fontWeight: "600",
-    fontSize: 14,
+    color: "#303030",
+    fontFamily:"Poppins_600SemiBold",
+    fontSize: 18,
   },
 
   tamanhoFonteBox: {
@@ -212,8 +238,8 @@ const styles = StyleSheet.create({
 
   tituloCaixa: {
     textAlign: "center",
-    color: "#8A8080",
-    fontWeight: "bold",
+    color: "#303030",
+    fontFamily: "Poppins_800ExtraBold",
     fontSize: 20,
     marginBottom: 14,
   },
@@ -241,72 +267,55 @@ const styles = StyleSheet.create({
   },
 
   botaoFonteAtivo: {
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#FFEB9C",
     
   },
 
   letraFontePequena: {
     fontSize: 24,
-    color: "#8A8080",
-    fontWeight: "bold",
+    color: "#303030",
+    fontFamily:"Poppins_600SemiBold",
   },
 
   letraFonteMedia: {
     fontSize: 30,
-    color: "#8A8080",
-    fontWeight: "bold",
+    color: "#303030",
+    fontFamily:"Poppins_600SemiBold",
   },
 
   letraFonteGrande: {
     fontSize: 40,
-    color: "#8A8080",
-    fontWeight: "bold",
+    color: "#303030",
+    fontFamily:"Poppins_600SemiBold",
   },
 
   legendaFonte: {
     fontSize: 14,
-    color: "#8A8080",
+    fontFamily:"Poppins_600SemiBold",
+    color: "#303030",
     marginTop: 4,
   },
 
-  dropdown: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#EDEDED",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-
-  dropdownTexto: {
-    color: "#8A8080",
-    fontSize: 13,
-  },
 
   botaoSalvar: {
-    width: "90%",
-    marginTop: 30,
-    backgroundColor: "#D9D9D9",
-    borderRadius: 25,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    marginTop: 50,
+    width: 300,
+    borderRadius: 18,
+    paddingVertical: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 20,
     
   },
 
   textoSalvar: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#8A8080",
+     textAlign: "center",
+    fontSize: 30,
+    fontFamily: "Poppins_800ExtraBold",
+    color: "#303030",
+
   },
 });

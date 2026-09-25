@@ -16,6 +16,14 @@ import { PageFlow } from "../../components/PageFlow";
 export default function BemVindoScreen() {
   return (
     <View style={styles.container}>
+      <View style={styles.imagemContainer}>
+                <Image
+                    source={require("../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
+                    style={styles.imagemFundo}
+                    resizeMode="cover"
+                  />
+              </View>
+      
       <View style={styles.desenhoBox}>
         <Image
           source={require("../../assets/Lume/Mimi/Png/mimi-voando.png")}
@@ -25,7 +33,7 @@ export default function BemVindoScreen() {
 
       <Text style={styles.titulo}>Bem Vindo (a)</Text>
 
-      <PageFlow total={4} currentIndex={0} />
+      <PageFlow total={4} currentIndex={3} />
     </View>
   );
 }
@@ -39,12 +47,31 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
 
+  imagemContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: "hidden", 
+  },
+
+    imagemFundo: {
+      width: "100%",
+      height: "100%",
+      transform: [
+      { scale: 1.3 },
+      { translateY: -40 },
+      ],
+  },
+
   logo: {
     width: 250,
     height: 300,
     resizeMode: "contain",
+    overflow: "hidden",
     transform: [
-    { rotate: "340deg" },   // gira (graus, com "deg")
+    { rotate: "340deg" },
   
   ],
   },
@@ -56,9 +83,9 @@ const styles = StyleSheet.create({
 
  
   titulo: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "#7A7272",
+    fontSize: 35,
+    fontFamily: "Poppins_800ExtraBold",
+    color: "#303030",
     marginTop: 105,
   },
 });

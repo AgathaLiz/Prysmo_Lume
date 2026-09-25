@@ -9,17 +9,17 @@ export default function OnboardingIntroducaoDois() {
     <View style={styles.container}>
       <View style={styles.imagemContainer}>
         <Image
-          source={require("../../assets/Lume/Facilidades pro app/Png/Onboarding/fundoOnboarding3.png")}
+          source={require("../../assets/Lume/Facilidades pro app/Png/Onboarding/fundoOnboarding4.png")}
           style={styles.imagemFundo}
           resizeMode="cover"
         />
       </View>
-      <Text style={styles.titulo}>Como um jogo</Text>
+      <Text style={styles.titulo}>Ilumina</Text>
 
       <Text style={styles.subtitulo}>
-        Aprenda de forma interativa{"\n"}
-        divertida e coesa, e multiplique{"\n"}
-        seus resultados!
+        Com Lume, você se livra daquilo{"\n"}
+        que bloqueia sua aprendizagem{"\n"}
+        de habilidades digitais!
       </Text>
 
       <View style={styles.voltaBotao}>
@@ -32,10 +32,10 @@ export default function OnboardingIntroducaoDois() {
             cx={70}
             cy={70}
             r={58}
-            stroke="#604001"
+            stroke="#32064F"
             strokeWidth={6}
             fill="none"
-            strokeDasharray="180, 402"
+            strokeDasharray="402, 402"
             strokeLinecap="round"
             rotation={90}
             origin="70, 70"></Circle>
@@ -43,9 +43,9 @@ export default function OnboardingIntroducaoDois() {
 
         <TouchableOpacity
           style={styles.botaoProximo}
-          onPress={() => router.push("../onboarding/terceira_tela")}
+          onPress={() => router.push("../auth/login/contas")}
         >
-          <ChevronRight size={50} color="#FFC629" />
+          <ChevronRight size={50} color="#891CC0" />
         </TouchableOpacity>
       </View>
 
@@ -75,7 +75,10 @@ const styles = StyleSheet.create({
   imagemFundo: {
     width: "100%",
     height: "100%",
-    transform: [{ scale: 1.2 }],
+    transform: [
+    { scale: 1.3 },
+    { translateY: -40 },
+    ],
   },
 
   titulo: {
@@ -83,7 +86,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
     textAlign: "center",
-    marginTop:450,
+    marginTop:50,
   },
 
   subtitulo: {
@@ -99,9 +102,10 @@ const styles = StyleSheet.create({
   voltaBotao: {
     width: 100,
     height: 100,
+    marginTop: 425,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 35,
+    
   },
 
   progresso: {
@@ -112,7 +116,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#604001",
+    backgroundColor: "#32064F",
     justifyContent: "center",
     alignItems: "center",
     marginTop: "auto",
