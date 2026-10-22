@@ -1,6 +1,6 @@
 import { PageFlow } from "@/components/PageFlow";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import {
@@ -17,69 +17,83 @@ import { supabase } from "../../lib/supabase";
 
 
 export default function TelaPreferencias() {
-    const [modoEscuro, setModoEscuro] = useState(false);
-    const [audioDescricao, setAudioDescricao] = useState(false);
-    const [tamanhoFonte, setTamanhoFonte] = useState<"P" | "M" | "G">("M");
-    
+  const [modoEscuro, setModoEscuro] = useState(false);
+  const [audioDescricao, setAudioDescricao] = useState(false);
+  const [tamanhoFonte, setTamanhoFonte] = useState<"P" | "M" | "G">("M");
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
 
-    const tamanhosPx = {P: 24 , M:30, G: 40};
+  const tamanhosPx = { P: 24, M: 30, G: 40 };
 
-;
-    
+  // Carrega as preferências já salvas (quem é novo fica com os padrões)
+  useEffect(() => {
+    async function carregar() {
+      const { data: usuarioData } = await supabase
+        .from("usuario")
+        .select("usuario_id")
+        .maybeSingle();
 
-    async function salvarPreferencias() {
-      const {data: { user} } = await supabase.auth.getUser()
+      if (!usuarioData) return;
 
-      if(!user) {
-        console.log("Usuário não autenticado");
-        return;
-      }
+      const { data } = await supabase
+        .from("usuario_acessibilidade_settings")
+        .select("tamanho_fonte, modo_escuro, audio_descricao")
+        .eq("usuario_id", usuarioData.usuario_id)
+        .maybeSingle();
 
-      //Buscar p usuário_id interno a partir do auth_user_id
-      const { data: usuarioData, error: usuarioError} = await supabase
+      if (!data) return;
+
+      setModoEscuro(data.modo_escuro);
+      setAudioDescricao(data.audio_descricao);
+      setTamanhoFonte(
+        data.tamanho_fonte <= 24 ? "P" : data.tamanho_fonte >= 40 ? "G" : "M"
+      );
+    }
+    carregar();
+  }, []);
+
+  async function salvarPreferencias() {
+    if (carregando) return;
+    setErro("");
+    setCarregando(true);
+
+    const { data: usuarioData, error: usuarioError } = await supabase
       .from("usuario")
       .select("usuario_id")
-      .eq("auth_user_id", user.id)
-      .single();
+      .maybeSingle();
 
-      if(usuarioError || !usuarioData) {
-        console.log("Usuário não encontrado:", usuarioError?.message);
-        return;
-      }
+    if (usuarioError || !usuarioData) {
+      setCarregando(false);
+      setErro("Não foi possível carregar seu perfil. Entre novamente.");
+      return;
+    }
 
-      console.log("auth user id:", user.id);
-      console.log("usuario encontrado:", usuarioData);
-      console.log("erro na busca:", usuarioError);
-
-      //inseri na tabela
-      const {error} = await supabase.from("usuario_acessibilidade_settings").upsert({
-        usuario_id: usuarioData.usuario_id,
-        tamanho_fonte: tamanhosPx[tamanhoFonte],
-        modo_escuro: modoEscuro,
-        audio_descricao: audioDescricao,
-      },
-        {onConflict: "usuario_id"}
+    const { error } = await supabase
+      .from("usuario_acessibilidade_settings")
+      .upsert(
+        {
+          usuario_id: usuarioData.usuario_id,
+          tamanho_fonte: tamanhosPx[tamanhoFonte],
+          modo_escuro: modoEscuro,
+          audio_descricao: audioDescricao,
+        },
+        { onConflict: "usuario_id" }
       );
 
-      if (error) {
-        console.log(error.message);
-        return;
-      }
+    setCarregando(false);
 
-      // sucesso
-        router.push("/onboarding/bem_vindo");
-        console.log({modoEscuro, audioDescricao, tamanhoFonte});
+    if (error) {
+      console.log(error.message);
+      setErro("Não foi possível salvar. Tente novamente.");
+      return;
     }
+
+    router.replace("/onboarding/bem_vindo");
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.imagemContainer}>
-          <Image
-              source={require("../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
-              style={styles.imagemFundo}
-              resizeMode="cover"
-            />
-        </View>
+      
 
         <Text style={styles.tituloPrincipal}>
           Preferências
@@ -142,14 +156,14 @@ export default function TelaPreferencias() {
         </View>
 
         {/* Botão Salvar*/}
-        <TouchableOpacity  onPress={salvarPreferencias}>
-          <LinearGradient
-            colors={["#FFD651", "#D987FF"]}
-            start={{x:0, y:0}}
-            end={{x:1, y:1}}
-            style={styles.botaoSalvar}>
-            <Text style={styles.textoSalvar}>Salvar</Text>
-          </LinearGradient>
+        {erro ? <Text style={{ color: "#C04B4B", fontFamily: "Poppins_600SemiBold", marginTop: 20 }}>{erro}</Text> : null}
+
+        <TouchableOpacity
+          style={[styles.botaoSalvar, carregando && { opacity: 0.6 }]}
+          onPress={salvarPreferencias}
+          disabled={carregando}
+        >
+          <Text style={styles.textoSalvar}>{carregando ? "Salvando..." : "Salvar"}</Text>
         </TouchableOpacity>
           
          <PageFlow
@@ -167,25 +181,10 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     paddingTop: 100,
+    backgroundColor: "#E9B8FF",
   },
 
-  imagemContainer: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      overflow: "hidden", 
-  },
-
-    imagemFundo: {
-      width: "100%",
-      height: "100%",
-      transform: [
-      { scale: 1.3 },
-      { translateY: -40 },
-      ],
-  },
+ 
 
   tituloPrincipal: {
     fontSize: 35, 
@@ -254,7 +253,7 @@ const styles = StyleSheet.create({
   botaoFonte: {
     flex: 1,
     marginHorizontal: 4,
-    backgroundColor: "#EDEDED",
+    backgroundColor: "#fafafa",
     borderRadius: 14,
     paddingVertical: 10,
     alignItems: "center",
@@ -298,6 +297,7 @@ const styles = StyleSheet.create({
 
 
   botaoSalvar: {
+    backgroundColor: "#FFD651",
     marginTop: 50,
     width: 300,
     borderRadius: 18,

@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronLeft, Eye, EyeOff } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Image,
@@ -20,36 +20,62 @@ import { supabase } from "../../../lib/supabase";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erroLogin, setErroLogin] = useState("");const [continuarConectado, setContinuarConectado] = useState(false);
 
   async function Login() {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: senha,
-  });
+  if (carregando) return;
+  setErroLogin("");
 
-  if (error) {
-    setErroLogin("E-mail ou senha incorretos");
+  if (!email.trim() || !senha) {
+    setErroLogin("Preencha e-mail e senha");
     return;
   }
 
+  setCarregando(true);
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password: senha,
+  });
 
-  router.push("/auth/tela_preferencias");
+  if (error || !data.user) {
+    setCarregando(false);
+    console.log(error?.message);
+    if (error?.message.toLowerCase().includes("invalid login")) {
+      setErroLogin("E-mail ou senha incorretos");
+    } else {
+      setErroLogin("Não foi possível entrar. Verifique sua conexão e tente novamente.");
+    }
+    return;
+  }
+
+  // Descobre o papel da pessoa que acabou de entrar
+  const { data: perfil, error: erroPerfil } = await supabase
+    .from("usuario")
+    .select("papel")
+    .eq("auth_user_id", data.user.id)
+    .single();
+
+  setCarregando(false);
+
+  if (erroPerfil) {
+    console.log(erroPerfil.message);
+    setErroLogin("Não foi possível carregar seu perfil. Tente novamente.");
+    return;
+  }
+
+  if (perfil.papel === "admin") {
+    router.replace("/");               // ajuste para a sua rota de admin
+  } else {
+    router.replace("/auth/tela_preferencias");
+  }
 }
-
-
 
   return (
     <View style={styles.container}>
             
-      <View style={styles.imagemContainer}>
-          <Image
-            source={require("../../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
-            style={styles.imagemFundo}
-            resizeMode="cover"
-          />
-      </View>
+      
       {/* Botão para voltar */}
         <TouchableOpacity
           style={styles.botaoVoltar}
@@ -71,16 +97,22 @@ export default function LoginScreen() {
         />
       </View>
 
+      {/*EMAIL*/}
+
       <View style={styles.inputContainer}>
         <TextInput
           placeholder="Email"
           placeholderTextColor="#303030"
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
           style={styles.input}
         />
       </View>
       
+      {/*SENHA*/}
 
       <View style={styles.senhaContainer}>
         <TextInput
@@ -93,10 +125,11 @@ export default function LoginScreen() {
         />
 
         <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-          <Image
-            source={require("../../../assets/images/padlock.png")}
-            style={styles.icon}
-          />
+            {mostrarSenha ? (
+              <EyeOff size={22} color="#303030" />
+              ) : (
+              <Eye size={22} color="#303030" />
+            )}
         </TouchableOpacity>
       </View>
 
@@ -108,29 +141,19 @@ export default function LoginScreen() {
 
       <View style={styles.links}>
 
-        <TouchableOpacity
-          style={styles.continuarConectadoRow}
-          onPress={() => setContinuarConectado(!continuarConectado)}>
-          
-          <View 
-          style={[styles.continuarConectadoBox, continuarConectado && styles.continuarConectadoAtivo,]}>
-          </View>
-          <Text style={styles.continuarConectadoTexto}>Continuar conectado?</Text>
-          </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push("../cadastro")}>
           <Text style={styles.linkEscuro}>Criar conta?</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={Login}>
-         <LinearGradient
-                      colors={["#FFD651", "#D987FF"]}
-                      start={{x:0, y:0}}
-                      end={{x:1, y:1}}
-                      style={styles.botao}>
-                      <Text style={styles.botaoTexto}>Entrar</Text>
-                    </LinearGradient>
+      {/*BOTÃO LOGIN*/}
+
+      <TouchableOpacity
+        onPress={Login}
+        disabled={carregando}
+        style={[styles.botao, carregando && { opacity: 0.6 }]}
+        >
+        <Text style={styles.botaoTexto}>{carregando ? "Entrando..." : "Entrar"}</Text>
       </TouchableOpacity>
 
     
@@ -147,25 +170,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     justifyContent: "center",
     paddingBottom: 80,
+    backgroundColor: "#E9B8FF",
   },
 
-  imagemContainer: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      overflow: "hidden", 
-  },
-
-    imagemFundo: {
-      width: "100%",
-      height: "100%",
-      transform: [
-      { scale: 1.3 },
-      { translateY: -40 },
-      ],
-  },
+  
 
   logoContainer: {
       flexDirection: "row",
@@ -303,6 +311,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     marginBottom: 20,
+    backgroundColor: "#FFD651",
   },
 
   botaoTexto: {

@@ -14,13 +14,7 @@ import { PageFlow } from "../../../components/PageFlow";
 export default function LoginSocialScreen() {
   return (
     <View style={styles.container}>
-          <View style={styles.imagemContainer}>
-            <Image
-              source={require("../../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
-              style={styles.imagemFundo}
-              resizeMode="cover"
-            />
-          </View>
+         
       
       <View style={styles.ilustracaoBox}>
         <Image
@@ -50,7 +44,7 @@ export default function LoginSocialScreen() {
 
       <TouchableOpacity
         style={styles.socialButton}
-        onPress={() => router.push("../login/login")}
+        onPress={() => router.push("/auth/login/login")}
       >
         <Image
           source={require("../../../assets/images/user_icon.png")}
@@ -63,7 +57,7 @@ export default function LoginSocialScreen() {
 
         <Text style={styles.footerText}>Ainda não tem uma conta?</Text>
         <TouchableOpacity
-          onPress={() => router.push("../cadastro")}>
+          onPress={() => router.push("/auth/cadastro")}>
              <LinearGradient
               colors={["#FFD651", "#D987FF"]}
               start={{x:0, y:0}}
@@ -87,24 +81,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 25,
     paddingBottom: 80,
+    backgroundColor: "#E9B8FF",
   },
-    imagemContainer: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      overflow: "hidden", 
-  },
-
-    imagemFundo: {
-      width: "100%",
-      height: "100%",
-      transform: [
-      { scale: 1.3 },
-      { translateY: -40 },
-      ],
-  },
+    
 
   backText: {
     fontSize: 25,

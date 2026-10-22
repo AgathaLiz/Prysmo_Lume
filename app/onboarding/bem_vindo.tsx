@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { Image as ImageIcon } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
+import { supabase } from "../../lib/supabase";
 import {
   Image,
   StyleSheet,
@@ -14,6 +15,13 @@ import { PageFlow } from "../../components/PageFlow";
 
 
 export default function BemVindoScreen() {
+ useEffect(() => {
+  const timer = setTimeout(() => {
+    router.replace("/pages/tela_inicial" as any);
+  }, 2500);
+  return () => clearTimeout(timer);
+}, []);
+  
   return (
     <View style={styles.container}>
       <View style={styles.imagemContainer}>

@@ -26,6 +26,8 @@ import { supabase } from "../../lib/supabase";
 
 // nomes dos objetos que vão guardar as informações
 export default function CadastroScreen() {
+  const [carregando, setCarregando] = useState(false);
+  const [erroGeral, setErroGeral] = useState("");
   const [nome, setNome] = useState("");
   const [nascimento, setNascimento] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -68,65 +70,57 @@ function formatarData(data: string) {
   return `${ano}-${mes}-${dia}`;
 }
 
-//cadastrar usuario
-async function cadastrarUsuario() {
-  const novosErros = {
-    nome: "",
-    nascimento: "",
-    telefone: "",
-    email: "",
-    senha: "",
-    confirmarSenha: "",
-  };
 
-  //Validar os campos
+
+function dataValida(valor: string) {
+  const [d, m, a] = valor.split("/").map(Number);
+  if (!d || !m || !a || a < 1900) return false;
+  const dt = new Date(a, m - 1, d);
+  return dt.getFullYear() === a && dt.getMonth() === m - 1 && dt.getDate() === d && dt <= new Date();
+}
+
+async function cadastrarUsuario() {
+  if (carregando) return;
+  setErroGeral("");
+
+  const novosErros = { nome: "", nascimento: "", telefone: "", email: "", senha: "", confirmarSenha: "" };
 
   if (!nome.trim()) novosErros.nome = "Preencha o nome";
-  if (!nascimento.trim()) novosErros.nascimento = "Preencha a data";
-  if (!telefone.trim()) novosErros.telefone = "Preencha o telefone";
-  if (!email.trim()) novosErros.email = "Preencha o e-mail";
-  if (!senha.trim()) novosErros.senha = "Preencha a senha";
+  if (!dataValida(nascimento)) novosErros.nascimento = "Data inválida";
+  if (telefone.replace(/\D/g, "").length < 10) novosErros.telefone = "Telefone inválido";
+  if (!emailValido(email)) novosErros.email = "E-mail inválido";
+  if (senha.length < 6) novosErros.senha = "Mínimo de 6 caracteres";
   if (senha !== confirmarSenha) novosErros.confirmarSenha = "Senhas diferentes";
 
   setErros(novosErros);
+  if (Object.values(novosErros).some((e) => e !== "")) return;
 
-  const temErro = Object.values(novosErros).some((erro) => erro !== "");
-  if (temErro) return;
-
-  // Chama o Supabase
-  const { data, error } = await supabase.auth.signUp({
-    email,
+  setCarregando(true);
+  const { error } = await supabase.auth.signUp({
+    email: email.trim(),
     password: senha,
+    options: {
+      data: {
+        nome_completo: nome.trim(),
+        telefone,
+        data_nascimento: formatarData(nascimento),
+      },
+    },
   });
+  setCarregando(false);
 
   if (error) {
+    setErroGeral("Não foi possível criar a conta. Verifique os dados e tente novamente.");
     console.log(error.message);
     return;
   }
 
-  // Salva dados extras na tabela
-  await supabase.from("usuario").insert([
-    {
-      auth_user_id: data.user?.id,
-      nome_completo: nome,
-      telefone: telefone,
-      data_nascimento: formatarData(nascimento),
-    },
-  ]);
-
-  // sucesso
-  router.push("/auth/login/login");
+  router.replace("/auth/tela_preferencias");
 }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.imagemContainer}>
-                  <Image
-                    source={require("../../assets/Lume/Facilidades pro app/Png/Outros Fundos/fundoMaior.png")}
-                    style={styles.imagemFundo}
-                    resizeMode="cover"
-                  />
-                </View>
+      
       {/* Botão para levar a página de login */}
        <TouchableOpacity
           style={styles.botaoVoltar}
@@ -212,44 +206,47 @@ async function cadastrarUsuario() {
   {erros.email ? <Text style={styles.errorText}>{erros.email}</Text> : null}
 </View>
 
-<View style={styles.row}>
-  <View style={[styles.inputWrapper, styles.halfInput]}>
-    <Lock size={20} color="#303030" style={styles.icon} />
-    <TextInput
-      placeholder="Criar senha"
-      placeholderTextColor="#303030"
-      secureTextEntry
-      value={senha}
-      onChangeText={setSenha}
-      style={[styles.input, styles.inputWithIcon]}
-    />
+  <View style={styles.row}>
+    <View style={[styles.inputWrapper, styles.halfInput]}>
+      <Lock size={20} color="#303030" style={styles.icon} />
+      <TextInput
+        placeholder="Criar senha"
+        placeholderTextColor="#303030"
+        secureTextEntry
+        value={senha}
+        onChangeText={setSenha}
+        style={[styles.input, styles.inputWithIcon]}
+      />
+    </View>
+
+    <View style={[styles.inputWrapper, styles.halfInput]}>
+      <Lock size={20} color="#303030" style={styles.icon} />
+      <TextInput
+        placeholder="Repetir senha"
+        placeholderTextColor="#303030"
+        secureTextEntry
+        value={confirmarSenha}
+        onChangeText={setConfirmarSenha}
+        style={[styles.input, styles.inputWithIcon]}
+      />
+    </View>
   </View>
 
-  <View style={[styles.inputWrapper, styles.halfInput]}>
-    <Lock size={20} color="#303030" style={styles.icon} />
-    <TextInput
-      placeholder="Repetir senha"
-      placeholderTextColor="#303030"
-      secureTextEntry
-      value={confirmarSenha}
-      onChangeText={setConfirmarSenha}
-      style={[styles.input, styles.inputWithIcon]}
-    />
-  </View>
-</View>
+  {/* Erros das senhas */}
+  {erros.senha ? <Text style={styles.errorText}>{erros.senha}</Text> : null}
+  {erros.confirmarSenha ? <Text style={styles.errorText}>{erros.confirmarSenha}</Text> : null}
 
-  {/* BOTÃO PARA CONCLUIR CADASTRO */}
-      {/* Botão que conclui o envio do formulário */}
-      <TouchableOpacity  onPress={cadastrarUsuario}>
-          <LinearGradient
-              colors={["#FFD651", "#D987FF"]}
-              start={{x:0, y:0}}
-              end={{x:1, y:1}}
-              style={styles.button}>
-              <Text style={styles.buttonText}>Entrar</Text>
-            </LinearGradient>
-        </TouchableOpacity>
-      
+  {/* Erro geral do cadastro */}
+  {erroGeral ? <Text style={styles.errorText}>{erroGeral}</Text> : null}
+
+  {/* Botão que conclui o cadastro */}
+  <TouchableOpacity
+    style={[styles.button, carregando && { opacity: 0.6 }]}
+    onPress={cadastrarUsuario}
+    disabled={carregando}
+  >
+    <Text style={styles.buttonText}>{carregando ? "Criando..." : "Cadastrar"}</Text>
+  </TouchableOpacity>
       
         <PageFlow total={4} currentIndex={1} />
     </ScrollView>
@@ -259,7 +256,7 @@ async function cadastrarUsuario() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4F4F4",
+    backgroundColor: "#E9B8FF",
   },
 
   scrollContent: {
@@ -269,23 +266,7 @@ const styles = StyleSheet.create({
     
   },
 
-  imagemContainer: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      overflow: "hidden", 
-  },
-
-    imagemFundo: {
-      width: "100%",
-      height: "100%",
-      transform: [
-      { scale: 1.3 },
-      { translateY: -40 },
-      ],
-  },
+  
 
   topContainer: {
     flexDirection: "row",
@@ -366,7 +347,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 25,
     marginBottom: 10,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#FFD651",
     borderRadius: 35,
     paddingVertical: 18,
     shadowColor: "#000",
