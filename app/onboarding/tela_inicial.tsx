@@ -1,5 +1,3 @@
-import { signInWithFacebook, signInWithGoogle } from "@/services/authService";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -9,7 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { PageFlow } from "../../components/PageFlow";
 
 export default function OnboardingTelaInicial() {
   return (
@@ -28,25 +25,22 @@ export default function OnboardingTelaInicial() {
 
         <Text style={styles.title}>Olá, seja Bem-Vindo</Text>
 
-        <Text style={styles.footerText}>Continue para aprender a usar o Lume!</Text>
+        <View style={styles.containerFooterText}>
+          <Text style={styles.footerContinueText}>Continue</Text>
+          <Text style={styles.footerText}>para aprender a usar o Lume!</Text>
+        </View>
 
         <View style={styles.botoesFinal}>
             <TouchableOpacity
-                style={styles.botaoPular}
-                onPress={() => router.push("../auth/login/contas")}>
-                <Text style={styles.botoesTexto}>Pular</Text>
+              style={styles.botaoPular}
+              onPress={() => router.push("../auth/login/contas")}>
+              <Text style={styles.botoesTexto}>Pular</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-                onPress={() => router.push("../onboarding/primeira_tela")}>
-                  <LinearGradient
-                    colors={["#FFD651", "#D987FF"]}
-                    start={{x:0, y:0}}
-                    end={{x:1, y:1}}
-                    style={styles.botaoComecar}>
-                    <Text style={styles.botoesTexto}>Começar</Text>
-                  </LinearGradient>
-    
+              style={styles.botaoComecar}
+              onPress={() => router.push("../onboarding/primeira_tela")}>
+              <Text style={styles.botoesTexto}>Começar</Text>
             </TouchableOpacity>        
         </View>  
       </View>
@@ -61,7 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFC629",
   },
 
-    ilustracaoBox: {
+  ilustracaoBox: {
     flex: 1,                    // ocupa todo o espaço restante, nem mais nem menos
     width: "100%",
     backgroundColor: "#FFC629",
@@ -76,7 +70,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginTop: 25,
     transform: [
-        {scale: 1.9},
+      {scale: 1.9},
     ]
   },
 
@@ -100,6 +94,21 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
 
+  containerFooterText: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  footerContinueText: {
+    marginTop: 8,
+    fontFamily:"Poppins_600SemiBold",
+    fontSize: 2,
+    color: "#D987FF",
+    alignSelf: "center",
+  },
+
   footerText: {
     marginTop: 8,
     fontFamily:"Poppins_600SemiBold",
@@ -116,28 +125,34 @@ const styles = StyleSheet.create({
   },
 
   botaoPular: {
-  flex: 1,
-  marginRight: 10,
-  backgroundColor: "#FFFFFF",
-  borderRadius: 20,
-  paddingVertical: 15,
-  alignItems: "center",
-  borderWidth: 1.5,
-  borderColor: "#E0E0E0",
+    flex: 1,
+    marginRight: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingVertical: 15,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
 
   botaoComecar: {
-  marginLeft: 10,
-  paddingVertical: 15,
-  paddingHorizontal: 30,
-  borderRadius: 20,
-  alignItems: "center",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 6,
-  elevation: 4,
-},
+    marginLeft: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    backgroundColor: "#D987FF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
 
   botoesTexto: {
     fontSize: 25,
