@@ -13,6 +13,7 @@ import {
 import { ActivityIndicator, View } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { AcessibilidadeProvider } from "@/hooks/use-acessibilidade";
 import { supabase } from "../lib/supabase";
 
 export default function RootLayout() {
@@ -82,9 +83,11 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }} />
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AcessibilidadeProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }} />
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AcessibilidadeProvider>
   );
 }

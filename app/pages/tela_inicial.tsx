@@ -1,13 +1,17 @@
 import { Label, Button } from "@react-navigation/elements";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
     StyleSheet,
     Text,
+    TouchableOpacity,
     View
 } from "react-native";
 
 export default function TelaInicial() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <View style={styles.viewSequencia}>
@@ -60,7 +64,13 @@ export default function TelaInicial() {
         </View>
       </View>
 
-      <View style={styles.viewProxLicao}>
+      <TouchableOpacity
+        style={styles.viewProxLicao}
+        onPress={() => router.push("/trilha" as any)}
+        accessibilityRole="button"
+        accessibilityLabel="Trilhas de lições"
+        accessibilityHint="Abre a sua trilha de lições"
+      >
         <View style={styles.iconProxLicao}></View>
         <View style={{ marginLeft: 10 }}>
           <Text style={{ fontSize: 30, color: "#8A8080", fontWeight: "bold" }}>
@@ -68,7 +78,7 @@ export default function TelaInicial() {
           </Text>
           <Text style={{ color: "#8A8080" }}>Ilumine seu próprio caminho</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }

@@ -29,7 +29,7 @@ export default function LoginSocialScreen() {
 
       <TouchableOpacity style={styles.socialButton}  onPress={signInWithGoogle}>
         <Image
-          source={require("../../../assets/images/google_icon.png")}
+          source={require("../../../assets/images/icons/google_icon.png")}
           style={styles.icon}
         />
         <Text style={styles.socialText}>Entrar com Google</Text>
@@ -37,7 +37,7 @@ export default function LoginSocialScreen() {
 
       <TouchableOpacity style={styles.socialButton} onPress={signInWithFacebook}>
         <Image
-          source={require("../../../assets/images/facebook_icon.png")}
+          source={require("../../../assets/images/icons/facebook_icon.png")}
           style={styles.icon}/>  
         <Text style={styles.socialText}>Entrar com Facebook</Text>
       </TouchableOpacity>
@@ -47,7 +47,7 @@ export default function LoginSocialScreen() {
         onPress={() => router.push("/auth/login/login")}
       >
         <Image
-          source={require("../../../assets/images/user_icon.png")}
+          source={require("../../../assets/images/icons/user_icon.png")}
           style={styles.icon}
         />
         <Text style={styles.socialText}>Fazer Login</Text>
