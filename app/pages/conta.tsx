@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BotaoApagarConta } from "@/components/BotaoApagarConta";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { FundoAmarelo } from "@/components/FundoAmarelo";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
@@ -159,6 +160,8 @@ export default function TelaConta() {
             valor={formatarDataCurta(dados?.criadoEm ?? null) || "Não informado"}
           />
         </View>
+
+        <BotaoApagarConta />
       </ScrollView>
     </SafeAreaView>
   );

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BotaoApagarConta } from "@/components/BotaoApagarConta";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 
@@ -87,6 +88,8 @@ export default function TelaConfiguracoes() {
         <Text style={[styles.rodape, { color: secundario, fontSize: fonte(12) }]}>
           As preferências de notificações e sons são aplicadas neste aparelho.
         </Text>
+
+        <BotaoApagarConta />
       </ScrollView>
     </SafeAreaView>
   );
