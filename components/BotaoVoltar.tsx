@@ -11,6 +11,7 @@ type Props = {
   semTexto?: boolean;
 };
 
+/** Toda subprancha embaixo do Perfil volta para ele, não para a abertura. */
 export function BotaoVoltar({ onPress, cor, semTexto = false }: Props) {
   const router = useRouter();
   const { tema, fonte } = useAcessibilidade();
@@ -19,7 +20,9 @@ export function BotaoVoltar({ onPress, cor, semTexto = false }: Props) {
   return (
     <TouchableOpacity
       style={styles.botao}
-      onPress={onPress ?? (() => router.back())}
+      onPress={
+        onPress ?? (() => router.navigate("/pages/tela_usuario" as never))
+      }
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel="Voltar"

@@ -362,5 +362,7 @@ const styles = StyleSheet.create({
   textoReset: {
     fontFamily: "Poppins_900Black",
     color: "#303030",
+    flexShrink: 1,
+    textAlign: "center",
   },
 });

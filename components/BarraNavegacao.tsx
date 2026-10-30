@@ -38,25 +38,41 @@ function AbaAtiva({
   );
 }
 
+const CAMINHOS: Record<Aba, string> = {
+  inicio: "/pages/tela_inicial",
+  progresso: "/pages/tela_opcoes",
+  perfil: "/pages/tela_usuario",
+};
+
+type BarraNavegacaoProps = {
+  /**
+   * Qual aba fica destacada. Por padrão é a aberta na tela atual
+   * (nas telas de configuração o perfil continua marcado, como no design);
+   * a trilha passa `inicio`, como no mockup.
+   */
+  aba?: Aba;
+};
+
 /**
- * Barra inferior compartilhada pelas abas e pelas telas de configuração.
- * Nas telas de configuração o perfil continua marcado, como no design.
+ * Barra inferior compartilhada pelas abas, pelas telas de configuração
+ * e pela trilha — sempre o mesmo componente/tamanhos, mudando só a aba
+ * destacada.
  */
-export function BarraNavegacao() {
+export function BarraNavegacao({ aba }: BarraNavegacaoProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
   const naHome = pathname.includes("tela_inicial");
   const noProgresso = pathname.includes("tela_opcoes");
-  const ativo: Aba = naHome ? "inicio" : noProgresso ? "progresso" : "perfil";
+  const automatica: Aba = naHome ? "inicio" : noProgresso ? "progresso" : "perfil";
+  const ativo: Aba = aba ?? automatica;
 
-  const irPara = (aba: Aba) => {
-    if (aba === ativo) return;
-
-    if (aba === "inicio") router.navigate("/pages/tela_inicial" as never);
-    if (aba === "progresso") router.navigate("/pages/tela_opcoes" as never);
-    if (aba === "perfil") router.navigate("/pages/tela_usuario" as never);
+  const irPara = (destino: Aba) => {
+    // Pular só quando a rota atual já é dessa aba (por pathname, não por
+    // aba destacada: da trilha, Início continua clicável).
+    if (pathname.includes(CAMINHOS[destino])) return;
+    router.navigate(CAMINHOS[destino] as never);
   };
 
   return (

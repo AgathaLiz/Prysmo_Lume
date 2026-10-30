@@ -9,7 +9,6 @@ import {
   WifiOff,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ImageSourcePropType } from "react-native";
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -25,6 +24,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 
+import { BarraNavegacao } from "@/components/BarraNavegacao";
 import { BotaoGrande } from "@/components/BotaoGrande";
 import { ALTURA_NO, NoTrilha, Y_CENTRO } from "@/components/NoTrilha";
 import { TutorialTrilha } from "@/components/TutorialTrilha";
@@ -44,12 +44,6 @@ import {
 } from "@/lib/trilha";
 
 const CHAVE_TUTORIAL = "lume_trilha_tutorial_visto";
-
-const ICONES_NAV = {
-  inicio: require("../assets/images/icons/Icons=home.png") as ImageSourcePropType,
-  progresso: require("../assets/images/icons/Icons=estatisticas.png") as ImageSourcePropType,
-  perfil: require("../assets/images/icons/Icons=pefil_tab_bar.png") as ImageSourcePropType,
-};
 
 const CAMINHO_TRILHA = require("../assets/images/Linha.png");
 
@@ -121,14 +115,14 @@ export default function TrilhaScreen() {
             setSecoes([
               {
                 ...base,
-                licoes: Array.from({ length: 6 }, (_, indice) => ({
+                licoes: Array.from({ length: 3 }, (_, indice) => ({
                   ...base.licoes[0],
                   licoes_id: -1 - indice,
                   posicao: indice + 1,
                   estado: indice === 0 ? "atual" : "bloqueada",
                 })),
-                total: 6,
-                resumo: "São 6 lições. Vamos começar?",
+                total: 3,
+                resumo: "São 3 lições. Vamos começar?",
               },
             ]);
             setExemplo(true);
@@ -441,14 +435,10 @@ export default function TrilhaScreen() {
       ) : (
         <ScrollView
           ref={rolagemRef}
-          style={[
-            styles.rolagem,
-            {
-              backgroundColor: modoEscuro
-                ? TrilhaCores.gradienteFundoEscuro
-                : TrilhaCores.gradienteFundo,
-            },
-          ]}
+          // Sem cor de fundo aqui: o céu (gradiente, planetas e estrelas) fica
+          // atrás do conteúdo e continua visível enquanto a lista rola — igual ao
+          // que aparece na tela de carregamento.
+          style={styles.rolagem}
           bounces={false}
           overScrollMode="never"
           contentContainerStyle={[
@@ -675,87 +665,21 @@ export default function TrilhaScreen() {
         </View>
       )}
 
-      {/* Navegação flutuante */}
-      <View
-        style={[
-          styles.nav,
-          { bottom: Math.max(insets.bottom, 12) },
-        ]}
-        accessibilityRole="tablist"
-      >
-        <ItemNav
-          icone={ICONES_NAV.inicio}
-          rotulo="Início"
-          descricao="Volta para a tela inicial"
-          ativo
-          onPress={() => router.replace("/pages/tela_inicial" as any)}
-        />
-        <ItemNav
-          icone={ICONES_NAV.progresso}
-          rotulo="Desempenho"
-          descricao="Abre seu desempenho"
-          onPress={() => router.replace("/pages/tela_opcoes" as any)}
-        />
-        <ItemNav
-          icone={ICONES_NAV.perfil}
-          rotulo="Perfil"
-          descricao="Abre seu perfil"
-          onPress={() => router.push("/pages/tela_usuario" as any)}
-        />
-      </View>
+      {/* Navegação flutuante: a mesma barra das demais telas do app */}
+      <BarraNavegacao aba="inicio" />
 
       <TutorialTrilha visivel={tutorialVisivel} onFechar={fecharTutorial} />
     </SafeAreaView>
   );
 }
 
-type ItemNavProps = {
-  icone: ImageSourcePropType;
-  rotulo: string;
-  descricao: string;
-  ativo?: boolean;
-  onPress: () => void;
-};
-
-function ItemNav({
-  icone,
-  rotulo,
-  descricao,
-  ativo = false,
-  onPress,
-}: ItemNavProps) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      accessibilityRole="tab"
-      accessibilityLabel={rotulo}
-      accessibilityHint={descricao}
-      accessibilityState={{ selected: ativo }}
-      style={styles.itemNav}
-    >
-      {ativo ? (
-        <LinearGradient
-          colors={["#FFD36E", "#F3A6B8", "#C77DFF"]}
-          start={{ x: 0.15, y: 0 }}
-          end={{ x: 0.85, y: 1 }}
-          style={styles.circuloAtivo}
-        >
-          <Image source={icone} style={styles.iconeAtivo} resizeMode="contain" />
-        </LinearGradient>
-      ) : (
-        <Image
-          source={icone}
-          style={styles.iconeInativo}
-          resizeMode="contain"
-        />
-      )}
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   tela: {
     flex: 1,
+    // Planetas e céus são posicionados para fora da tela (right: -110 etc.);
+    // sem recorte eles vazam da área roxa e ocupam o espaço do lado de fora,
+    // aumentando a página (rolagem horizontal) em web.
+    overflow: "hidden",
   },
   rolagem: {
     flex: 1,
@@ -986,51 +910,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: "Poppins_600SemiBold",
     color: TrilhaCores.texto,
-  },
-  nav: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    height: 80,
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: 18,
-    borderWidth: 1,
-    borderColor: "#E9E3ED",
-    shadowColor: "#1A0524",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  itemNav: {
-    width: 72,
-    height: 64,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  circuloAtivo: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#B36BE0",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  iconeAtivo: {
-    width: 26,
-    height: 26,
-  },
-  iconeInativo: {
-    width: 26,
-    height: 26,
-    opacity: 0.65,
   },
 });

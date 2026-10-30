@@ -75,7 +75,9 @@ export default function TelaUsuario() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.conteudo,
-          { paddingBottom: 168 + insets.bottom },
+          // Folga maior que a navbar flutuante (92 + base do aparelho) para
+          // o botão de sair não ficar colado nela, mesmo com fonte grande.
+          { paddingBottom: 200 + insets.bottom },
         ]}
       >
         <View

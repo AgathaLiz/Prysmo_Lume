@@ -30,8 +30,10 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { supabase } from "@/lib/supabase";
 
 // O banco guarda px (24 / 30 / 40). Convertemos para escala,
-// sem nunca diminuir o texto base (importante para baixa visão).
-const ESCALA_PEQUENA = 1.35;
+// sem nunca diminuir o texto base (importante para baixa visão):
+// "Pequena" é o próprio texto desenhado no protótipo (1x),
+// "Média" cresce um pouco e "Grande" cresce mais.
+const ESCALA_PEQUENA = 1;
 const ESCALA_MEDIA = 1.15;
 const ESCALA_GRANDE = 1.35;
 

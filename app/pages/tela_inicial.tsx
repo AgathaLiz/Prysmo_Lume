@@ -83,10 +83,7 @@ export default function TelaInicial() {
         >
           <View style={styles.linhaSequencia}>
             <Image source={LUZ} style={styles.luz} resizeMode="contain" />
-            <Text
-              style={[styles.legenda, { color: texto, fontSize: fonte(16) }]}
-              numberOfLines={2}
-            >
+            <Text style={[styles.legenda, { color: texto, fontSize: fonte(16) }]}>
               Sua luz está acesa há:{" "}
               <Text style={[styles.diasLuz, { fontSize: fonte(16) }]}>
                 {diasDeLuz} {diasDeLuz === 1 ? "dia" : "dias"}
@@ -155,61 +152,100 @@ export default function TelaInicial() {
           </View>
         </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.cartaoGrande,
-            {
-              opacity: pressed ? 0.9 : 1,
-              shadowColor: modoEscuro ? "#000" : "#8C3DB8",
-            },
-          ]}
-          onPress={() => router.push("/trilha" as never)}
-          accessibilityRole="button"
-          accessibilityLabel="Próxima lição. Pronto para brilhar?"
-        >
-          <ImageBackground
-            source={FUNDO_PROXIMA_LICAO}
-            style={styles.fundoCartao}
-            imageStyle={styles.imagemCartao}
-            resizeMode="cover"
-          >
-            <Text style={[styles.tituloGrande, { color: "#2C1038", fontSize: fonte(32) }]}>
-              Próxima lição
-            </Text>
-            <Text style={[styles.rotuloGrande, { color: "#3A1748", fontSize: fonte(16) }]}>
-              Pronto(a) pra brilhar?
-            </Text>
-          </ImageBackground>
-        </Pressable>
+        <CartaoGrande
+          fundo={FUNDO_PROXIMA_LICAO}
+          sombra={modoEscuro ? "#000" : "#8C3DB8"}
+          corTitulo="#2C1038"
+          corSubtitulo="#3A1748"
+          titulo="Próxima lição"
+          subtitulo="Pronto(a) pra brilhar?"
+          rotuloAcessibilidade="Próxima lição. Pronto para brilhar?"
+          aoPressionar={() => router.push("/trilha" as never)}
+          fonte={fonte}
+        />
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.cartaoGrande,
-            {
-              opacity: pressed ? 0.9 : 1,
-              shadowColor: modoEscuro ? "#000" : "#A07B12",
-            },
-          ]}
-          onPress={() => router.push("/trilha" as never)}
-          accessibilityRole="button"
-          accessibilityLabel="Trilhas. Escolha uma trilha para começar"
-        >
-          <ImageBackground
-            source={FUNDO_TRILHA}
-            style={styles.fundoCartao}
-            imageStyle={styles.imagemCartao}
-            resizeMode="cover"
-          >
-            <Text style={[styles.tituloGrande, { color: texto, fontSize: fonte(32) }]}>
-              Trilhas
-            </Text>
-            <Text style={[styles.rotuloGrande, { color: texto, fontSize: fonte(16) }]}>
-              Ilumine seu próprio caminho
-            </Text>
-          </ImageBackground>
-        </Pressable>
+        <CartaoGrande
+          fundo={FUNDO_TRILHA}
+          sombra={modoEscuro ? "#000" : "#A07B12"}
+          corTitulo={texto}
+          corSubtitulo={texto}
+          titulo="Trilhas"
+          subtitulo="Ilumine seu próprio caminho"
+          rotuloAcessibilidade="Trilhas. Escolha uma trilha para começar"
+          aoPressionar={() => router.push("/trilha" as never)}
+          fonte={fonte}
+        />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+type CartaoGrandeProps = {
+  fundo: number;
+  sombra: string;
+  corTitulo: string;
+  corSubtitulo: string;
+  titulo: string;
+  subtitulo: string;
+  rotuloAcessibilidade: string;
+  aoPressionar: () => void;
+  fonte: (base: number) => number;
+};
+
+/**
+ * Card grande da home (Próxima lição / Trilhas).
+ *
+ * O PNG de fundo é um retângulo arredondado com margens transparentes, então
+ * ele precisa cobrir o card inteiro: a imagem fica presa ao box do card e o
+ * texto é medido dentro de um `View` interno que cresce (`flexGrow`), com
+ * `minHeight: 196` só no card. Assim a altura segue o conteúdo e o subtítulo
+ * nunca cai fora da forma colorida. Não há cor chapada atrás da imagem: o card
+ * mostra só o PNG de fundo (como nos mockups).
+ */
+function CartaoGrande({
+  fundo,
+  sombra,
+  corTitulo,
+  corSubtitulo,
+  titulo,
+  subtitulo,
+  rotuloAcessibilidade,
+  aoPressionar,
+  fonte,
+}: CartaoGrandeProps) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.cartaoGrande,
+        {
+          opacity: pressed ? 0.9 : 1,
+          shadowColor: sombra,
+        },
+      ]}
+      onPress={aoPressionar}
+      accessibilityRole="button"
+      accessibilityLabel={rotuloAcessibilidade}
+    >
+      <ImageBackground
+        source={fundo}
+        style={styles.fundoCartao}
+        imageStyle={styles.imagemCartao}
+        resizeMode="cover"
+      >
+        <View style={styles.conteudoCartao}>
+          <Text
+            style={[styles.tituloGrande, { color: corTitulo, fontSize: fonte(32) }]}
+          >
+            {titulo}
+          </Text>
+          <Text
+            style={[styles.rotuloGrande, { color: corSubtitulo, fontSize: fonte(16) }]}
+          >
+            {subtitulo}
+          </Text>
+        </View>
+      </ImageBackground>
+    </Pressable>
   );
 }
 
@@ -306,26 +342,40 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
+  // A imagem de fundo fica presa a este box (width/height 100%) e o "minHeight"
+  // garante o tamanho do mockup; quem manda no tamanho é a altura do card.
   fundoCartao: {
     width: "100%",
     minHeight: 196,
+    borderRadius: 18,
+  },
+  imagemCartao: {
+    borderRadius: 18,
+    width: "100%",
+    height: "100%",
+  },
+  // Texto dentro de um box que cresce com o conteúdo e ocupa o fundo inteiro:
+  // com fonte Grande o título quebra em 2 linhas e o card acompanha.
+  conteudoCartao: {
+    flexGrow: 1,
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 26,
     paddingVertical: 28,
   },
-  imagemCartao: {
-    borderRadius: 18,
-  },
+  // Título/subtítulo com largura definida: em um pai com alignItems "center"
+  // o texto é medido sem limite e estouraria o card (especialmente na fonte
+  // Grande). Com "100%" ele quebra linha dentro do card em vez de passar dele.
   rotuloGrande: {
     fontFamily: "Poppins_600SemiBold",
     textAlign: "center",
     marginTop: 4,
+    width: "100%",
   },
   tituloGrande: {
     fontFamily: "Poppins_900Black",
     textAlign: "center",
-    maxWidth: "100%",
-    flexShrink: 1,
+    width: "100%",
   },
 });
