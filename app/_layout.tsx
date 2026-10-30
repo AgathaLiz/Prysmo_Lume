@@ -9,6 +9,7 @@ import {
   Poppins_300Light,
   Poppins_600SemiBold,
   Poppins_800ExtraBold,
+  Poppins_900Black,
 } from "@expo-google-fonts/poppins";
 import { ActivityIndicator, View } from "react-native";
 import type { Session } from "@supabase/supabase-js";
@@ -25,6 +26,7 @@ export default function RootLayout() {
     Poppins_300Light,
     Poppins_600SemiBold,
     Poppins_800ExtraBold,
+    Poppins_900Black,
   });
 
   const [session, setSession] = useState<Session | null>(null);
@@ -58,7 +60,7 @@ export default function RootLayout() {
   // 2. Só na abertura do app
   if (!jaDecidiu.current) {
     jaDecidiu.current = true;
-    if (area !== "auth") {
+    if (false && area !== "auth") {
       router.replace(
         (session ? "/onboarding/bem_vindo" : "/onboarding/tela_primeiro_acesso") as any
       );
@@ -68,7 +70,7 @@ export default function RootLayout() {
 
   // 3. Sem sessão: só pode ficar em auth e no onboarding (exceto o bem_vindo)
   const publica = area === "auth" || (area === "onboarding" && tela !== "bem_vindo");
-  if (!session && !publica && area !== undefined) {
+  if (false && !session && !publica && area !== undefined) {
     router.replace("/auth/login/contas" as any);
   }
 }, [session, sessaoCarregada, fontsLoaded, segments]);
@@ -85,7 +87,14 @@ export default function RootLayout() {
   return (
     <AcessibilidadeProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* A trilha tem fundo escuro próprio; evita qualquer faixa clara
+              aparecendo atrás dela durante a navegação. */}
+          <Stack.Screen
+            name="trilha"
+            options={{ contentStyle: { backgroundColor: "#25063A" } }}
+          />
+        </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
     </AcessibilidadeProvider>

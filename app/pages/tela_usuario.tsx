@@ -1,208 +1,379 @@
-import { router } from "expo-router";
-import { Bold } from "lucide-react-native";
-import React, { useState } from "react";
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { PageFlow } from "../../components/PageFlow";
-import { Tabs } from 'expo-router';
-import { Label } from "@react-navigation/elements";
-import AntDesign from '@expo/vector-icons/AntDesign';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { useFocusEffect, useRouter } from "expo-router";
+import {
+  Accessibility,
+  ChevronRight,
+  HelpCircle,
+  LogOut,
+  Palette,
+  Settings,
+  UserRound,
+} from "lucide-react-native";import React, { useCallback, useState } from "react";
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-async function lerFoto() {
-    const foto = document.getElementsByClassName(".foto");
+import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import { carregarPainel, type DadosPainel } from "@/lib/painel";
+import { supabase } from "@/lib/supabase";
 
-    console.log("foto recebida")
+export default function TelaUsuario() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { tema, modoEscuro, fonte } = useAcessibilidade();
+  const [dados, setDados] = useState<DadosPainel | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+      carregarPainel().then((resultado) => {
+        if (ativo) setDados(resultado);
+      });
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const fundo = modoEscuro ? tema.fundo : "#FFFFFF";
+  const cartao = tema.cartao;
+  const texto = tema.texto;
+  const secundario = tema.textoSecundario;
+  const nome = dados?.nome || "Sua conta";
+
+  const sair = useCallback(async () => {
+    await supabase.auth.signOut();
+    router.replace("/auth/login/contas" as never);
+  }, [router]);
+
+  const confirmarSaida = useCallback(() => {
+    const mensagem = "Deseja mesmo sair da sua conta?";
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(mensagem)) {
+        void sair();
+      }
+      return;
+    }
+
+    Alert.alert("Sair da conta", mensagem, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Sair", style: "destructive", onPress: () => void sair() },
+    ]);
+  }, [sair]);
+
+  return (
+    <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.conteudo,
+          { paddingBottom: 168 + insets.bottom },
+        ]}
+      >
+        <View
+          style={[
+            styles.cartaoTopo,
+            {
+              backgroundColor: cartao,
+              borderColor: modoEscuro ? tema.borda : "#E5E5E5",
+              shadowColor: modoEscuro ? "#000" : "#5A3C6B",
+            },
+          ]}
+        >
+          <View style={styles.linhaPerfil}>
+            <View style={[styles.avatar, { backgroundColor: modoEscuro ? "#4A3A52" : "#D9D9D9" }]}>
+              <UserRound size={56} color={modoEscuro ? "#F4EDF8" : "#8A8080"} strokeWidth={1.5} />
+            </View>
+            <View style={styles.dadosPerfil}>
+              <Text
+                style={[styles.nome, { color: texto, fontSize: fonte(32) }]}
+                numberOfLines={2}
+              >
+                {nome}
+              </Text>
+              <Text style={[styles.subtitulo, { color: secundario, fontSize: fonte(16) }]}>
+                Descobridor de Mundos
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.divisoria, { backgroundColor: tema.borda }]} />
+
+          <TouchableOpacity
+            style={styles.linhaConta}
+            onPress={() => router.push("/pages/conta" as never)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir informações da conta"
+          >
+            <UserRound size={26} color={texto} strokeWidth={2} />
+            <Text style={[styles.textoConta, { color: texto, fontSize: fonte(18) }]}>
+              Informações da Conta
+            </Text>
+            <ChevronRight size={26} color={secundario} />
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={[
+            styles.cartaoEstatisticas,
+            { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#5A3C6B" },
+          ]}
+        >
+          <ItemEstatistica
+            rotulo="Moedas"
+            corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
+            corRotulo={secundario}
+          />
+          <ItemEstatistica
+            rotulo="Exp."
+            corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
+            corRotulo={secundario}
+            divisoria
+          />
+          <ItemEstatistica
+            rotulo="Energia"
+            corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
+            corRotulo={secundario}
+            divisoria
+          />
+        </View>
+
+        <View
+          style={[
+            styles.cartaoMenu,
+            { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#5A3C6B" },
+          ]}
+        >
+          <LinhaMenu
+            icone={<Palette size={25} color={texto} />}
+            titulo="Aparência do Lume"
+            onPress={() => router.push("/pages/aparencia" as never)}
+          />
+          <LinhaMenu
+            icone={<Accessibility size={25} color={texto} />}
+            titulo="Acessibilidade"
+            onPress={() => router.push("/pages/acessibilidade" as never)}
+          />
+          <LinhaMenu
+            icone={<HelpCircle size={25} color={texto} />}
+            titulo="Central de Ajuda"
+            onPress={() => router.push("/pages/ajuda" as never)}
+          />
+          <LinhaMenu
+            icone={<Settings size={25} color={texto} />}
+            titulo="Configurações Gerais"
+            onPress={() => router.push("/pages/configuracoes" as never)}
+            ultima
+          />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.botaoSair,
+            { backgroundColor: tema.roxo, opacity: pressed ? 0.82 : 1 },
+          ]}
+          onPress={confirmarSaida}
+          accessibilityRole="button"
+          accessibilityLabel="Sair da conta"
+        >
+          <LogOut size={30} color="#303030" strokeWidth={2.3} />
+          <Text style={[styles.textoSair, { fontSize: fonte(24) }]}>Sair da Conta</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
-export default function TelaUsuario () {
-
-return (
-    <View style={styles.container}>
-        <View style={styles.viewName}>
-            <View style={styles.foto}>
-                <Text>Foto</Text>
-                <Image className="foto" style={{display: "none"}}/>
-            </View>
-            <View>
-                <Text style={{fontWeight: "bold", fontSize: 24, color: "#8A8080" }}>José da Silva</Text>
-                <Text style={{fontSize: 16, color: "#8A8080",}}>Descobridor de mundos</Text>
-            </View>
-        </View>
-
-        <View style={styles.viewConquistas}>
-            <View>
-                <Text style={styles.textoConquistas}>Moedas</Text>
-                <View style={styles.icons}/>
-            </View>
-            <View>
-                <Text style={styles.textoConquistas}>Exp.</Text>
-                <View style={styles.icons}/>
-            </View>
-            <View>
-                <Text style={styles.textoConquistas}>Energia</Text>
-                <View style={styles.icons} />
-            </View>
-        </View>
-
-        <View style={styles.viewOpcoes}>
-            <View style = {styles.opcao}>
-                <Text style={styles.textoOpcoes}>Configurações gerais</Text>
-                <AntDesign name="right" size={16} color="#8A8080" />
-            </View>
-            <View style = {styles.divider}/>
-            <View style = {styles.opcao}>
-                <Text style={styles.textoOpcoes}>Aparência do Aplicativo</Text>
-                <AntDesign name="right" size={16} color="#8A8080" />
-            </View>
-            <View style = {styles.divider}/>
-            <View style = {styles.opcao}>
-                <Text style={styles.textoOpcoes}>Acessibilidade</Text>
-                <AntDesign name="right" size={16} color="#8A8080" />
-            </View>
-            <View style = {styles.divider}/>
-            <View style = {styles.opcao}>
-                <Text style={styles.textoOpcoes}>Central de Ajuda</Text>
-                <AntDesign name="right" size={16} color="#8A8080" />
-            </View>
-        </View>
-
-        <View style={styles.viewSaida}>
-            <Ionicons name="exit-outline" size={32} color="#8A8080" />
-            <Text style={{fontWeight: "bold", color: "#8A8080", textAlign: "left", fontSize: 24, marginLeft: 10}}>Sair da conta</Text>
-        </View>
-
+function ItemEstatistica({
+  rotulo,
+  corFundo,
+  corRotulo,
+  divisoria = false,
+}: {
+  rotulo: string;
+  corFundo: string;
+  corRotulo: string;
+  divisoria?: boolean;
+}) {
+  const { fonte } = useAcessibilidade();
+  return (
+    <View style={styles.itemEstatistica}>
+      {divisoria ? (
+        <View style={[styles.divisoriaVertical, { backgroundColor: "#E5E5E5" }]} />
+      ) : null}
+      <Text style={[styles.rotuloEstatistica, { color: corRotulo, fontSize: fonte(14) }]}>
+        {rotulo}
+      </Text>
+      <View style={[styles.circuloEstatistica, { backgroundColor: corFundo }]} />
     </View>
-);
+  );
+}
 
+function LinhaMenu({
+  icone,
+  titulo,
+  onPress,
+  ultima = false,
+}: {
+  icone: React.ReactNode;
+  titulo: string;
+  onPress: () => void;
+  ultima?: boolean;
+}) {
+  const { tema, fonte } = useAcessibilidade();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.linhaMenu,
+        !ultima && { borderBottomWidth: 1, borderBottomColor: tema.borda },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.65}
+      accessibilityRole="button"
+      accessibilityLabel={titulo}
+    >
+      <View style={styles.iconeMenu}>{icone}</View>
+      <Text style={[styles.tituloMenu, { color: tema.texto, fontSize: fonte(17) }]}>
+        {titulo}
+      </Text>
+      <ChevronRight size={24} color={tema.textoSecundario} />
+    </TouchableOpacity>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "white",
-        alignItems: "center",
-        padding: 0,
-        margin: 0,
-        color: "#8A8080",
-    },
-    viewName: {
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexDirection: "row",
-        marginTop: 30,
-        width: "90%",
-        height: "18%",
-        backgroundColor: "white",
-        padding: 20,
-        shadowColor: "black",
-        shadowOffset: {
-            width: 0,
-            height: 0,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
-        borderRadius: 20,
-    },
-    viewConquistas: {
-        width: "90%",
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginTop: 20,
-        backgroundColor: "white",
-        padding: 20,
-        shadowColor: "black",
-        shadowOffset: {
-            width: 0,
-            height: 0,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 5,
-        borderRadius: 20,
-    },
-    divider: {
-        height: StyleSheet.hairlineWidth,
-        backgroundColor: '#D9D9D9',
-        opacity: 0.8,
-        width: '100%',
-        marginVertical: 8,
-    },
-    textoConquistas: {
-        textAlign: "center",
-        fontWeight: "bold",
-        marginBottom: 8,
-        color: "#8A8080",
-    },
-    foto: {
-        display: "flex", 
-        width: 80, 
-        height: 80, 
-        alignItems: "center", 
-        justifyContent: "center", 
-        backgroundColor: "#D9D9D9", 
-        padding: 20, 
-        borderRadius: "50%",
-    },
-    icons: {
-        display: "flex", 
-        width: 60, 
-        height: 60, 
-        alignItems: "center", 
-        justifyContent: "center", 
-        backgroundColor: "#D9D9D9", 
-        padding: 20, 
-        borderRadius: "50%",
-    },
-    viewOpcoes: {
-        alignItems: "flex-start",
-        justifyContent: "center",
-        marginTop: 20,
-        width: "90%",
-        backgroundColor: "white",
-        padding: 20,
-        shadowColor: "black",
-        shadowOffset: {
-            width: 0,
-            height: 0,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
-        borderRadius: 20,
-    },
-    textoOpcoes: {
-        fontWeight: "bold",
-        color: "#8A8080",
-        textAlign: "left",
-        fontSize: 16
-    },
-    opcao: {
-        width: "100%",
-        flexDirection: "row", 
-        justifyContent: "space-between",
-        alignItems: "center", 
-        marginBottom: 8,
-    },
-    viewSaida: {
-        width: "90%",
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 20,
-        backgroundColor: "white",
-        padding: 20,
-        shadowColor: "black",
-        shadowOffset: {
-            width: 0,
-            height: 0,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 5,
-        borderRadius: 20,
-    }
-
-})
+  tela: {
+    flex: 1,
+  },
+  conteudo: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  cartaoTopo: {
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  linhaPerfil: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dadosPerfil: {
+    flex: 1,
+  },
+  nome: {
+    fontFamily: "Poppins_900Black",
+    lineHeight: 34,
+  },
+  subtitulo: {
+    fontFamily: "Poppins_600SemiBold",
+    marginTop: 2,
+  },
+  divisoria: {
+    height: 1,
+    marginVertical: 16,
+  },
+  linhaConta: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 44,
+    gap: 12,
+  },
+  textoConta: {
+    flex: 1,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  cartaoEstatisticas: {
+    marginTop: 16,
+    borderRadius: 20,
+    paddingVertical: 16,
+    flexDirection: "row",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  itemEstatistica: {
+    flex: 1,
+    alignItems: "center",
+    position: "relative",
+  },
+  divisoriaVertical: {
+    position: "absolute",
+    left: 0,
+    top: 12,
+    bottom: 12,
+    width: 1,
+  },
+  rotuloEstatistica: {
+    fontFamily: "Poppins_600SemiBold",
+    marginBottom: 10,
+  },
+  circuloEstatistica: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  cartaoMenu: {
+    marginTop: 16,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  linhaMenu: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconeMenu: {
+    width: 30,
+    alignItems: "center",
+  },
+  tituloMenu: {
+    flex: 1,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  botaoSair: {
+    marginTop: 24,
+    marginBottom: 16,
+    minHeight: 72,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  textoSair: {
+    fontFamily: "Poppins_900Black",
+    color: "#303030",
+    flexShrink: 1,
+    textAlign: "center",
+  },
+});

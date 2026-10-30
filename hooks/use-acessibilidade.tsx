@@ -31,7 +31,7 @@ import { supabase } from "@/lib/supabase";
 
 // O banco guarda px (24 / 30 / 40). Convertemos para escala,
 // sem nunca diminuir o texto base (importante para baixa visão).
-const ESCALA_PEQUENA = 1;
+const ESCALA_PEQUENA = 1.35;
 const ESCALA_MEDIA = 1.15;
 const ESCALA_GRANDE = 1.35;
 
@@ -44,6 +44,7 @@ type ConfiguracoesBanco = {
 type Contexto = {
   carregando: boolean;
   escalaFonte: number;
+  tamanhoFontePx: number;
   modoEscuro: boolean;
   audioDescricao: boolean;
   reduzirMovimento: boolean;
@@ -53,6 +54,10 @@ type Contexto = {
   falar: (texto?: string | null) => void;
   pararFala: () => void;
   recarregar: () => Promise<void>;
+  definirModoEscuro: (valor: boolean) => Promise<void>;
+  definirTamanhoFonte: (pixels: number) => Promise<void>;
+  definirAudioDescricao: (valor: boolean) => Promise<void>;
+  restaurarPadrao: () => Promise<void>;
 };
 
 const ContextoAcessibilidade = createContext<Contexto | null>(null);
@@ -70,6 +75,7 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
   // null = sem preferência salva -> segue o sistema.
   const [modoEscuroSalvo, setModoEscuroSalvo] = useState<boolean | null>(null);
   const [escalaFonte, setEscalaFonte] = useState(ESCALA_PEQUENA);
+  const [tamanhoFontePx, setTamanhoFontePx] = useState(24);
   const [audioDescricao, setAudioDescricao] = useState(false);
   const [reduzirMovimento, setReduzirMovimento] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -83,6 +89,7 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       if (!idAuth) {
         setModoEscuroSalvo(null);
         setEscalaFonte(ESCALA_PEQUENA);
+        setTamanhoFontePx(24);
         setAudioDescricao(false);
         return;
       }
@@ -96,6 +103,7 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       if (!usuario) {
         setModoEscuroSalvo(null);
         setEscalaFonte(ESCALA_PEQUENA);
+        setTamanhoFontePx(24);
         setAudioDescricao(false);
         return;
       }
@@ -109,6 +117,7 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       if (!data) return;
 
       setEscalaFonte(escalaDe(data.tamanho_fonte));
+      setTamanhoFontePx(data.tamanho_fonte ?? 24);
       setModoEscuroSalvo(data.modo_escuro ?? null);
       setAudioDescricao(data.audio_descricao ?? false);
     } catch (erro) {
@@ -163,12 +172,96 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const modoEscuro = modoEscuroSalvo ?? esquemaDoSistema === "dark";
+  const salvarConfiguracoes = useCallback(
+    async (parcial: Partial<ConfiguracoesBanco>) => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: usuario } = await supabase
+          .from("usuario")
+          .select("usuario_id")
+          .eq("auth_user_id", user.id)
+          .maybeSingle<{ usuario_id: number }>();
+
+        if (!usuario) return;
+
+        const { error } = await supabase
+          .from("usuario_acessibilidade_settings")
+          .upsert(
+            {
+              usuario_id: usuario.usuario_id,
+              tamanho_fonte: parcial.tamanho_fonte ?? tamanhoFontePx,
+              modo_escuro:
+                parcial.modo_escuro ??
+                modoEscuroSalvo ??
+                (esquemaDoSistema === "dark"),
+              audio_descricao: parcial.audio_descricao ?? audioDescricao,
+            },
+            { onConflict: "usuario_id" }
+          );
+
+        if (error) {
+          console.log("Erro ao salvar acessibilidade:", error.message);
+        }
+      } catch (erro) {
+        console.log("Erro ao salvar acessibilidade:", erro);
+      }
+    },
+    [
+      audioDescricao,
+      esquemaDoSistema,
+      modoEscuroSalvo,
+      tamanhoFontePx,
+    ]
+  );
+
+  const definirModoEscuro = useCallback(
+    async (valor: boolean) => {
+      setModoEscuroSalvo(valor);
+      await salvarConfiguracoes({ modo_escuro: valor });
+    },
+    [salvarConfiguracoes]
+  );
+
+  const definirTamanhoFonte = useCallback(
+    async (pixels: number) => {
+      setTamanhoFontePx(pixels);
+      setEscalaFonte(escalaDe(pixels));
+      await salvarConfiguracoes({ tamanho_fonte: pixels });
+    },
+    [salvarConfiguracoes]
+  );
+
+  const definirAudioDescricao = useCallback(
+    async (valor: boolean) => {
+      setAudioDescricao(valor);
+      await salvarConfiguracoes({ audio_descricao: valor });
+    },
+    [salvarConfiguracoes]
+  );
+
+  const restaurarPadrao = useCallback(async () => {
+    setModoEscuroSalvo(false);
+    setTamanhoFontePx(24);
+    setEscalaFonte(ESCALA_PEQUENA);
+    setAudioDescricao(false);
+    await salvarConfiguracoes({
+      modo_escuro: false,
+      tamanho_fonte: 24,
+      audio_descricao: false,
+    });
+  }, [salvarConfiguracoes]);
+
+  const modoEscuro = false;
 
   const valor = useMemo<Contexto>(
     () => ({
       carregando,
       escalaFonte,
+      tamanhoFontePx,
       modoEscuro,
       audioDescricao,
       reduzirMovimento,
@@ -177,16 +270,25 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       falar,
       pararFala,
       recarregar,
+      definirModoEscuro,
+      definirTamanhoFonte,
+      definirAudioDescricao,
+      restaurarPadrao,
     }),
     [
       carregando,
       escalaFonte,
+      tamanhoFontePx,
       modoEscuro,
       audioDescricao,
       reduzirMovimento,
       falar,
       pararFala,
       recarregar,
+      definirModoEscuro,
+      definirTamanhoFonte,
+      definirAudioDescricao,
+      restaurarPadrao,
     ]
   );
 
@@ -208,6 +310,7 @@ export function useAcessibilidade(): Contexto {
   return {
     carregando: false,
     escalaFonte: ESCALA_PEQUENA,
+    tamanhoFontePx: 24,
     modoEscuro: false,
     audioDescricao: false,
     reduzirMovimento: false,
@@ -216,5 +319,9 @@ export function useAcessibilidade(): Contexto {
     falar: () => {},
     pararFala: () => {},
     recarregar: async () => {},
+    definirModoEscuro: async () => {},
+    definirTamanhoFonte: async () => {},
+    definirAudioDescricao: async () => {},
+    restaurarPadrao: async () => {},
   };
 }

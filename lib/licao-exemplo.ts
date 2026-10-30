@@ -22,7 +22,7 @@ export type QuestaoExemplo = {
 };
 
 export const CONTEUDO_EXEMPLO = {
-  titulo: "Salvar um contato no celular",
+  titulo: "Adicionar um contato no celular",
   descricao:
     "Nesta lição você vai aprender a guardar o telefone de alguém importante. É mais fácil do que parece: a gente vê o caminho junto, um passo de cada vez.",
   // Ainda não temos o vídeo: o tipo "video" faz a tela reservar o espaço.
@@ -54,7 +54,7 @@ export const QUESTOES_EXEMPLO: QuestaoExemplo[] = [
  * em cima e o elemento certo brilhando na tela do celular de mentirinha.
  */
 export const CENARIO_EXEMPLO: CenarioSimulacao = {
-  titulo: "Vamos salvar um contato",
+  titulo: "Vamos adicionar um contato",
   tela: "home",
   passos: [
     {

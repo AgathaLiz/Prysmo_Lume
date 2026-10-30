@@ -222,3 +222,41 @@ export function resumoGeral(trilha: NivelTrilha[]): {
   const concluidas = trilha.reduce((soma, nivel) => soma + nivel.concluidas, 0);
   return { total, concluidas, terminou: total > 0 && concluidas === total };
 }
+
+/**
+ * Trilha de demonstração.
+ *
+ * Usada só quando o banco ainda não tem nenhuma lição cadastrada, para a
+ * pessoa conseguir abrir e testar a primeira lição. Os IDs negativos nunca
+ * colidem com os bigints do Supabase. Quando o banco tiver lições, esta
+ * trilha deixa de ser usada automaticamente.
+ */
+export const NIVEL_EXEMPLO_ID = -1;
+export const AULA_EXEMPLO_ID = -1;
+export const LICAO_EXEMPLO_ID = -1;
+
+export function trilhaExemplo(): NivelTrilha[] {
+  const licao: LicaoTrilha = {
+    licoes_id: LICAO_EXEMPLO_ID,
+    aulas_id: AULA_EXEMPLO_ID,
+    estado: "atual",
+    posicao: 1,
+    titulo: "Adicionar um contato no celular",
+    notaMinima: NOTA_MINIMA_PADRAO,
+    jaTentou: false,
+    pontuacao: null,
+    estrelas: 0,
+  };
+
+  return [
+    {
+      niveis_id: NIVEL_EXEMPLO_ID,
+      nome: "Primeiros passos",
+      ordem: 0,
+      licoes: [licao],
+      total: 1,
+      concluidas: 0,
+      resumo: "É 1 lição. Vamos começar?",
+    },
+  ];
+}

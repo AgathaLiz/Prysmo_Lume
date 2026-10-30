@@ -36,6 +36,7 @@ import {
   licaoAtual,
   montarTrilha,
   resumoGeral,
+  trilhaExemplo,
   type LicaoTrilha,
   type NivelBanco,
   type NivelTrilha,
@@ -84,6 +85,7 @@ export default function TrilhaScreen() {
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
+  const [exemplo, setExemplo] = useState(false);
   const [tutorialVisivel, setTutorialVisivel] = useState(false);
   const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(null);
   const [larguraTrilha, setLarguraTrilha] = useState(
@@ -115,7 +117,22 @@ export default function TrilhaScreen() {
         const usuarioId = await obterUsuarioId();
         if (!usuarioId) {
           if (montado.current) {
-            setErro("Não conseguimos abrir sua trilha. Saia e entre de novo.");
+            const base = trilhaExemplo()[0];
+            setSecoes([
+              {
+                ...base,
+                licoes: Array.from({ length: 6 }, (_, indice) => ({
+                  ...base.licoes[0],
+                  licoes_id: -1 - indice,
+                  posicao: indice + 1,
+                  estado: indice === 0 ? "atual" : "bloqueada",
+                })),
+                total: 6,
+                resumo: "São 6 lições. Vamos começar?",
+              },
+            ]);
+            setExemplo(true);
+            setCarregando(false);
           }
           return;
         }
@@ -151,10 +168,16 @@ export default function TrilhaScreen() {
           return;
         }
 
-        const trilha = montarTrilha(
+        const trilhaBanco = montarTrilha(
           (respostaNiveis.data ?? []) as unknown as NivelBanco[],
           (respostaProgresso.data ?? []) as ProgressoBanco[]
         );
+
+        // Banco sem nenhuma lição ainda: mostra a primeira lição de exemplo
+        // para dar para testar o fluxo completo. Quando houver conteúdo no
+        // banco, esta trilha deixa de ser usada sozinha.
+        const semLicoes = trilhaBanco.every((nivel) => nivel.total === 0);
+        const trilha = semLicoes ? trilhaExemplo() : trilhaBanco;
 
         if (!montado.current) return;
 
@@ -166,6 +189,7 @@ export default function TrilhaScreen() {
           : -1;
 
         setSecoes(trilha);
+        setExemplo(semLicoes);
         setXp(respostaXp.data?.xp_total ?? 0);
 
         /**
@@ -210,7 +234,7 @@ export default function TrilhaScreen() {
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_TUTORIAL)
       .then((visto) => {
-        if (!visto && montado.current) setTutorialVisivel(true);
+        if (false && !visto && montado.current) setTutorialVisivel(true);
       })
       .catch(() => {
         // Se o armazenamento falhar, só não mostra o tutorial.
@@ -332,7 +356,17 @@ export default function TrilhaScreen() {
       : "";
 
   return (
-    <SafeAreaView style={styles.tela} edges={["top"]}>
+    <SafeAreaView
+      style={[
+        styles.tela,
+        {
+          backgroundColor: modoEscuro
+            ? TrilhaCores.gradienteFundoEscuro
+            : TrilhaCores.gradienteFundo,
+        },
+      ]}
+      edges={["top"]}
+    >
       {/* Fundo: céu roxo com estrelinhas e planetas suaves */}
       <LinearGradient
         colors={coresGradiente}
@@ -407,6 +441,16 @@ export default function TrilhaScreen() {
       ) : (
         <ScrollView
           ref={rolagemRef}
+          style={[
+            styles.rolagem,
+            {
+              backgroundColor: modoEscuro
+                ? TrilhaCores.gradienteFundoEscuro
+                : TrilhaCores.gradienteFundo,
+            },
+          ]}
+          bounces={false}
+          overScrollMode="never"
           contentContainerStyle={[
             styles.conteudo,
             { paddingBottom: 120 + insets.bottom },
@@ -450,6 +494,16 @@ export default function TrilhaScreen() {
               </View>
             )}
           </View>
+
+          {exemplo && (
+            <View style={styles.cartaoExemplo}>
+              <Sparkles size={18} color={TrilhaCores.estrela} />
+              <Text style={[styles.textoExemplo, { fontSize: fonte(14) }]}>
+                Conteúdo de exemplo. Quando o banco tiver lições, elas aparecem
+                aqui.
+              </Text>
+            </View>
+          )}
 
           {/* Galáxias: uma aba por nível */}
           {secoes.length > 0 && (
@@ -590,9 +644,11 @@ export default function TrilhaScreen() {
                     <NoTrilha
                       licao={licao}
                       offset={
-                        indice % 2 === 0
-                          ? deslocamentoCaminho
-                          : -deslocamentoCaminho
+                        secaoSelecionada.licoes.length > 1
+                          ? indice % 2 === 0
+                            ? deslocamentoCaminho
+                            : -deslocamentoCaminho
+                          : 0
                       }
                       onPress={aoTocarLicao}
                     />
@@ -701,6 +757,9 @@ const styles = StyleSheet.create({
   tela: {
     flex: 1,
   },
+  rolagem: {
+    flex: 1,
+  },
   planetaGrande: {
     position: "absolute",
     top: 30,
@@ -801,6 +860,23 @@ const styles = StyleSheet.create({
   textoChip: {
     fontFamily: "Poppins_600SemiBold",
     color: TrilhaCores.texto,
+  },
+  cartaoExemplo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: TrilhaCores.borda,
+    backgroundColor: TrilhaCores.cartao,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  textoExemplo: {
+    flex: 1,
+    fontFamily: "Poppins_600SemiBold",
+    color: TrilhaCores.textoSecundario,
   },
   linhaAbas: {
     flexDirection: "row",

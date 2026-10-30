@@ -65,14 +65,16 @@ export function PlayerVideo({ url }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.molduraVideo, { backgroundColor: "#000000" }]}>
-        <VideoView
-          player={player}
-          style={styles.video}
-          contentFit="contain"
-          nativeControls
-          allowsFullscreen
-        />
+      <View style={[styles.molduraVideo, { backgroundColor: "#1A1A1A" }]}>
+        <View style={styles.telaVideo}>
+          <VideoView
+            player={player}
+            style={styles.video}
+            contentFit="contain"
+            nativeControls
+            allowsFullscreen
+          />
+        </View>
       </View>
 
       <BotaoGrande
@@ -90,12 +92,25 @@ export function PlayerVideo({ url }: Props) {
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
     gap: 14,
   },
   molduraVideo: {
     width: "100%",
-    aspectRatio: 16 / 9,
-    borderRadius: 16,
+    maxWidth: 260,
+    aspectRatio: 9 / 19.5,
+    borderRadius: 44,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  telaVideo: {
+    flex: 1,
+    backgroundColor: "#000000",
+    borderRadius: 36,
     overflow: "hidden",
   },
   video: {

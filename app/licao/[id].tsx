@@ -5,8 +5,9 @@ import {
   Heart,
   Lock,
   PartyPopper,
-  Play,
+  Pause,
   RotateCcw,
+  RotateCw,
   Sparkles,
   Star,
   XCircle,
@@ -35,6 +36,7 @@ import { BotaoGrande } from "@/components/BotaoGrande";
 import { CabecalhoLicao } from "@/components/CabecalhoLicao";
 import { PlayerVideo } from "@/components/PlayerVideo";
 import { SimuladorCelular } from "@/components/SimuladorCelular";
+import { TutorialMimi } from "@/components/TutorialMimi";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import {
   CONTEUDO_EXEMPLO,
@@ -44,8 +46,8 @@ import {
 import {
   ESTRELAS_MAXIMAS,
   NOTA_MINIMA_PADRAO,
+  XP_POR_LICAO,
   descreverEstrelas,
-  descreverNota,
   estrelasDaNota,
   foiAprovado,
   notaDaSimulacao,
@@ -56,13 +58,27 @@ import { obterUsuarioId, salvarResultadoLicao } from "@/lib/progresso";
 import { normalizarCenario, type CenarioSimulacao } from "@/lib/simulacao";
 import { supabase } from "@/lib/supabase";
 import {
+  AULA_EXEMPLO_ID,
+  LICAO_EXEMPLO_ID,
+  NIVEL_EXEMPLO_ID,
   comoLista,
   montarTrilha,
   type NivelBanco,
   type ProgressoBanco,
 } from "@/lib/trilha";
 
-type Etapa = "intro" | "video" | "questionario" | "simulacao" | "resultado";
+type Etapa =
+  | "intro"
+  | "video"
+  | "questionario"
+  | "simulacao"
+  | "resultado"
+  | "ofensiva";
+
+const MIMI_FEEDBACK = require("../../assets/Lume/Mimi/Png/mimi-de-frente.png");
+const MIMI_FEEDBACK_TRISTE = require("../../assets/Lume/Mimi/Png/mimi-pra-baixo.png");
+const LUZ_OFENSIVA = require("../../assets/Lume/Outros elementos/Png/luz-acesa.png");
+const ESTRELA_DIA = require("../../assets/Lume/Outros elementos/Png/estrela-cinco-pontas.png");
 
 type Alternativa = {
   alternativas_id: number;
@@ -102,6 +118,19 @@ type ChecagemBloqueio = {
   posicao: number | null;
 };
 
+const AULA_EXEMPLO: Aula = {
+  aulas_id: AULA_EXEMPLO_ID,
+  nome: CONTEUDO_EXEMPLO.titulo,
+  niveis_id: NIVEL_EXEMPLO_ID,
+  aulas_conteudo: CONTEUDO_EXEMPLO,
+};
+
+const LICAO_EXEMPLO: Licao = {
+  licoes_id: LICAO_EXEMPLO_ID,
+  aulas_id: AULA_EXEMPLO_ID,
+  aulas: AULA_EXEMPLO,
+};
+
 const AJUDA_POR_ETAPA: Record<Etapa, string> = {
   intro:
     "Leia com calma o que vai acontecer nesta lição. Quando estiver pronto(a), toque em Vamos começar.",
@@ -113,6 +142,8 @@ const AJUDA_POR_ETAPA: Record<Etapa, string> = {
     "Leia a instrução que aparece em cima e toque na parte do celular que combina com ela.",
   resultado:
     "Aqui aparecem suas estrelas. Com 2 estrelas ou mais, você passa de fase. Se quiser, pode tentar de novo.",
+  ofensiva:
+    "Esta é a sua ofensiva: os dias seguidos em que você veio aprender. Toque em Continuar para voltar para a trilha.",
 };
 
 /** O Supabase devolve objeto ou lista dependendo do relacionamento. */
@@ -145,7 +176,20 @@ function embaralhar<T>(lista: T[]): T[] {
   return copia;
 }
 
-/** Espaço reservado do vídeo, enquanto a gravação não fica pronta. */
+/** Converte o conteúdo local para o mesmo formato das perguntas do banco. */
+function montarQuestoesExemplo(): Questao[] {
+  return QUESTOES_EXEMPLO.map((questao, indiceQuestao) => ({
+    questoes_id: -(indiceQuestao + 1),
+    pergunta: questao.pergunta,
+    alternativas: questao.alternativas.map((alternativa, indice) => ({
+      alternativas_id: -(indiceQuestao * 10 + indice + 1),
+      texto: alternativa.texto,
+      correta: alternativa.correta,
+    })),
+  }));
+}
+
+/** Espaço reservado do vídeo, com a moldura de celular do design. */
 function EspacoVideo({ titulo }: { titulo: string }) {
   const { tema, fonte } = useAcessibilidade();
 
@@ -153,31 +197,40 @@ function EspacoVideo({ titulo }: { titulo: string }) {
     <View
       accessible
       accessibilityLabel={`Espaço do vídeo ${titulo}. O vídeo ainda não está disponível.`}
-      style={[
-        styles.espacoVideo,
-        { backgroundColor: tema.cartaoSuave, borderColor: tema.borda },
-      ]}
+      style={styles.molduraVideo}
     >
-      <View style={[styles.espacoVideoIcone, { backgroundColor: tema.roxoEscuro }]}>
-        <Play size={38} color="#FFFFFF" />
-      </View>
-      <Text
-        style={[styles.espacoVideoTitulo, { color: tema.texto, fontSize: fonte(20) }]}
-      >
-        {titulo}
-      </Text>
-      <Text
-        style={[
-          styles.espacoVideoTexto,
-          { color: tema.textoSecundario, fontSize: fonte(16) },
-        ]}
-      >
-        O vídeo ainda não está disponível. Você pode seguir para as perguntas.
-      </Text>
-      <View style={[styles.etiquetaVideo, { backgroundColor: tema.amareloSuave }]}>
-        <Text style={[styles.textoEtiqueta, { color: "#32064F", fontSize: fonte(14) }]}>
-          EM BREVE
-        </Text>
+      <View style={styles.telaVideo}>
+        <View style={styles.notchVideo} />
+
+        <View style={styles.controlesVideo}>
+          <View style={styles.controleVideo}>
+            <RotateCcw size={32} color="#C9C9C9" />
+            <Text style={[styles.controleVideoTexto, { fontSize: fonte(11) }]}>
+              10
+            </Text>
+          </View>
+
+          <Pause size={40} color="#C9C9C9" />
+
+          <View style={styles.controleVideo}>
+            <RotateCw size={32} color="#C9C9C9" />
+            <Text style={[styles.controleVideoTexto, { fontSize: fonte(11) }]}>
+              10
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.rodapeVideo}>
+          <View style={[styles.etiquetaVideo, { backgroundColor: tema.amareloSuave }]}>
+            <Text style={[styles.textoEtiqueta, { color: "#32064F", fontSize: fonte(11) }]}>
+              VÍDEO EM BREVE
+            </Text>
+          </View>
+
+          <View style={styles.barraVideo}>
+            <View style={styles.barraVideoPreenchida} />
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -234,6 +287,19 @@ export default function LicaoScreen() {
 
     if (!Number.isFinite(idLicao)) {
       setErro("Não encontramos esta lição.");
+      setCarregando(false);
+      return;
+    }
+
+    // Lição de demonstração da trilha de exemplo. Não consulta o banco,
+    // porque ela é montada só para dar para testar o fluxo completo.
+    if (idLicao === LICAO_EXEMPLO_ID) {
+      setExemplo(true);
+      setLicao(LICAO_EXEMPLO);
+      setAula(AULA_EXEMPLO);
+      setQuestoes(montarQuestoesExemplo());
+      setCenario(CENARIO_EXEMPLO);
+      setBloqueada(false);
       setCarregando(false);
       return;
     }
@@ -379,20 +445,14 @@ export default function LicaoScreen() {
       const usarExemplo = ehPrimeiraLicao && bancoSemConteudo;
 
       const aulaFinal = usarExemplo
-        ? { ...aulaEncontrada, aulas_conteudo: CONTEUDO_EXEMPLO }
+        ? {
+            ...aulaEncontrada,
+            nome: CONTEUDO_EXEMPLO.titulo,
+            aulas_conteudo: CONTEUDO_EXEMPLO,
+          }
         : aulaEncontrada;
 
-      const perguntas = usarExemplo
-        ? QUESTOES_EXEMPLO.map((questao, indiceQuestao) => ({
-            questoes_id: -(indiceQuestao + 1),
-            pergunta: questao.pergunta,
-            alternativas: questao.alternativas.map((alternativa, indice) => ({
-              alternativas_id: -(indiceQuestao * 10 + indice + 1),
-              texto: alternativa.texto,
-              correta: alternativa.correta,
-            })),
-          }))
-        : perguntasBanco;
+      const perguntas = usarExemplo ? montarQuestoesExemplo() : perguntasBanco;
 
       const cenarioFinal = usarExemplo ? CENARIO_EXEMPLO : cenarioEncontrado;
 
@@ -456,6 +516,71 @@ export default function LicaoScreen() {
     return lista;
   }, [temVideo, questoes.length, cenario]);
 
+  /** O que a Mimi fala em cada etapa. Muda junto com o que está na tela. */
+  const falaMimi = useMemo(() => {
+    if (etapa === "intro") {
+      if (passosDaIntro.length === 0) {
+        return "Oi! Eu sou a Mimi. Vou ficar com você nesta lição. Não há pressa.";
+      }
+
+      const ultimoPasso = passosDaIntro[passosDaIntro.length - 1];
+      const listaPassos =
+        passosDaIntro.length === 1
+          ? ultimoPasso
+          : `${passosDaIntro.slice(0, -1).join(", ")} e ${ultimoPasso}`;
+
+      return `Oi! Eu sou a Mimi. Vou ficar com você em cada passo: ${listaPassos.toLowerCase()}. Não há pressa.`;
+    }
+
+    if (etapa === "video") {
+      return "Assista ao vídeo com calma. Se quiser, veja de novo. Quando terminar, toque em Continuar.";
+    }
+
+    if (etapa === "questionario") {
+      if (!verificado) {
+        return "Leia a pergunta e toque na resposta que parece certa. Depois toque em Verificar. Não tem pressa.";
+      }
+
+      const ultimaPergunta = indiceQuestao >= questoes.length - 1;
+      const botao = ultimaPergunta ? "Ver resultado" : "Próxima";
+
+      if (acertouQuestao) {
+        return `Isso mesmo! Você acertou. Toque em ${botao} para continuar.`;
+      }
+      return `Quase! A resposta certa está marcada em verde. Toque em ${botao} e vamos juntos.`;
+    }
+
+    if (etapa === "simulacao") {
+      return "Agora é a sua vez. Leia a instrução em cima e toque na parte do celular que combina com ela. Se errar, aparece uma dica e você tenta de novo.";
+    }
+
+    if (etapa === "ofensiva") {
+      return "Você manteve sua ofensiva! Volte amanhã para continuar aprendendo.";
+    }
+
+    if (erroSalvar !== "") {
+      return "Suas estrelas estão aqui, mas não consegui salvar. Toque em Tentar salvar de novo.";
+    }
+    if (salvando) {
+      return "Estou guardando o seu resultado. Só um instante.";
+    }
+    if (aprovado) {
+      return `Muito bem! Você ganhou ${estrelas} de ${ESTRELAS_MAXIMAS} estrelas e passou de fase.`;
+    }
+    return `Você ganhou ${estrelas} de ${ESTRELAS_MAXIMAS} estrelas. Quase lá! Vamos praticar de novo?`;
+  }, [
+    etapa,
+    passosDaIntro,
+    verificado,
+    acertouQuestao,
+    indiceQuestao,
+    questoes.length,
+    erroSalvar,
+    salvando,
+    aprovado,
+    estrelas,
+  ]);
+
   const tituloLicao = aula?.nome ?? "Lição";
 
   const textoOuvir = useMemo(() => {
@@ -467,13 +592,13 @@ export default function LicaoScreen() {
         partes.push(`Nesta lição você vai: ${passosDaIntro.join(", ")}.`);
       }
       partes.push("Não há pressa.");
-      return partes.join(" ");
+      return `${falaMimi} ${partes.join(" ")}`;
     }
     if (etapa === "video") {
-      return (
+      return `${falaMimi} ${
         conteudo?.descricao ??
         "Assista ao vídeo com calma. Você pode ver de novo quando quiser."
-      );
+      }`;
     }
     if (etapa === "questionario" && questaoAtual) {
       const opcoes = alternativas
@@ -482,9 +607,10 @@ export default function LicaoScreen() {
       return `${questaoAtual.pergunta}. ${opcoes}`;
     }
     if (etapa === "resultado") {
-      return aprovado
-        ? `Parabéns! Você ganhou ${estrelas} de ${ESTRELAS_MAXIMAS} estrelas. Sua nota foi ${notaFinalCalculada} por cento.`
-        : `Você ganhou ${estrelas} de ${ESTRELAS_MAXIMAS} estrelas. Sua nota foi ${notaFinalCalculada} por cento. Você foi bem, mas vale praticar mais um pouco.`;
+      return `${falaMimi} Sua nota foi ${notaFinalCalculada} por cento.`;
+    }
+    if (etapa === "ofensiva") {
+      return "Você manteve sua ofensiva. Toque em Continuar para voltar para a trilha.";
     }
     return "";
   }, [
@@ -493,9 +619,8 @@ export default function LicaoScreen() {
     conteudo,
     questaoAtual,
     alternativas,
-    aprovado,
     notaFinalCalculada,
-    estrelas,
+    falaMimi,
   ]);
 
   // Audio-descrição: lê a pergunta e o resultado sozinho.
@@ -503,6 +628,7 @@ export default function LicaoScreen() {
     if (!audioDescricao) return;
     if (etapa === "questionario" && textoOuvir) falar(textoOuvir);
     if (etapa === "resultado" && textoOuvir) falar(textoOuvir);
+    if (etapa === "ofensiva" && textoOuvir) falar(textoOuvir);
   }, [audioDescricao, etapa, textoOuvir, falar]);
 
   /** Descobre se esta é a última lição do nível e qual nível liberar. */
@@ -551,8 +677,18 @@ export default function LicaoScreen() {
   const salvar = useCallback(async () => {
     if (!licao || salvando) return;
 
-    setSalvando(true);
     setErroSalvar("");
+
+    // A lição de demonstração não tem linha no banco: o resultado serve só
+    // para visualizar a tela de feedback e a ofensiva.
+    if (licao.licoes_id === LICAO_EXEMPLO_ID) {
+      setSalvo(true);
+      setXpGanho(XP_POR_LICAO);
+      setSalvando(false);
+      return;
+    }
+
+    setSalvando(true);
 
     const proximoNivelId =
       aprovado && aula
@@ -801,7 +937,9 @@ export default function LicaoScreen() {
       <CabecalhoLicao
         titulo={tituloLicao}
         etapaAtual={
-          etapa === "resultado" && totalEtapas > 0 ? totalEtapas : etapaAtualNumero
+          (etapa === "resultado" || etapa === "ofensiva") && totalEtapas > 0
+            ? totalEtapas
+            : etapaAtualNumero
         }
         totalEtapas={totalEtapas}
         textoOuvir={textoOuvir || undefined}
@@ -818,23 +956,7 @@ export default function LicaoScreen() {
       >
         {etapa === "intro" && (
           <View style={styles.secao}>
-            <View style={styles.linhaMascote}>
-              <Image
-                source={require("../../assets/Lume/Mimi/Png/mimi-ensinando.png")}
-                style={styles.mascote}
-                resizeMode="contain"
-              />
-              <View
-                style={[
-                  styles.balao,
-                  { backgroundColor: tema.amareloSuave },
-                ]}
-              >
-                <Text style={[styles.textoBalao, { color: tema.texto, fontSize: fonte(18) }]}>
-                  Vamos aprender juntos, com calma.
-                </Text>
-              </View>
-            </View>
+            <TutorialMimi fala={falaMimi} destaque />
 
             <Text style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(26) }]}>
               Nesta lição você vai:
@@ -909,6 +1031,8 @@ export default function LicaoScreen() {
 
         {etapa === "video" && (
           <View style={styles.secao}>
+            <TutorialMimi fala={falaMimi} pose="direita" />
+
             <Text style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(24) }]}>
               {conteudo?.titulo?.trim() || "Assista ao vídeo"}
             </Text>
@@ -940,6 +1064,8 @@ export default function LicaoScreen() {
 
         {etapa === "questionario" && questaoAtual && (
           <View style={styles.secao}>
+            <TutorialMimi fala={falaMimi} pose="frente" />
+
             <Text style={[styles.contador, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
               Pergunta {indiceQuestao + 1} de {questoes.length}
             </Text>
@@ -1074,15 +1200,73 @@ export default function LicaoScreen() {
             <Text style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(24) }]}>
               {cenario.titulo?.trim() || "Pratique no celular"}
             </Text>
+            <TutorialMimi fala={falaMimi} pose="esquerda" />
             <SimuladorCelular cenario={cenario} onFinalizar={finalizarSimulacao} />
           </View>
         )}
 
         {etapa === "resultado" && (
           <View style={styles.secao}>
-            <Text style={[styles.tituloResultado, { color: tema.texto, fontSize: fonte(30) }]}>
-              {estrelas >= 3 ? "Perfeito!" : aprovado ? "Parabéns!" : "Quase lá!"}
+            <Image
+              source={aprovado ? MIMI_FEEDBACK : MIMI_FEEDBACK_TRISTE}
+              style={styles.mimiFeedback}
+              resizeMode="contain"
+              accessible={false}
+            />
+
+            <Text
+              style={[styles.tituloResultado, { color: tema.texto, fontSize: fonte(32) }]}
+            >
+              {aprovado ? "Muito Bem!" : "Quase lá!"}
             </Text>
+
+            <Text
+              style={[
+                styles.subtituloResultado,
+                { color: tema.textoSecundario, fontSize: fonte(18) },
+              ]}
+            >
+              {aprovado
+                ? "Você concluiu a lição. A Mimi está orgulhosa!"
+                : "Não desanime. Tente de novo, sem pressa."}
+            </Text>
+
+            <View style={styles.linhaEstatisticas}>
+              <View
+                style={[
+                  styles.cartaoEstatistica,
+                  { backgroundColor: tema.amareloSuave },
+                ]}
+              >
+                <Text style={[styles.rotuloEstatistica, { fontSize: fonte(17) }]}>
+                  {questoes.length > 0 ? "Acertos" : "Nota"}
+                </Text>
+                <View style={styles.caixaEstatistica}>
+                  <Text
+                    style={[styles.valorEstatistica, { fontSize: fonte(26) }]}
+                  >
+                    {questoes.length > 0
+                      ? `${acertos}/${questoes.length}`
+                      : `${notaFinalCalculada}%`}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={[styles.cartaoEstatistica, { backgroundColor: tema.roxo }]}
+              >
+                <Text style={[styles.rotuloEstatistica, { fontSize: fonte(17) }]}>
+                  XP
+                </Text>
+                <View style={styles.caixaEstatistica}>
+                  <Text
+                    style={[styles.valorEstatistica, { fontSize: fonte(26) }]}
+                  >
+                    {salvando ? "..." : `+${xpGanho}`}
+                  </Text>
+                </View>
+              </View>
+            </View>
 
             <View
               accessible
@@ -1092,7 +1276,7 @@ export default function LicaoScreen() {
               {Array.from({ length: ESTRELAS_MAXIMAS }).map((_, indice) => (
                 <Star
                   key={indice}
-                  size={54}
+                  size={34}
                   color={indice < estrelas ? "#E0A800" : tema.borda}
                   fill={indice < estrelas ? "#FFD651" : "transparent"}
                   strokeWidth={2}
@@ -1101,7 +1285,10 @@ export default function LicaoScreen() {
             </View>
 
             <Text
-              style={[styles.estrelasTexto, { color: tema.texto, fontSize: fonte(21) }]}
+              style={[
+                styles.estrelasTexto,
+                { color: tema.texto, fontSize: fonte(18) },
+              ]}
             >
               {descreverEstrelas(estrelas)}
             </Text>
@@ -1114,52 +1301,56 @@ export default function LicaoScreen() {
               accessibilityLiveRegion="polite"
             >
               {aprovado ? (
-                <PartyPopper size={26} color={tema.sucesso} />
+                <PartyPopper size={24} color={tema.sucesso} />
               ) : (
-                <Heart size={26} color={tema.roxoEscuro} />
+                <Heart size={24} color={tema.roxoEscuro} />
               )}
               <Text
                 style={[
                   styles.textoSelo,
-                  { color: aprovado ? tema.sucesso : tema.texto, fontSize: fonte(17) },
+                  {
+                    color: aprovado ? tema.sucesso : tema.texto,
+                    fontSize: fonte(16),
+                  },
                 ]}
               >
                 {aprovado
                   ? "Você passou de fase!"
-                  : "Você ainda não passou. Tente de novo!"}
+                  : "Com 2 estrelas ou mais, a próxima lição abre."}
               </Text>
             </View>
 
-            <Text style={[styles.nota, { color: tema.texto, fontSize: fonte(30) }]}>
-              {notaFinalCalculada}% de acerto
-            </Text>
-
-            <Text style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}>
-              {descreverNota(notaFinalCalculada)}
-            </Text>
-
-            <Text
-              style={[styles.textoCalma, { color: tema.textoSecundario, fontSize: fonte(16) }]}
-            >
-              Com 2 estrelas ou mais, a próxima lição abre.
-            </Text>
-
-            {aprovado && xpGanho > 0 && (
-              <Text style={[styles.xp, { color: tema.roxoEscuro, fontSize: fonte(22) }]}>
-                +{xpGanho} XP
+            {aprovado && xpGanho === 0 && salvo && (
+              <Text
+                style={[
+                  styles.texto,
+                  { color: tema.textoSecundario, fontSize: fonte(16) },
+                ]}
+              >
+                Você já tinha ganhado o XP desta lição.
               </Text>
             )}
 
-            {aprovado && xpGanho === 0 && salvo && (
-              <Text style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
-                Você já tinha ganhado o XP desta lição.
+            {exemplo && (
+              <Text
+                style={[
+                  styles.texto,
+                  { color: tema.textoSecundario, fontSize: fonte(15) },
+                ]}
+              >
+                Lição de exemplo: o resultado não é salvo.
               </Text>
             )}
 
             {salvando && (
               <View style={styles.linhaSalvando}>
                 <ActivityIndicator size="small" color={tema.roxoEscuro} />
-                <Text style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
+                <Text
+                  style={[
+                    styles.texto,
+                    { color: tema.textoSecundario, fontSize: fonte(16) },
+                  ]}
+                >
                   Salvando seu resultado...
                 </Text>
               </View>
@@ -1168,7 +1359,12 @@ export default function LicaoScreen() {
             {erroSalvar !== "" && (
               <View style={[styles.feedback, { backgroundColor: tema.erroFundo }]}>
                 <XCircle size={24} color={tema.erro} />
-                <Text style={[styles.textoFeedback, { color: tema.erro, fontSize: fonte(17) }]}>
+                <Text
+                  style={[
+                    styles.textoFeedback,
+                    { color: tema.erro, fontSize: fonte(17) },
+                  ]}
+                >
                   {erroSalvar}
                 </Text>
               </View>
@@ -1176,9 +1372,11 @@ export default function LicaoScreen() {
 
             {aprovado ? (
               <BotaoGrande
-                titulo={salvando ? "Salvando..." : "Voltar para a trilha"}
+                titulo={salvando ? "Salvando..." : "Continuar"}
+                variante="roxo"
                 carregando={salvando}
-                onPress={irParaTrilha}
+                desabilitado={erroSalvar !== ""}
+                onPress={() => setEtapa("ofensiva")}
               />
             ) : (
               <>
@@ -1207,6 +1405,82 @@ export default function LicaoScreen() {
             )}
           </View>
         )}
+
+        {etapa === "ofensiva" && (
+          <View style={styles.secao}>
+            <Image
+              source={LUZ_OFENSIVA}
+              style={styles.luzOfensiva}
+              resizeMode="contain"
+              accessible={false}
+            />
+
+            <Text
+              style={[styles.tituloResultado, { color: tema.texto, fontSize: fonte(30) }]}
+            >
+              Dias de Ofensiva
+            </Text>
+
+            <Text
+              style={[
+                styles.textoCalma,
+                { color: tema.textoSecundario, fontSize: fonte(17) },
+              ]}
+            >
+              Você veio aprender hoje. Continue assim!
+            </Text>
+
+            <View
+              accessible
+              accessibilityLabel="Ofensiva de 2 dias. Dia 1 e dia 2 com estrela. Os dias 3, 4 e 5 ainda estão vazios."
+              style={[
+                styles.cartaoOfensiva,
+                { backgroundColor: tema.cartao, borderColor: tema.borda },
+              ]}
+            >
+              {[1, 2, 3, 4, 5].map((dia) => {
+                // Ainda não existe tabela de ofensiva: usamos 2 dias como
+                // exemplo visual, igual ao design.
+                const ativo = dia <= 2;
+
+                return (
+                  <View key={dia} style={styles.diaOfensiva}>
+                    <Text
+                      style={[
+                        styles.rotuloDia,
+                        { color: tema.textoSecundario, fontSize: fonte(13) },
+                      ]}
+                    >
+                      Dia {dia}
+                    </Text>
+                    <View
+                      style={[
+                        styles.circuloDia,
+                        { backgroundColor: ativo ? "#FFD651" : tema.cartaoSuave },
+                      ]}
+                    >
+                      <Image
+                        source={ESTRELA_DIA}
+                        style={[styles.estrelaDia, { opacity: ativo ? 1 : 0.22 }]}
+                        resizeMode="contain"
+                        accessible={false}
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            <Text
+              style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(16) }]}
+            >
+              Volte amanhã para manter a ofensiva.
+            </Text>
+
+            <BotaoGrande titulo="Continuar" variante="roxo" onPress={irParaTrilha} />
+          </View>
+        )}
+
       </ScrollView>
 
       {/* Ajuda de cada etapa */}
@@ -1263,20 +1537,6 @@ const styles = StyleSheet.create({
   botaoCentro: {
     marginTop: 8,
   },
-  linhaMascote: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  mascote: {
-    width: 90,
-    height: 130,
-  },
-  balao: {
-    flex: 1,
-    borderRadius: 24,
-    padding: 14,
-  },
   cartaoTexto: {
     borderRadius: 20,
     borderWidth: 1,
@@ -1296,40 +1556,76 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_800ExtraBold",
     letterSpacing: 0.5,
   },
-  espacoVideo: {
-    borderRadius: 22,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    minHeight: 190,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 20,
+  molduraVideo: {
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 260,
+    aspectRatio: 9 / 19.5,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 44,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  espacoVideoIcone: {
-    width: 72,
-    height: 72,
+  telaVideo: {
+    flex: 1,
+    backgroundColor: "#E6E6E6",
     borderRadius: 36,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
-  espacoVideoTitulo: {
-    fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
+  notchVideo: {
+    position: "absolute",
+    top: 0,
+    width: 86,
+    height: 22,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    backgroundColor: "#1A1A1A",
   },
-  espacoVideoTexto: {
-    fontFamily: "Poppins_300Light",
-    textAlign: "center",
+  controlesVideo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 26,
+  },
+  controleVideo: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controleVideoTexto: {
+    marginTop: -4,
+    fontFamily: "Poppins_600SemiBold",
+    color: "#BDBDBD",
+  },
+  rodapeVideo: {
+    position: "absolute",
+    left: 18,
+    right: 18,
+    bottom: 16,
+    alignItems: "center",
+    gap: 8,
+  },
+  barraVideo: {
+    width: "100%",
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#1A1A1A",
+    overflow: "hidden",
+  },
+  barraVideoPreenchida: {
+    width: "38%",
+    height: "100%",
+    borderRadius: 4,
+    backgroundColor: "#C77DFF",
   },
   etiquetaVideo: {
     borderRadius: 999,
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 10,
-    marginTop: 2,
-  },
-  textoBalao: {
-    fontFamily: "Poppins_600SemiBold",
-    textAlign: "center",
   },
   tituloSecao: {
     fontFamily: "Poppins_800ExtraBold",
@@ -1432,13 +1728,75 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_800ExtraBold",
     textAlign: "center",
   },
-  nota: {
-    fontFamily: "Poppins_800ExtraBold",
+  mimiFeedback: {
+    alignSelf: "center",
+    width: 190,
+    height: 245,
+  },
+  subtituloResultado: {
+    fontFamily: "Poppins_300Light",
     textAlign: "center",
   },
-  xp: {
+  linhaEstatisticas: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  cartaoEstatistica: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 10,
+    gap: 8,
+    alignItems: "center",
+  },
+  rotuloEstatistica: {
     fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
+    color: "#32064F",
+  },
+  caixaEstatistica: {
+    width: "100%",
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: "center",
+  },
+  valorEstatistica: {
+    fontFamily: "Poppins_800ExtraBold",
+    color: "#32064F",
+  },
+  luzOfensiva: {
+    alignSelf: "center",
+    width: 190,
+    height: 190,
+    marginTop: 6,
+  },
+  cartaoOfensiva: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    gap: 4,
+  },
+  diaOfensiva: {
+    flex: 1,
+    alignItems: "center",
+    gap: 8,
+  },
+  rotuloDia: {
+    fontFamily: "Poppins_600SemiBold",
+  },
+  circuloDia: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  estrelaDia: {
+    width: 30,
+    height: 30,
   },
   linhaSalvando: {
     flexDirection: "row",
