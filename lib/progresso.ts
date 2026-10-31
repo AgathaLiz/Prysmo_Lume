@@ -30,7 +30,13 @@ export type ResultadoParaSalvar = {
 };
 
 export type ResultadoSalvo =
-  | { ok: true; xpGanho: number; jaEstavaConcluida: boolean }
+  | {
+      ok: true;
+      xpGanho: number;
+      jaEstavaConcluida: boolean;
+      /** Nomes das conquistas que a pessoa ganhou agora. */
+      conquistasNovas: string[];
+    }
   | { ok: false; mensagem: string };
 
 /** usuario_id do app (não é o id do auth). Sempre vem da sessão atual. */
@@ -68,12 +74,14 @@ export async function salvarResultadoLicao(
     const linha = data[0] as {
       xp_ganho: number;
       ja_estava_concluida: boolean;
+      conquistas_novas: string[] | null;
     };
 
     return {
       ok: true,
       xpGanho: linha.xp_ganho,
       jaEstavaConcluida: linha.ja_estava_concluida,
+      conquistasNovas: linha.conquistas_novas ?? [],
     };
   } catch (erro) {
     // Rede caiu, JSON estranho, etc. Nunca derruba a tela.

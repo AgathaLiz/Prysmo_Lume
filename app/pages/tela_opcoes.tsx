@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowRight } from "lucide-react-native";
+import { ArrowRight, Lock, Trophy } from "lucide-react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ScrollView,
@@ -12,7 +12,11 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { FundoAmarelo } from "@/components/FundoAmarelo";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
-import { carregarPainel, type DadosPainel } from "@/lib/painel";
+import {
+  carregarPainel,
+  formatarDataCurta,
+  type DadosPainel,
+} from "@/lib/painel";
 
 const MESES = [
   "Janeiro",
@@ -70,7 +74,10 @@ export default function TelaOpcoes() {
   const nivel = dados?.nivel ?? Math.floor(xp / 50) + 1;
   const xpNoNivel = xp % 50;
   const progressoNivel = Math.max(0.04, Math.min(1, xpNoNivel / 50));
-  const diasFazendo = dados?.diasAtivos || 2;
+  const diasFazendo = dados?.diasAtivos ?? 0;
+
+  const conquistas = dados?.conquistas ?? [];
+  const totalGanhas = conquistas.filter((item) => item.conquistada).length;
 
   const fundo = modoEscuro ? tema.fundo : "#FFFFFF";
   const cartao = tema.cartao;
@@ -150,6 +157,98 @@ export default function TelaOpcoes() {
             sombra={modoEscuro ? "#000" : "#7A4A00"}
           />
         </View>
+
+        {conquistas.length > 0 && (
+          <View
+            style={[
+              styles.cartaoConquistas,
+              { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#7A4A00" },
+            ]}
+          >
+            <View style={styles.cabecalhoConquistas}>
+              <Text style={[styles.tituloConquistas, { color: texto, fontSize: fonte(22) }]}>
+                Conquistas
+              </Text>
+              <View style={[styles.seloContagem, { backgroundColor: tema.roxo }]}>
+                <Text style={[styles.textoContagem, { fontSize: fonte(13) }]}>
+                  {totalGanhas} de {conquistas.length}
+                </Text>
+              </View>
+            </View>
+
+            {conquistas.map((conquista) => {
+              const data = formatarDataCurta(conquista.conquistadaEm);
+
+              return (
+                <View
+                  key={conquista.id}
+                  style={styles.linhaConquista}
+                  accessible
+                  accessibilityLabel={`${conquista.nome}. ${
+                    conquista.conquistada
+                      ? `Conquistada${data ? ` em ${data}` : ""}`
+                      : "Ainda não conquistada"
+                  }. ${conquista.descricao}`}
+                >
+                  {conquista.conquistada ? (
+                    <LinearGradient
+                      colors={["#C77DFF", "#F3A6B8", "#FFD36E"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.iconeConquista, styles.iconeGanho]}
+                    >
+                      <Trophy size={22} color="#2C1038" strokeWidth={2.3} />
+                    </LinearGradient>
+                  ) : (
+                    <View
+                      style={[
+                        styles.iconeConquista,
+                        { backgroundColor: modoEscuro ? "#3D2A46" : "#E8E4EA" },
+                      ]}
+                    >
+                      <Lock size={20} color={secundario} strokeWidth={2.3} />
+                    </View>
+                  )}
+
+                  <View style={styles.textoConquista}>
+                    <Text
+                      style={[
+                        styles.nomeConquista,
+                        {
+                          color: conquista.conquistada ? texto : secundario,
+                          fontSize: fonte(16),
+                        },
+                      ]}
+                    >
+                      {conquista.nome}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.descricaoConquista,
+                        { color: secundario, fontSize: fonte(13) },
+                      ]}
+                    >
+                      {conquista.descricao}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.situacaoConquista,
+                        {
+                          color: conquista.conquistada ? "#2E7D32" : secundario,
+                          fontSize: fonte(12),
+                        },
+                      ]}
+                    >
+                      {conquista.conquistada
+                        ? `Conquistada${data ? ` em ${data}` : ""}`
+                        : "Ainda falta"}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         <View
           style={[
@@ -348,6 +447,66 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
     lineHeight: 14,
+  },
+  cartaoConquistas: {
+    marginTop: 16,
+    borderRadius: 22,
+    padding: 18,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  cabecalhoConquistas: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 6,
+  },
+  tituloConquistas: {
+    fontFamily: "Poppins_900Black",
+    flexShrink: 1,
+  },
+  seloContagem: {
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  textoContagem: {
+    fontFamily: "Poppins_900Black",
+    color: "#2C1038",
+  },
+  linhaConquista: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+  },
+  iconeConquista: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconeGanho: {
+    borderWidth: 2,
+    borderColor: "#2B2730",
+  },
+  textoConquista: {
+    flex: 1,
+    gap: 1,
+  },
+  nomeConquista: {
+    fontFamily: "Poppins_900Black",
+  },
+  descricaoConquista: {
+    fontFamily: "Poppins_600SemiBold",
+  },
+  situacaoConquista: {
+    fontFamily: "Poppins_600SemiBold",
+    marginTop: 1,
   },
   cartaoCalendario: {
     marginTop: 16,

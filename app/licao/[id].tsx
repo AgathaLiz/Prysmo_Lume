@@ -10,6 +10,7 @@ import {
   RotateCw,
   Sparkles,
   Star,
+  Trophy,
   XCircle,
 } from "lucide-react-native";
 import {
@@ -279,6 +280,12 @@ export default function LicaoScreen() {
   const [erroSalvar, setErroSalvar] = useState("");
   const salvouRef = useRef(false);
 
+  // Ofensiva (dias seguidos), lida do servidor na etapa final
+  const [ofensiva, setOfensiva] = useState(0);
+
+  // Conquistas ganhas ao salvar este resultado
+  const [conquistasNovas, setConquistasNovas] = useState<string[]>([]);
+
   const conteudo = normalizarUm(aula?.aulas_conteudo);
   const temVideo = ehVideo(conteudo);
   const semConteudo =
@@ -322,7 +329,7 @@ export default function LicaoScreen() {
             supabase
               .from("niveis")
               .select(
-                "niveis_id, nome, aulas(aulas_id, niveis_id, nome, ordem, licoes(licoes_id, aulas_id))"
+                "niveis_id, nome, aulas(aulas_id, niveis_id, nome, licoes(licoes_id, aulas_id))"
               )
               .order("niveis_id", { ascending: true }),
             supabase
@@ -507,6 +514,7 @@ export default function LicaoScreen() {
 
   const aprovado = foiAprovado(notaFinalCalculada, NOTA_MINIMA_PADRAO);
   const estrelas = estrelasDaNota(notaFinalCalculada);
+  const diasSeguidos = Math.max(1, ofensiva);
 
   // O gabarito vem do servidor, só depois de a pessoa verificar a resposta.
   const alternativaCerta =
@@ -712,6 +720,7 @@ export default function LicaoScreen() {
     if (resposta.ok) {
       setSalvo(true);
       setXpGanho(resposta.xpGanho);
+      setConquistasNovas(resposta.conquistasNovas);
     } else {
       setErroSalvar(resposta.mensagem);
     }
@@ -735,6 +744,25 @@ export default function LicaoScreen() {
     void salvar();
   }, [etapa, salvar]);
 
+  // Ao chegar na etapa da ofensiva, lê a sequência real no servidor.
+  useEffect(() => {
+    if (etapa !== "ofensiva") return;
+    let ativo = true;
+
+    supabase.rpc("ofensiva_atual").then(({ data, error }) => {
+      if (!ativo) return;
+      if (error) {
+        console.log("Erro ao ler a ofensiva:", error.message);
+        return;
+      }
+      setOfensiva(typeof data === "number" ? data : 0);
+    });
+
+    return () => {
+      ativo = false;
+    };
+  }, [etapa]);
+
   function irParaProximaEtapa(etapaAtual: Etapa) {
     const posicao = etapasConteudo.indexOf(etapaAtual);
     const proxima = etapasConteudo[posicao + 1];
@@ -750,6 +778,7 @@ export default function LicaoScreen() {
     setSalvo(false);
     setErroSalvar("");
     setXpGanho(0);
+    setConquistasNovas([]);
     setNotaQuiz(null);
     setNotaSimulacao(null);
     setIndiceQuestao(0);
@@ -1362,6 +1391,26 @@ export default function LicaoScreen() {
               </Text>
             </View>
 
+            {conquistasNovas.length > 0 && (
+              <View
+                style={[styles.seloFase, { backgroundColor: tema.amareloSuave }]}
+                accessibilityLiveRegion="polite"
+              >
+                <Trophy size={24} color="#32064F" />
+                <Text
+                  style={[
+                    styles.textoSelo,
+                    { color: "#32064F", fontSize: fonte(16) },
+                  ]}
+                >
+                  {conquistasNovas.length === 1
+                    ? "Nova conquista: "
+                    : "Novas conquistas: "}
+                  {conquistasNovas.join(", ")}
+                </Text>
+              </View>
+            )}
+
             {aprovado && xpGanho === 0 && salvo && (
               <Text
                 style={[
@@ -1469,21 +1518,22 @@ export default function LicaoScreen() {
                 { color: tema.textoSecundario, fontSize: fonte(17) },
               ]}
             >
-              Você veio aprender hoje. Continue assim!
+              {diasSeguidos === 1
+                ? "Você começou sua sequência hoje. Continue assim!"
+                : `Você está há ${diasSeguidos} dias seguidos. Continue assim!`}
             </Text>
 
             <View
               accessible
-              accessibilityLabel="Ofensiva de 2 dias. Dia 1 e dia 2 com estrela. Os dias 3, 4 e 5 ainda estão vazios."
+              accessibilityLabel={`Ofensiva de ${diasSeguidos} ${diasSeguidos === 1 ? "dia" : "dias"}.`}
               style={[
                 styles.cartaoOfensiva,
                 { backgroundColor: tema.cartao, borderColor: tema.borda },
               ]}
             >
               {[1, 2, 3, 4, 5].map((dia) => {
-                // Ainda não existe tabela de ofensiva: usamos 2 dias como
-                // exemplo visual, igual ao design.
-                const ativo = dia <= 2;
+                // Acende uma estrela por dia seguido (até 5, como no design).
+                const ativo = dia <= Math.min(diasSeguidos, 5);
 
                 return (
                   <View key={dia} style={styles.diaOfensiva}>

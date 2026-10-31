@@ -59,7 +59,7 @@ export default function TelaInicial() {
 
   const dias = useMemo(ultimosCincoDias, []);
   const datasAtivas = dados?.datasAtivas ?? [];
-  const diasDeLuz = dados?.diasAtivos && dados.diasAtivos > 0 ? dados.diasAtivos : 2;
+  const diasDeLuz = dados?.ofensiva ?? 0;
 
   const fundo = modoEscuro ? tema.fundo : "#FFFFFF";
   const cartao = tema.cartao;
@@ -82,12 +82,22 @@ export default function TelaInicial() {
           ]}
         >
           <View style={styles.linhaSequencia}>
-            <Image source={LUZ} style={styles.luz} resizeMode="contain" />
+            <Image
+              source={LUZ}
+              style={[styles.luz, diasDeLuz === 0 && { opacity: 0.35 }]}
+              resizeMode="contain"
+            />
             <Text style={[styles.legenda, { color: texto, fontSize: fonte(16) }]}>
-              Sua luz está acesa há:{" "}
-              <Text style={[styles.diasLuz, { fontSize: fonte(16) }]}>
-                {diasDeLuz} {diasDeLuz === 1 ? "dia" : "dias"}
-              </Text>
+              {diasDeLuz === 0 ? (
+                "Sua luz está apagada. Faça uma lição para acendê-la!"
+              ) : (
+                <>
+                  Sua luz está acesa há:{" "}
+                  <Text style={[styles.diasLuz, { fontSize: fonte(16) }]}>
+                    {diasDeLuz} {diasDeLuz === 1 ? "dia" : "dias"}
+                  </Text>
+                </>
+              )}
             </Text>
           </View>
           <Pressable
@@ -116,10 +126,7 @@ export default function TelaInicial() {
           </Text>
           <View style={styles.linhaDias}>
             {dias.map((dia, indice) => {
-              const ativo =
-                datasAtivas.length > 0
-                  ? datasAtivas.includes(dia.iso)
-                  : indice < 2;
+              const ativo = datasAtivas.includes(dia.iso);
               return (
                 <View
                   key={dia.iso}
