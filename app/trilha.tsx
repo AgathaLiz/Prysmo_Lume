@@ -136,7 +136,7 @@ export default function TrilhaScreen() {
           supabase
             .from("niveis")
             .select(
-              "niveis_id, nome, aulas(aulas_id, niveis_id, nome, licoes(licoes_id, aulas_id))"
+              "niveis_id, nome, aulas(aulas_id, niveis_id, nome, ordem, licoes(licoes_id, aulas_id))"
             )
             .order("niveis_id", { ascending: true }),
           supabase

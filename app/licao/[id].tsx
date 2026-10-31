@@ -80,10 +80,12 @@ const MIMI_FEEDBACK_TRISTE = require("../../assets/Lume/Mimi/Png/mimi-pra-baixo.
 const LUZ_OFENSIVA = require("../../assets/Lume/Outros elementos/Png/luz-acesa.png");
 const ESTRELA_DIA = require("../../assets/Lume/Outros elementos/Png/estrela-cinco-pontas.png");
 
+// `correta` só existe na lição de exemplo local. As lições do banco NÃO
+// recebem essa coluna: o servidor confere a resposta (função verificar_resposta).
 type Alternativa = {
   alternativas_id: number;
   texto: string;
-  correta: boolean;
+  correta?: boolean;
 };
 
 type Questao = {
@@ -262,6 +264,11 @@ export default function LicaoScreen() {
   const [acertos, setAcertos] = useState(0);
   const [notaQuiz, setNotaQuiz] = useState<number | null>(null);
 
+  // Gabarito vindo do servidor (só depois de a pessoa responder)
+  const [certaId, setCertaId] = useState<number | null>(null);
+  const [acertou, setAcertou] = useState(false);
+  const [verificando, setVerificando] = useState(false);
+
   // Simulação
   const [notaSimulacao, setNotaSimulacao] = useState<number | null>(null);
 
@@ -315,7 +322,7 @@ export default function LicaoScreen() {
             supabase
               .from("niveis")
               .select(
-                "niveis_id, nome, aulas(aulas_id, niveis_id, nome, licoes(licoes_id, aulas_id))"
+                "niveis_id, nome, aulas(aulas_id, niveis_id, nome, ordem, licoes(licoes_id, aulas_id))"
               )
               .order("niveis_id", { ascending: true }),
             supabase
@@ -356,11 +363,10 @@ export default function LicaoScreen() {
             )
             .eq("licoes_id", idLicao)
             .maybeSingle<Licao>(),
+          // ATENÇÃO: sem a coluna `correta`. O gabarito fica só no servidor.
           supabase
             .from("questoes")
-            .select(
-              "questoes_id, pergunta, alternativas(alternativas_id, texto, correta)"
-            )
+            .select("questoes_id, pergunta, alternativas(alternativas_id, texto)")
             .eq("licoes_id", idLicao),
           consultaBloqueio,
           // Usada só para saber se esta é a primeira lição do app.
@@ -502,11 +508,10 @@ export default function LicaoScreen() {
   const aprovado = foiAprovado(notaFinalCalculada, NOTA_MINIMA_PADRAO);
   const estrelas = estrelasDaNota(notaFinalCalculada);
 
-  const alternativaCerta = alternativas.find((a) => a.correta) ?? null;
-  const acertouQuestao =
-    verificado &&
-    selecionada !== null &&
-    alternativaCerta?.alternativas_id === selecionada;
+  // O gabarito vem do servidor, só depois de a pessoa verificar a resposta.
+  const alternativaCerta =
+    alternativas.find((a) => a.alternativas_id === certaId) ?? null;
+  const acertouQuestao = verificado && acertou;
 
   const passosDaIntro = useMemo(() => {
     const lista: string[] = [];
@@ -751,6 +756,9 @@ export default function LicaoScreen() {
     setSelecionada(null);
     setVerificado(false);
     setAcertos(0);
+    setCertaId(null);
+    setAcertou(false);
+    setVerificando(false);
 
     if (pularVideo) {
       const semVideo = etapasConteudo.find((item) => item !== "video");
@@ -760,15 +768,43 @@ export default function LicaoScreen() {
     }
   }
 
-  function verificarResposta() {
-    if (!questaoAtual || selecionada === null || verificado) return;
+  async function verificarResposta() {
+    if (!questaoAtual || selecionada === null || verificado || verificando) {
+      return;
+    }
 
-    const escolhida = alternativas.find(
-      (alternativa) => alternativa.alternativas_id === selecionada
-    );
+    setVerificando(true);
+    let correta = false;
+    let idCerta: number | null = null;
 
+    if (selecionada < 0) {
+      // Lição de exemplo local: o gabarito está no próprio app.
+      const certa = alternativas.find((a) => a.correta);
+      idCerta = certa?.alternativas_id ?? null;
+      correta = idCerta === selecionada;
+    } else {
+      // Lição do banco: quem confere é o servidor.
+      const { data, error } = await supabase.rpc("verificar_resposta", {
+        p_alternativa_id: selecionada,
+      });
+
+      if (error || !data || data.length === 0) {
+        console.log("Erro ao verificar a resposta:", error?.message);
+        setVerificando(false);
+        Alert.alert("Ops", "Não foi possível verificar agora. Tente de novo.");
+        return;
+      }
+
+      correta = data[0].acertou;
+      idCerta = data[0].alternativa_correta_id;
+    }
+
+    setAcertou(correta);
+    setCertaId(idCerta);
     setVerificado(true);
-    if (escolhida?.correta) {
+    setVerificando(false);
+
+    if (correta) {
       setAcertos((total) => total + 1);
       if (audioDescricao) falar("Isso mesmo!");
     } else if (audioDescricao) {
@@ -790,6 +826,8 @@ export default function LicaoScreen() {
     setIndiceQuestao((indice) => indice + 1);
     setSelecionada(null);
     setVerificado(false);
+    setCertaId(null);
+    setAcertou(false);
   }
 
   function finalizarSimulacao(erros: number) {
@@ -1088,18 +1126,22 @@ export default function LicaoScreen() {
 
             {alternativas.map((alternativa) => {
               const escolhida = selecionada === alternativa.alternativas_id;
-              const mostrarCerta = verificado && alternativa.correta;
-              const mostrarErrada = verificado && escolhida && !alternativa.correta;
+              const mostrarCerta =
+                verificado && alternativa.alternativas_id === certaId;
+              const mostrarErrada =
+                verificado &&
+                escolhida &&
+                alternativa.alternativas_id !== certaId;
 
               return (
                 <TouchableOpacity
                   key={alternativa.alternativas_id}
                   onPress={() => {
-                    if (verificado) return;
+                    if (verificado || verificando) return;
                     setSelecionada(alternativa.alternativas_id);
                     if (audioDescricao) falar(alternativa.texto);
                   }}
-                  disabled={verificado}
+                  disabled={verificado || verificando}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: escolhida, disabled: verificado }}
                   accessibilityLabel={alternativa.texto}
@@ -1179,9 +1221,9 @@ export default function LicaoScreen() {
 
             {!verificado ? (
               <BotaoGrande
-                titulo="Verificar"
+                titulo={verificando ? "Verificando..." : "Verificar"}
                 onPress={verificarResposta}
-                desabilitado={selecionada === null}
+                desabilitado={selecionada === null || verificando}
               />
             ) : (
               <BotaoGrande
