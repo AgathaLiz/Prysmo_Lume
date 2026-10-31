@@ -96,7 +96,7 @@ async function cadastrarUsuario() {
   if (Object.values(novosErros).some((e) => e !== "")) return;
 
   setCarregando(true);
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password: senha,
     options: {
@@ -115,7 +115,16 @@ async function cadastrarUsuario() {
     return;
   }
 
-  router.replace("/auth/tela_preferencias");
+  // Se o e-mail já tem conta, o Supabase não dá erro: devolve identities vazio
+if (data.user && data.user.identities?.length === 0) {
+  setErros({ ...novosErros, email: "Este e-mail já tem uma conta. Tente entrar." });
+  return;
+}
+
+router.replace({
+  pathname: "/auth/verificar_email",
+  params: { email: email.trim() },
+});
 }
 
   return (

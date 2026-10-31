@@ -42,6 +42,19 @@ export default function LoginScreen() {
   if (error || !data.user) {
     setCarregando(false);
     console.log(error?.message);
+
+     if (
+    error?.code === "email_not_confirmed" ||
+    error?.message.toLowerCase().includes("email not confirmed")
+  ) {
+    await supabase.auth.resend({ type: "signup", email: email.trim() });
+    router.push({
+      pathname: "/auth/verificar_email",
+      params: { email: email.trim() },
+    });
+    return;
+  }
+
     if (error?.message.toLowerCase().includes("invalid login")) {
       setErroLogin("E-mail ou senha incorretos");
     } else {
