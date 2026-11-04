@@ -1,8 +1,8 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  Image,
   ImageBackground,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
