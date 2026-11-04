@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from "react-native";
+import {
+  View, Text, TextInput, TouchableOpacity, Image, StyleSheet,
+  ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions,
+} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { supabase } from "../../lib/supabase"; // mesmo import do cadastro
+import { supabase } from "../../lib/supabase"; // mantenha o mesmo import que já funciona aí
 
 export default function VerificarEmailScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -11,6 +14,9 @@ export default function VerificarEmailScreen() {
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [espera, setEspera] = useState(60);
+
+  const { width } = useWindowDimensions();
+  const larguraLogo = Math.min(width * 0.3, 120);
 
   useEffect(() => {
     if (espera <= 0) return;
@@ -58,76 +64,88 @@ export default function VerificarEmailScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Botão para voltar */}
-      <TouchableOpacity style={styles.botaoVoltar} onPress={() => router.back()}>
-        <ChevronLeft size={25} color="#303030" />
-      </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#E9B8FF" }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.conteudo}>
+          {/* Botão para voltar */}
+          <TouchableOpacity style={styles.botaoVoltar} onPress={() => router.back()}>
+            <ChevronLeft size={25} color="#303030" />
+          </TouchableOpacity>
 
-      <View style={styles.logoContainer}>
-        <View style={styles.textoContainer}>
-          <Text style={styles.titulo}>Confirme seu e-mail</Text>
-          <Text style={styles.subtitulo}>Digite o código que enviamos para você</Text>
+          <View style={styles.logoContainer}>
+            <View style={styles.textoContainer}>
+              <Text style={styles.titulo}>Confirme seu e-mail</Text>
+              <Text style={styles.subtitulo}>Digite o código que enviamos para você</Text>
+            </View>
+
+            <Image
+              source={require("../../assets/Lume/Mimi/Png/mimi-pra-esquerda.png")} // mantenha o caminho que já funciona aí
+              style={[styles.logo, { width: larguraLogo, height: larguraLogo * (200 / 140) }]}
+            />
+          </View>
+
+          <Text style={styles.textoEmail}>
+            Enviamos 6 números para {email}. Olhe também a caixa de spam.
+          </Text>
+
+          {/*CÓDIGO*/}
+          <View style={styles.inputContainer}>
+            <TextInput
+              placeholder="000000"
+              placeholderTextColor="#9E9E9E"
+              value={codigo}
+              onChangeText={(t) => {
+                const so = t.replace(/\D/g, "").slice(0, 6);
+                setCodigo(so);
+                if (so.length === 6) confirmar(so);
+              }}
+              keyboardType="number-pad"
+              maxLength={6}
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
+              style={styles.inputCodigo}
+            />
+          </View>
+
+          {erro !== "" && <Text style={styles.erro}>{erro}</Text>}
+          {aviso !== "" && <Text style={styles.aviso}>{aviso}</Text>}
+
+          {/*BOTÃO CONFIRMAR*/}
+          <TouchableOpacity
+            onPress={() => confirmar(codigo)}
+            disabled={carregando || codigo.length !== 6}
+            style={[styles.botao, (carregando || codigo.length !== 6) && { opacity: 0.6 }]}
+          >
+            <Text style={styles.botaoTexto}>{carregando ? "Confirmando..." : "Confirmar"}</Text>
+          </TouchableOpacity>
+
+          {/*REENVIAR*/}
+          <TouchableOpacity onPress={reenviar} disabled={espera > 0}>
+            <Text style={[styles.linkEscuro, espera > 0 && { opacity: 0.5 }]}>
+              {espera > 0 ? `Reenviar código em ${espera}s` : "Reenviar código"}
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        <Image
-          source={require("../../assets/Lume/Mimi/Png/mimi-pra-esquerda.png")}
-          style={styles.logo}
-        />
-      </View>
-
-      <Text style={styles.textoEmail}>
-        Enviamos 6 números para {email}. Olhe também a caixa de spam.
-      </Text>
-
-      {/*CÓDIGO*/}
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="000000"
-          placeholderTextColor="#9E9E9E"
-          value={codigo}
-          onChangeText={(t) => {
-            const so = t.replace(/\D/g, "").slice(0, 6);
-            setCodigo(so);
-            if (so.length === 6) confirmar(so);
-          }}
-          keyboardType="number-pad"
-          maxLength={6}
-          textContentType="oneTimeCode"
-          autoComplete="one-time-code"
-          style={styles.inputCodigo}
-        />
-      </View>
-
-      {erro !== "" && <Text style={styles.erro}>{erro}</Text>}
-      {aviso !== "" && <Text style={styles.aviso}>{aviso}</Text>}
-
-      {/*BOTÃO CONFIRMAR*/}
-      <TouchableOpacity
-        onPress={() => confirmar(codigo)}
-        disabled={carregando || codigo.length !== 6}
-        style={[styles.botao, (carregando || codigo.length !== 6) && { opacity: 0.6 }]}
-      >
-        <Text style={styles.botaoTexto}>{carregando ? "Confirmando..." : "Confirmar"}</Text>
-      </TouchableOpacity>
-
-      {/*REENVIAR*/}
-      <TouchableOpacity onPress={reenviar} disabled={espera > 0}>
-        <Text style={[styles.linkEscuro, espera > 0 && { opacity: 0.5 }]}>
-          {espera > 0 ? `Reenviar código em ${espera}s` : "Reenviar código"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 25,
+  scroll: {
+    flexGrow: 1,
     justifyContent: "center",
-    paddingBottom: 80,
-    backgroundColor: "#E9B8FF",
+    alignItems: "center",
+    paddingHorizontal: 25,
+    paddingVertical: 40,
+  },
+
+  conteudo: {
+    width: "100%",
+    maxWidth: 480,
   },
 
   botaoVoltar: {
@@ -137,6 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -154,17 +173,15 @@ const styles = StyleSheet.create({
   textoContainer: {
     flex: 1,
     paddingRight: 10,
-    marginLeft: 20,
+    marginLeft: 10,
   },
 
   logo: {
-    width: 140,
-    height: 200,
     resizeMode: "contain",
   },
 
   titulo: {
-    fontSize: 35,
+    fontSize: 28,
     fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
   },
@@ -172,7 +189,7 @@ const styles = StyleSheet.create({
   subtitulo: {
     marginTop: 10,
     color: "#303030",
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Poppins_600SemiBold",
   },
 
@@ -199,10 +216,12 @@ const styles = StyleSheet.create({
 
   inputCodigo: {
     flex: 1,
+    minWidth: 0,
+    width: "100%",
     paddingVertical: 16,
     color: "#303030",
-    fontSize: 32,
-    letterSpacing: 8,
+    fontSize: 28,
+    letterSpacing: 6,
     textAlign: "center",
     fontFamily: "Poppins_800ExtraBold",
   },
