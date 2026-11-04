@@ -10,6 +10,7 @@ import {
   RotateCw,
   Sparkles,
   Star,
+  Trophy,
   XCircle,
 } from "lucide-react-native";
 import {
@@ -80,10 +81,12 @@ const MIMI_FEEDBACK_TRISTE = require("../../assets/Lume/Mimi/Png/mimi-pra-baixo.
 const LUZ_OFENSIVA = require("../../assets/Lume/Outros elementos/Png/luz-acesa.png");
 const ESTRELA_DIA = require("../../assets/Lume/Outros elementos/Png/estrela-cinco-pontas.png");
 
+// `correta` só existe na lição de exemplo local. As lições do banco NÃO
+// recebem essa coluna: o servidor confere a resposta (função verificar_resposta).
 type Alternativa = {
   alternativas_id: number;
   texto: string;
-  correta: boolean;
+  correta?: boolean;
 };
 
 type Questao = {
@@ -262,6 +265,11 @@ export default function LicaoScreen() {
   const [acertos, setAcertos] = useState(0);
   const [notaQuiz, setNotaQuiz] = useState<number | null>(null);
 
+  // Gabarito vindo do servidor (só depois de a pessoa responder)
+  const [certaId, setCertaId] = useState<number | null>(null);
+  const [acertou, setAcertou] = useState(false);
+  const [verificando, setVerificando] = useState(false);
+
   // Simulação
   const [notaSimulacao, setNotaSimulacao] = useState<number | null>(null);
 
@@ -271,6 +279,12 @@ export default function LicaoScreen() {
   const [xpGanho, setXpGanho] = useState(0);
   const [erroSalvar, setErroSalvar] = useState("");
   const salvouRef = useRef(false);
+
+  // Ofensiva (dias seguidos), lida do servidor na etapa final
+  const [ofensiva, setOfensiva] = useState(0);
+
+  // Conquistas ganhas ao salvar este resultado
+  const [conquistasNovas, setConquistasNovas] = useState<string[]>([]);
 
   const conteudo = normalizarUm(aula?.aulas_conteudo);
   const temVideo = ehVideo(conteudo);
@@ -356,11 +370,10 @@ export default function LicaoScreen() {
             )
             .eq("licoes_id", idLicao)
             .maybeSingle<Licao>(),
+          // ATENÇÃO: sem a coluna `correta`. O gabarito fica só no servidor.
           supabase
             .from("questoes")
-            .select(
-              "questoes_id, pergunta, alternativas(alternativas_id, texto, correta)"
-            )
+            .select("questoes_id, pergunta, alternativas(alternativas_id, texto)")
             .eq("licoes_id", idLicao),
           consultaBloqueio,
           // Usada só para saber se esta é a primeira lição do app.
@@ -501,12 +514,12 @@ export default function LicaoScreen() {
 
   const aprovado = foiAprovado(notaFinalCalculada, NOTA_MINIMA_PADRAO);
   const estrelas = estrelasDaNota(notaFinalCalculada);
+  const diasSeguidos = Math.max(1, ofensiva);
 
-  const alternativaCerta = alternativas.find((a) => a.correta) ?? null;
-  const acertouQuestao =
-    verificado &&
-    selecionada !== null &&
-    alternativaCerta?.alternativas_id === selecionada;
+  // O gabarito vem do servidor, só depois de a pessoa verificar a resposta.
+  const alternativaCerta =
+    alternativas.find((a) => a.alternativas_id === certaId) ?? null;
+  const acertouQuestao = verificado && acertou;
 
   const passosDaIntro = useMemo(() => {
     const lista: string[] = [];
@@ -707,6 +720,7 @@ export default function LicaoScreen() {
     if (resposta.ok) {
       setSalvo(true);
       setXpGanho(resposta.xpGanho);
+      setConquistasNovas(resposta.conquistasNovas);
     } else {
       setErroSalvar(resposta.mensagem);
     }
@@ -730,6 +744,25 @@ export default function LicaoScreen() {
     void salvar();
   }, [etapa, salvar]);
 
+  // Ao chegar na etapa da ofensiva, lê a sequência real no servidor.
+  useEffect(() => {
+    if (etapa !== "ofensiva") return;
+    let ativo = true;
+
+    supabase.rpc("ofensiva_atual").then(({ data, error }) => {
+      if (!ativo) return;
+      if (error) {
+        console.log("Erro ao ler a ofensiva:", error.message);
+        return;
+      }
+      setOfensiva(typeof data === "number" ? data : 0);
+    });
+
+    return () => {
+      ativo = false;
+    };
+  }, [etapa]);
+
   function irParaProximaEtapa(etapaAtual: Etapa) {
     const posicao = etapasConteudo.indexOf(etapaAtual);
     const proxima = etapasConteudo[posicao + 1];
@@ -745,12 +778,16 @@ export default function LicaoScreen() {
     setSalvo(false);
     setErroSalvar("");
     setXpGanho(0);
+    setConquistasNovas([]);
     setNotaQuiz(null);
     setNotaSimulacao(null);
     setIndiceQuestao(0);
     setSelecionada(null);
     setVerificado(false);
     setAcertos(0);
+    setCertaId(null);
+    setAcertou(false);
+    setVerificando(false);
 
     if (pularVideo) {
       const semVideo = etapasConteudo.find((item) => item !== "video");
@@ -760,15 +797,43 @@ export default function LicaoScreen() {
     }
   }
 
-  function verificarResposta() {
-    if (!questaoAtual || selecionada === null || verificado) return;
+  async function verificarResposta() {
+    if (!questaoAtual || selecionada === null || verificado || verificando) {
+      return;
+    }
 
-    const escolhida = alternativas.find(
-      (alternativa) => alternativa.alternativas_id === selecionada
-    );
+    setVerificando(true);
+    let correta = false;
+    let idCerta: number | null = null;
 
+    if (selecionada < 0) {
+      // Lição de exemplo local: o gabarito está no próprio app.
+      const certa = alternativas.find((a) => a.correta);
+      idCerta = certa?.alternativas_id ?? null;
+      correta = idCerta === selecionada;
+    } else {
+      // Lição do banco: quem confere é o servidor.
+      const { data, error } = await supabase.rpc("verificar_resposta", {
+        p_alternativa_id: selecionada,
+      });
+
+      if (error || !data || data.length === 0) {
+        console.log("Erro ao verificar a resposta:", error?.message);
+        setVerificando(false);
+        Alert.alert("Ops", "Não foi possível verificar agora. Tente de novo.");
+        return;
+      }
+
+      correta = data[0].acertou;
+      idCerta = data[0].alternativa_correta_id;
+    }
+
+    setAcertou(correta);
+    setCertaId(idCerta);
     setVerificado(true);
-    if (escolhida?.correta) {
+    setVerificando(false);
+
+    if (correta) {
       setAcertos((total) => total + 1);
       if (audioDescricao) falar("Isso mesmo!");
     } else if (audioDescricao) {
@@ -790,6 +855,8 @@ export default function LicaoScreen() {
     setIndiceQuestao((indice) => indice + 1);
     setSelecionada(null);
     setVerificado(false);
+    setCertaId(null);
+    setAcertou(false);
   }
 
   function finalizarSimulacao(erros: number) {
@@ -1088,18 +1155,22 @@ export default function LicaoScreen() {
 
             {alternativas.map((alternativa) => {
               const escolhida = selecionada === alternativa.alternativas_id;
-              const mostrarCerta = verificado && alternativa.correta;
-              const mostrarErrada = verificado && escolhida && !alternativa.correta;
+              const mostrarCerta =
+                verificado && alternativa.alternativas_id === certaId;
+              const mostrarErrada =
+                verificado &&
+                escolhida &&
+                alternativa.alternativas_id !== certaId;
 
               return (
                 <TouchableOpacity
                   key={alternativa.alternativas_id}
                   onPress={() => {
-                    if (verificado) return;
+                    if (verificado || verificando) return;
                     setSelecionada(alternativa.alternativas_id);
                     if (audioDescricao) falar(alternativa.texto);
                   }}
-                  disabled={verificado}
+                  disabled={verificado || verificando}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: escolhida, disabled: verificado }}
                   accessibilityLabel={alternativa.texto}
@@ -1179,9 +1250,9 @@ export default function LicaoScreen() {
 
             {!verificado ? (
               <BotaoGrande
-                titulo="Verificar"
+                titulo={verificando ? "Verificando..." : "Verificar"}
                 onPress={verificarResposta}
-                desabilitado={selecionada === null}
+                desabilitado={selecionada === null || verificando}
               />
             ) : (
               <BotaoGrande
@@ -1320,6 +1391,26 @@ export default function LicaoScreen() {
               </Text>
             </View>
 
+            {conquistasNovas.length > 0 && (
+              <View
+                style={[styles.seloFase, { backgroundColor: tema.amareloSuave }]}
+                accessibilityLiveRegion="polite"
+              >
+                <Trophy size={24} color="#32064F" />
+                <Text
+                  style={[
+                    styles.textoSelo,
+                    { color: "#32064F", fontSize: fonte(16) },
+                  ]}
+                >
+                  {conquistasNovas.length === 1
+                    ? "Nova conquista: "
+                    : "Novas conquistas: "}
+                  {conquistasNovas.join(", ")}
+                </Text>
+              </View>
+            )}
+
             {aprovado && xpGanho === 0 && salvo && (
               <Text
                 style={[
@@ -1427,21 +1518,22 @@ export default function LicaoScreen() {
                 { color: tema.textoSecundario, fontSize: fonte(17) },
               ]}
             >
-              Você veio aprender hoje. Continue assim!
+              {diasSeguidos === 1
+                ? "Você começou sua sequência hoje. Continue assim!"
+                : `Você está há ${diasSeguidos} dias seguidos. Continue assim!`}
             </Text>
 
             <View
               accessible
-              accessibilityLabel="Ofensiva de 2 dias. Dia 1 e dia 2 com estrela. Os dias 3, 4 e 5 ainda estão vazios."
+              accessibilityLabel={`Ofensiva de ${diasSeguidos} ${diasSeguidos === 1 ? "dia" : "dias"}.`}
               style={[
                 styles.cartaoOfensiva,
                 { backgroundColor: tema.cartao, borderColor: tema.borda },
               ]}
             >
               {[1, 2, 3, 4, 5].map((dia) => {
-                // Ainda não existe tabela de ofensiva: usamos 2 dias como
-                // exemplo visual, igual ao design.
-                const ativo = dia <= 2;
+                // Acende uma estrela por dia seguido (até 5, como no design).
+                const ativo = dia <= Math.min(diasSeguidos, 5);
 
                 return (
                   <View key={dia} style={styles.diaOfensiva}>

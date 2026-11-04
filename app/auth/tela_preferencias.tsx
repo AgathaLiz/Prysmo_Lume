@@ -1,305 +1,402 @@
-import { PageFlow } from "@/components/PageFlow";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useEffect, useState } from "react";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Moon, RotateCcw, Sun } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
-    Image
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-//import do subase
-import { supabase } from "../../lib/supabase";
+import { PageFlow } from "@/components/PageFlow";
+import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 
+const TAMANHOS = [
+  { px: 24, rotulo: "Pequena", letra: 20 },
+  { px: 30, rotulo: "Média", letra: 26 },
+  { px: 40, rotulo: "Grande", letra: 32 },
+];
 
 export default function TelaPreferencias() {
-  const [modoEscuro, setModoEscuro] = useState(false);
-  const [audioDescricao, setAudioDescricao] = useState(false);
-  const [tamanhoFonte, setTamanhoFonte] = useState<"P" | "M" | "G">("M");
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState("");
+  const {
+    tema,
+    modoEscuro,
+    fonte,
+    tamanhoFontePx,
+    audioDescricao,
+    definirAudioDescricao,
+    definirModoEscuro,
+    definirTamanhoFonte,
+    restaurarPadrao,
+    recarregar,
+  } = useAcessibilidade();
 
-  const tamanhosPx = { P: 24, M: 30, G: 40 };
+  // Tema, fonte e áudio mudam e são gravados na hora, pelo hook.
+  const [salvando, setSalvando] = useState(false);
 
-  // Carrega as preferências já salvas (quem é novo fica com os padrões)
+  // Quem já tem preferências salvas vê as dela (confirmar ou trocar).
   useEffect(() => {
-    async function carregar() {
-      const { data: usuarioData } = await supabase
-        .from("usuario")
-        .select("usuario_id")
-        .maybeSingle();
-
-      if (!usuarioData) return;
-
-      const { data } = await supabase
-        .from("usuario_acessibilidade_settings")
-        .select("tamanho_fonte, modo_escuro, audio_descricao")
-        .eq("usuario_id", usuarioData.usuario_id)
-        .maybeSingle();
-
-      if (!data) return;
-
-      setModoEscuro(data.modo_escuro);
-      setAudioDescricao(data.audio_descricao);
-      setTamanhoFonte(
-        data.tamanho_fonte <= 24 ? "P" : data.tamanho_fonte >= 40 ? "G" : "M"
-      );
-    }
-    carregar();
+    void recarregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const fundo = modoEscuro ? tema.fundo : "#E9B8FF";
+  const borda = modoEscuro ? tema.borda : "#DFC3F5";
+  const texto = tema.texto;
+  const secundario = tema.textoSecundario;
+
   async function salvarPreferencias() {
-    if (carregando) return;
-    setErro("");
-    setCarregando(true);
+    if (salvando) return;
+    setSalvando(true);
 
-    const { data: usuarioData, error: usuarioError } = await supabase
-      .from("usuario")
-      .select("usuario_id")
-      .maybeSingle();
+    // O hook grava as três preferências de uma vez (tema, fonte e áudio).
+    // Isso também cria a linha de quem nunca mexeu em nada e vai com os padrões.
+    await definirTamanhoFonte(tamanhoFontePx);
 
-    if (usuarioError || !usuarioData) {
-      setCarregando(false);
-      setErro("Não foi possível carregar seu perfil. Entre novamente.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("usuario_acessibilidade_settings")
-      .upsert(
-        {
-          usuario_id: usuarioData.usuario_id,
-          tamanho_fonte: tamanhosPx[tamanhoFonte],
-          modo_escuro: modoEscuro,
-          audio_descricao: audioDescricao,
-        },
-        { onConflict: "usuario_id" }
-      );
-
-    setCarregando(false);
-
-    if (error) {
-      console.log(error.message);
-      setErro("Não foi possível salvar. Tente novamente.");
-      return;
-    }
-
+    setSalvando(false);
     router.replace("/onboarding/bem_vindo");
   }
 
   return (
-    <View style={styles.container}>
-      
-
-        <Text style={styles.tituloPrincipal}>
+    <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.conteudo}
+      >
+        <Text style={[styles.tituloPrincipal, { color: "#303030", fontSize: fonte(32) }]}>
           Preferências
         </Text>
 
-        
-          
-          {/*caixa de acessibilidade*/}
-        <View style={styles.acessibilidadeBox}>
-            <View style={styles.linhaPreferencia}>
-                <Text style={styles.labelPreferencia}>MODO ESCURO</Text>
-                <Switch
-                value={modoEscuro}
-                onValueChange={setModoEscuro}
-                trackColor={{ false: "#d9d9d9", true: "#FFEB9C"}}
-                thumbColor={modoEscuro ? "#303030" : "#303030"}
-                ios_backgroundColor="#303030"></Switch>
-            </View>
-
-         <View style={styles.linhaPreferencia}>
-          <Text style={styles.labelPreferencia}>ÁUDIO DESCRIÇÃO</Text>
-          <Switch
-            value={audioDescricao}
-            onValueChange={setAudioDescricao}
-            trackColor={{ false: "#D9D9D9", true: "#FFEB9C" }}
-            thumbColor={modoEscuro ? "#303030" : "#303030"}
-            ios_backgroundColor="#303030"
-          />
-        </View>
-
-        </View>
-
-        
-
-            {/*caixa da fonte*/}
-        <View style={styles.tamanhoFonteBox}>
-          <Text style={styles.tituloCaixa}>Tamanho da Fonte</Text>
-
-          <View style={styles.opcoesFonte}>
-            <TouchableOpacity style={[styles.botaoFonte, tamanhoFonte === "P" && styles.botaoFonteAtivo,]}
-            onPress={() => setTamanhoFonte("P")}>
-              <Text style={styles.letraFontePequena}>A</Text>
-              <Text style={styles.legendaFonte}>Pequena</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.botaoFonte, tamanhoFonte === "M" && styles.botaoFonteAtivo,]}
-            onPress={() => setTamanhoFonte("M")}>
-              <Text style={styles.letraFonteMedia}>A</Text>
-              <Text style={styles.legendaFonte}>Media</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.botaoFonte, tamanhoFonte === "G" && styles.botaoFonteAtivo,]}
-            onPress={() => setTamanhoFonte("G")}>
-              <Text style={styles.letraFonteGrande}>A</Text>
-              <Text style={styles.legendaFonte}>Grande</Text>
-            </TouchableOpacity>
+        {/* Tema */}
+        <View style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}>
+          <View style={styles.linhaTituloSwitch}>
+            <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>
+              Tema Escuro
+            </Text>
+            <Switch
+              value={modoEscuro}
+              onValueChange={(valor) => void definirModoEscuro(valor)}
+              trackColor={{ false: "#D8D2DC", true: tema.roxoEscuro }}
+              thumbColor="#FFFFFF"
+              accessibilityLabel="Ativar tema escuro"
+            />
           </View>
 
-          
+          <View style={styles.linhaPreviews}>
+            <Pressable
+              style={[
+                styles.preview,
+                {
+                  backgroundColor: "#FFFFFF",
+                  borderColor: !modoEscuro ? tema.roxoEscuro : "#E6E0E9",
+                  borderWidth: !modoEscuro ? 3 : 1,
+                },
+              ]}
+              onPress={() => void definirModoEscuro(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Usar tema claro"
+            >
+              <View style={styles.linhaPreviewTopo}>
+                <Sun size={18} color="#5A4B60" />
+                <Text style={[styles.nomePreview, { color: "#303030" }]}>Claro</Text>
+              </View>
+              <Text style={[styles.tituloPreview, { color: "#303030" }]}>Título</Text>
+              <Text style={styles.subtituloPreview}>Subtítulo</Text>
+              <View style={[styles.botaoPreview, { backgroundColor: tema.roxo }]}>
+                <Text style={styles.textoBotaoPreview}>Botões</Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.preview,
+                {
+                  backgroundColor: "#3A2A42",
+                  borderColor: modoEscuro ? tema.roxo : "#3A2A42",
+                  borderWidth: modoEscuro ? 3 : 1,
+                },
+              ]}
+              onPress={() => void definirModoEscuro(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Usar tema escuro"
+            >
+              <View style={styles.linhaPreviewTopo}>
+                <Moon size={18} color="#F2E8F7" />
+                <Text style={[styles.nomePreview, { color: "#F2E8F7" }]}>Escuro</Text>
+              </View>
+              <Text style={[styles.tituloPreview, { color: "#FFFFFF" }]}>Título</Text>
+              <Text style={[styles.subtituloPreview, { color: "#D9CBE0" }]}>Subtítulo</Text>
+              <View style={[styles.botaoPreview, { backgroundColor: tema.roxo }]}>
+                <Text style={styles.textoBotaoPreview}>Botões</Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Botão Salvar*/}
-        {erro ? <Text style={{ color: "#C04B4B", fontFamily: "Poppins_600SemiBold", marginTop: 20 }}>{erro}</Text> : null}
+        {/* Fonte */}
+        <View style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}>
+          <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>Fonte</Text>
 
-        <TouchableOpacity
-          style={[styles.botaoSalvar, carregando && { opacity: 0.6 }]}
-          onPress={salvarPreferencias}
-          disabled={carregando}
+          <View style={styles.linhaTamanhos}>
+            {TAMANHOS.map((tamanho) => {
+              const ativo = tamanhoFontePx === tamanho.px;
+              return (
+                <Pressable
+                  key={tamanho.px}
+                  style={[
+                    styles.botaoTamanho,
+                    {
+                      backgroundColor: ativo ? tema.roxo : modoEscuro ? "#3D2A46" : "#F3ECF8",
+                      borderColor: ativo ? tema.roxoEscuro : "transparent",
+                    },
+                  ]}
+                  onPress={() => void definirTamanhoFonte(tamanho.px)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ativo }}
+                  accessibilityLabel={`Tamanho ${tamanho.rotulo}, ${tamanho.px} pixels`}
+                >
+                  <Text
+                    style={[
+                      styles.letraTamanho,
+                      { color: ativo ? "#2C1038" : texto, fontSize: tamanho.letra },
+                    ]}
+                  >
+                    A
+                  </Text>
+                  <Text
+                    style={[
+                      styles.rotuloTamanho,
+                      { color: ativo ? "#2C1038" : secundario, fontSize: fonte(11) },
+                    ]}
+                  >
+                    {tamanho.rotulo}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={[styles.linhaPx, { borderTopColor: tema.borda }]}>
+            <Text style={[styles.rotuloPx, { color: texto, fontSize: fonte(16) }]}>
+              Tamanho atual
+            </Text>
+            <View style={[styles.seloPx, { backgroundColor: tema.roxo }]}>
+              <Text style={[styles.textoPx, { fontSize: fonte(14) }]}>
+                {tamanhoFontePx} px
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Áudio-descrição */}
+        <View style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}>
+          <View style={styles.linhaTituloSwitch}>
+            <View style={styles.textoAudio}>
+              <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>
+                Áudio descrição
+              </Text>
+              <Text style={[styles.ajudaAudio, { color: secundario, fontSize: fonte(13) }]}>
+                O app lê as perguntas e os resultados em voz alta
+              </Text>
+            </View>
+            <Switch
+              value={audioDescricao}
+              onValueChange={(valor) => void definirAudioDescricao(valor)}
+              trackColor={{ false: "#D8D2DC", true: tema.roxoEscuro }}
+              thumbColor="#FFFFFF"
+              accessibilityLabel="Ativar áudio descrição"
+            />
+          </View>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.botaoReset,
+            { backgroundColor: tema.roxo, opacity: pressed ? 0.82 : 1 },
+          ]}
+          onPress={() => void restaurarPadrao()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar ao padrão"
         >
-          <Text style={styles.textoSalvar}>{carregando ? "Salvando..." : "Salvar"}</Text>
-        </TouchableOpacity>
-          
-         <PageFlow
-          total={4}
-          currentIndex={2}></PageFlow>
-        
-        </View>
+          <RotateCcw size={22} color="#303030" strokeWidth={2.3} />
+          <Text style={[styles.textoReset, { fontSize: fonte(18) }]}>
+            Voltar ao Padrão
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.botaoSalvar,
+            { opacity: salvando ? 0.6 : pressed ? 0.85 : 1 },
+          ]}
+          onPress={salvarPreferencias}
+          disabled={salvando}
+          accessibilityRole="button"
+          accessibilityLabel="Salvar preferências"
+        >
+          <Text style={[styles.textoSalvar, { fontSize: fonte(26) }]}>
+            {salvando ? "Salvando..." : "Salvar"}
+          </Text>
+        </Pressable>
+
+        <PageFlow total={4} currentIndex={2} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  tela: {
     flex: 1,
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    paddingTop: 100,
-    backgroundColor: "#E9B8FF",
   },
-
- 
-
+  conteudo: {
+    paddingHorizontal: 18,
+    paddingTop: 40,
+    paddingBottom: 40,
+  },
   tituloPrincipal: {
-    fontSize: 35, 
-    color: "#303030", 
     fontFamily: "Poppins_800ExtraBold",
+    textAlign: "center",
+    marginBottom: 6,
   },
-
- 
-
-   acessibilidadeBox: {
-    justifyContent: "space-between",
-    marginTop: 30,
-    width: "90%",
-    backgroundColor: "white",
+  cartao: {
+    marginTop: 12,
+    borderRadius: 28,
+    borderWidth: 3,
     padding: 20,
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-    borderRadius: 20,
   },
-
-  linhaPreferencia: {
+  linhaTituloSwitch: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  titulo: {
+    fontFamily: "Poppins_800ExtraBold",
+    flexShrink: 1,
+  },
+  textoAudio: {
+    flex: 1,
+  },
+  ajudaAudio: {
+    fontFamily: "Poppins_300Light",
+    marginTop: 2,
+  },
+  linhaPreviews: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  preview: {
+    flex: 1,
+    minHeight: 150,
+    borderRadius: 18,
+    padding: 12,
+  },
+  linhaPreviewTopo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  nomePreview: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+  },
+  tituloPreview: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 17,
+    marginTop: 12,
+  },
+  subtituloPreview: {
+    fontFamily: "Poppins_300Light",
+    fontSize: 12,
+    color: "#7A6E80",
+    marginTop: 2,
+  },
+  botaoPreview: {
+    marginTop: 12,
+    borderRadius: 12,
+    minHeight: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  textoBotaoPreview: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 11,
+    color: "#303030",
+  },
+  linhaTamanhos: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  botaoTamanho: {
+    flex: 1,
+    minHeight: 82,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 8,
   },
-
-  labelPreferencia: {
-    color: "#303030",
-    fontFamily:"Poppins_600SemiBold",
-    fontSize: 18,
-  },
-
-  tamanhoFonteBox: {
-    width: "90%",
-    justifyContent: "space-between",
-    marginTop: 20,
-    backgroundColor: "white",
-    padding: 20,
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-    borderRadius: 20,
-  },
-
-  tituloCaixa: {
-    textAlign: "center",
-    color: "#303030",
+  letraTamanho: {
     fontFamily: "Poppins_800ExtraBold",
-    fontSize: 20,
-    marginBottom: 14,
   },
-
-  opcoesFonte: {
+  rotuloTamanho: {
+    fontFamily: "Poppins_600SemiBold",
+    marginTop: 2,
+  },
+  linhaPx: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-    
-  },
-
-  botaoFonte: {
-    flex: 1,
-    marginHorizontal: 4,
-    backgroundColor: "#fafafa",
-    borderRadius: 14,
-    paddingVertical: 10,
     alignItems: "center",
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    marginTop: 16,
+    paddingTop: 14,
   },
-
-  botaoFonteAtivo: {
-    backgroundColor: "#FFEB9C",
-    
+  rotuloPx: {
+    fontFamily: "Poppins_600SemiBold",
   },
-
-  letraFontePequena: {
-    fontSize: 24,
+  seloPx: {
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  textoPx: {
+    fontFamily: "Poppins_800ExtraBold",
+    color: "#2C1038",
+  },
+  botaoReset: {
+    marginTop: 18,
+    minHeight: 56,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+  },
+  textoReset: {
+    fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
-    fontFamily:"Poppins_600SemiBold",
+    flexShrink: 1,
+    textAlign: "center",
   },
-
-  letraFonteMedia: {
-    fontSize: 30,
-    color: "#303030",
-    fontFamily:"Poppins_600SemiBold",
+  erro: {
+    color: "#C04B4B",
+    fontFamily: "Poppins_600SemiBold",
+    textAlign: "center",
+    marginTop: 16,
   },
-
-  letraFonteGrande: {
-    fontSize: 40,
-    color: "#303030",
-    fontFamily:"Poppins_600SemiBold",
-  },
-
-  legendaFonte: {
-    fontSize: 14,
-    fontFamily:"Poppins_600SemiBold",
-    color: "#303030",
-    marginTop: 4,
-  },
-
-
   botaoSalvar: {
     backgroundColor: "#FFD651",
-    marginTop: 50,
-    width: 300,
+    marginTop: 24,
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 320,
     borderRadius: 18,
     paddingVertical: 18,
     shadowColor: "#000",
@@ -308,14 +405,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     marginBottom: 20,
-    
   },
-
   textoSalvar: {
-     textAlign: "center",
-    fontSize: 30,
+    textAlign: "center",
     fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
-
   },
 });
