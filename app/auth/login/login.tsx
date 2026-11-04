@@ -153,11 +153,14 @@ export default function LoginScreen() {
 
 
       <View style={styles.links}>
+        <TouchableOpacity onPress={() => router.push("/auth/esqueci_senha" as any)}>
+          <Text style={styles.linkEscuro}>Esqueceu a senha?</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("../cadastro")}>
           <Text style={styles.linkEscuro}>Criar conta?</Text>
         </TouchableOpacity>
-      </View>
+</View>
 
       {/*BOTÃO LOGIN*/}
 
