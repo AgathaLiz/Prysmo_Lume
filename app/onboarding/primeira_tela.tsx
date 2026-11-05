@@ -1,9 +1,22 @@
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useEscalaOnboarding } from "@/lib/onboarding";
 
 export default function OnboardingIntroducaoUm() {
+  const { fonte, espaco, quadrado } = useEscalaOnboarding();
+  const ladoBotao = quadrado(120);
+
   return (
     <View style={styles.container}>
       <View style={styles.imagemContainer}>
@@ -13,20 +26,57 @@ export default function OnboardingIntroducaoUm() {
           resizeMode="cover"
         />
       </View>
-      <Text style={styles.titulo}>Te inclui</Text>
 
-      <Text style={styles.subtitulo}>
-        Com tudo que você precisa para{"\n"}
-        ser independente e presente{"\n"}
-        digitalmente
-      </Text>
+      <SafeAreaView style={styles.area} edges={["top", "bottom"]}>
+        <ScrollView
+          style={styles.rolagem}
+          contentContainerStyle={[
+            styles.conteudo,
+            { paddingTop: espaco(70), paddingBottom: espaco(40) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.coluna}>
+            <Text style={[styles.titulo, { fontSize: fonte(35) }]}>
+              Te inclui
+            </Text>
 
-      <TouchableOpacity
-        style={styles.botaoProximo}
-        onPress={() => router.push("../onboarding/segunda_tela")}
-      >
-        <ChevronRight size={50} color="#D987FF" />
-      </TouchableOpacity>
+            <Text
+              style={[
+                styles.subtitulo,
+                { fontSize: fonte(18), lineHeight: fonte(21) },
+              ]}
+            >
+              Com tudo que você precisa para{"\n"}
+              ser independente e presente{"\n"}
+              digitalmente
+            </Text>
+
+            {/* Empurra o botão para o rodapé em telas altas e encolhe em
+                telas baixas (antes era um marginTop fixo de 450px). */}
+            <View style={styles.espacador} />
+
+            <TouchableOpacity
+              style={[
+                styles.botaoProximo,
+                {
+                  width: ladoBotao,
+                  height: ladoBotao,
+                  borderRadius: ladoBotao / 2,
+                },
+              ]}
+              onPress={() => router.push("../onboarding/segunda_tela")}
+              accessibilityRole="button"
+              accessibilityLabel="Próxima tela"
+            >
+              <ChevronRight
+                size={Math.round(ladoBotao * 0.42)}
+                color="#D987FF"
+              />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -35,10 +85,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#891CC0",
-    alignItems: "center",
-    paddingTop: 70,
-    paddingHorizontal: 25,
-    paddingBottom: 40,
   },
 
   imagemContainer: {
@@ -47,8 +93,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    overflow: "hidden", 
-},
+    overflow: "hidden",
+  },
 
   imagemFundo: {
     width: "100%",
@@ -56,8 +102,28 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.5 }],
   },
 
+  area: {
+    flex: 1,
+  },
+
+  rolagem: {
+    flex: 1,
+  },
+
+  conteudo: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingHorizontal: 25,
+  },
+
+  coluna: {
+    width: "100%",
+    maxWidth: 520,
+    flexGrow: 1,
+    alignItems: "center",
+  },
+
   titulo: {
-    fontSize: 35,
     fontFamily: "Poppins_800ExtraBold",
     color: "#2E1A47",
     textAlign: "center",
@@ -65,21 +131,20 @@ const styles = StyleSheet.create({
 
   subtitulo: {
     marginTop: 10,
-    fontSize: 18,
-    fontFamily:"Poppins_600SemiBold",
+    fontFamily: "Poppins_600SemiBold",
     color: "#3A2A50",
     textAlign: "center",
-    lineHeight: 20,
+  },
+
+  espacador: {
+    flex: 1,
+    minHeight: 24,
   },
 
   botaoProximo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
     backgroundColor: "#32064F",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 450,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

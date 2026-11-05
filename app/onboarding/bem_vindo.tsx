@@ -1,16 +1,9 @@
 import { router } from "expo-router";
-import { Image as ImageIcon } from "lucide-react-native";
 import React, { useEffect } from "react";
-import { supabase } from "../../lib/supabase";
-import {
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { PageFlow } from "../../components/PageFlow";
+import { useEscalaOnboarding } from "@/lib/onboarding";
 
 
 
@@ -21,7 +14,12 @@ export default function BemVindoScreen() {
   }, 2500);
   return () => clearTimeout(timer);
 }, []);
-  
+
+  const { altura, largura, fonte, espaco } = useEscalaOnboarding();
+
+  // A Mimi agora acompanha a menor dimensão da tela.
+  const larguraMimi = Math.round(Math.min(largura * 0.64, altura * 0.36, 250));
+
   return (
     <View style={styles.container}>
       <View style={styles.imagemContainer}>
@@ -31,17 +29,41 @@ export default function BemVindoScreen() {
                     resizeMode="cover"
                   />
               </View>
-      
-      <View style={styles.desenhoBox}>
-        <Image
-          source={require("../../assets/Lume/Mimi/Png/mimi-voando.png")}
-          style={styles.logo}
-          />
-      </View>
 
-      <Text style={styles.titulo}>Bem Vindo (a)</Text>
+      <SafeAreaView style={styles.area} edges={["top", "bottom"]}>
+        <ScrollView
+          style={styles.rolagem}
+          contentContainerStyle={[
+            styles.conteudo,
+            {
+              paddingTop: espaco(72),
+              paddingBottom: espaco(80),
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.desenhoBox}>
+            <Image
+              source={require("../../assets/Lume/Mimi/Png/mimi-voando.png")}
+              style={[
+                styles.logo,
+                { width: larguraMimi, height: Math.round(larguraMimi * 1.2) },
+              ]}
+            />
+          </View>
 
-      <PageFlow total={4} currentIndex={3} />
+          <Text
+            style={[
+              styles.titulo,
+              { fontSize: fonte(35), marginTop: espaco(105) },
+            ]}
+          >
+            Bem Vindo (a)
+          </Text>
+        </ScrollView>
+
+        <PageFlow total={4} currentIndex={3} />
+      </SafeAreaView>
     </View>
   );
 }
@@ -50,9 +72,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    paddingTop: 100,
-    paddingBottom: 60,
   },
 
   imagemContainer: {
@@ -61,7 +80,7 @@ const styles = StyleSheet.create({
       left: 0,
       right: 0,
       bottom: 0,
-      overflow: "hidden", 
+      overflow: "hidden",
   },
 
     imagemFundo: {
@@ -73,15 +92,24 @@ const styles = StyleSheet.create({
       ],
   },
 
+  area: {
+    flex: 1,
+  },
+
+  rolagem: {
+    flex: 1,
+  },
+
+  conteudo: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingHorizontal: 25,
+  },
+
   logo: {
-    width: 250,
-    height: 300,
     resizeMode: "contain",
     overflow: "hidden",
-    transform: [
-    { rotate: "340deg" },
-  
-  ],
+    transform: [{ rotate: "340deg" }],
   },
 
   desenhoBox: {
@@ -89,11 +117,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
- 
+
   titulo: {
-    fontSize: 35,
     fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
-    marginTop: 105,
+    textAlign: "center",
   },
 });

@@ -1,10 +1,28 @@
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
-import Svg, { Circle } from "react-native-svg";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle } from "react-native-svg";
+
+import { useEscalaOnboarding } from "@/lib/onboarding";
 
 export default function OnboardingIntroducaoDois() {
+  const { fonte, espaco, quadrado } = useEscalaOnboarding();
+
+  const anel = quadrado(140);
+  const centro = anel / 2;
+  const raio = Math.round(58 * (anel / 140));
+  const ladoBotao = quadrado(100);
+  const proporcao = anel / 140;
+
   return (
     <View style={styles.container}>
       <View style={styles.imagemContainer}>
@@ -14,41 +32,79 @@ export default function OnboardingIntroducaoDois() {
           resizeMode="cover"
         />
       </View>
-      <Text style={styles.titulo}>Como um jogo</Text>
 
-      <Text style={styles.subtitulo}>
-        Aprenda de forma interativa{"\n"}
-        divertida e coesa, e multiplique{"\n"}
-        seus resultados!
-      </Text>
-
-      <View style={styles.voltaBotao}>
-        <Svg 
-          width={140}
-          height={140}
-          style={styles.progresso}>
-
-          <Circle
-            cx={70}
-            cy={70}
-            r={58}
-            stroke="#604001"
-            strokeWidth={6}
-            fill="none"
-            strokeDasharray="180, 402"
-            strokeLinecap="round"
-            rotation={90}
-            origin="70, 70"></Circle>
-        </Svg>
-
-        <TouchableOpacity
-          style={styles.botaoProximo}
-          onPress={() => router.push("../onboarding/terceira_tela")}
+      <SafeAreaView style={styles.area} edges={["top", "bottom"]}>
+        <ScrollView
+          style={styles.rolagem}
+          contentContainerStyle={[
+            styles.conteudo,
+            { paddingTop: espaco(70), paddingBottom: espaco(40) },
+          ]}
+          showsVerticalScrollIndicator={false}
         >
-          <ChevronRight size={50} color="#FFC629" />
-        </TouchableOpacity>
-      </View>
+          <View style={styles.coluna}>
+            <View style={styles.espacador} />
 
+            <Text style={[styles.titulo, { fontSize: fonte(35) }]}>
+              Como um jogo
+            </Text>
+
+            <Text
+              style={[
+                styles.subtitulo,
+                { fontSize: fonte(18), lineHeight: fonte(21) },
+              ]}
+            >
+              Aprenda de forma interativa{"\n"}
+              divertida e coesa, e multiplique{"\n"}
+              seus resultados!
+            </Text>
+
+            <View
+              style={[
+                styles.voltaBotao,
+                { width: anel, height: anel, marginTop: espaco(24) },
+              ]}
+            >
+              <Svg width={anel} height={anel} style={styles.progresso}>
+                <Circle
+                  cx={centro}
+                  cy={centro}
+                  r={raio}
+                  stroke="#604001"
+                  strokeWidth={6}
+                  fill="none"
+                  strokeDasharray={`${Math.round(180 * proporcao)}, ${Math.round(
+                    402 * proporcao
+                  )}`}
+                  strokeLinecap="round"
+                  rotation={90}
+                  origin={`${centro}, ${centro}`}
+                />
+              </Svg>
+
+              <TouchableOpacity
+                style={[
+                  styles.botaoProximo,
+                  {
+                    width: ladoBotao,
+                    height: ladoBotao,
+                    borderRadius: ladoBotao / 2,
+                  },
+                ]}
+                onPress={() => router.push("../onboarding/terceira_tela")}
+                accessibilityRole="button"
+                accessibilityLabel="Próxima tela"
+              >
+                <ChevronRight
+                  size={Math.round(ladoBotao * 0.5)}
+                  color="#FFC629"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -57,10 +113,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#891CC0",
-    alignItems: "center",
-    paddingTop: 70,
-    paddingHorizontal: 25,
-    paddingBottom: 40,
   },
 
   imagemContainer: {
@@ -69,7 +121,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    overflow: "hidden", 
+    overflow: "hidden",
   },
 
   imagemFundo: {
@@ -78,30 +130,49 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.2 }],
   },
 
+  area: {
+    flex: 1,
+  },
+
+  rolagem: {
+    flex: 1,
+  },
+
+  conteudo: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingHorizontal: 25,
+  },
+
+  coluna: {
+    width: "100%",
+    maxWidth: 520,
+    flexGrow: 1,
+    alignItems: "center",
+  },
+
+  espacador: {
+    flex: 1,
+    minHeight: 24,
+  },
+
   titulo: {
-    fontSize: 35,
     fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
     textAlign: "center",
-    marginTop:450,
   },
 
   subtitulo: {
     marginTop: 5,
     marginBottom: 5,
-    fontSize: 18,
-    fontFamily:"Poppins_600SemiBold",
+    fontFamily: "Poppins_600SemiBold",
     color: "#303030",
     textAlign: "center",
-    lineHeight: 20,
   },
 
   voltaBotao: {
-    width: 100,
-    height: 100,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 35,
   },
 
   progresso: {
@@ -109,13 +180,9 @@ const styles = StyleSheet.create({
   },
 
   botaoProximo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
     backgroundColor: "#604001",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: "auto",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
