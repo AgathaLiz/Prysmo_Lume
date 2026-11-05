@@ -2,12 +2,15 @@ import { useFocusEffect, useRouter } from "expo-router";
 import {
   Accessibility,
   ChevronRight,
+  Coins,
   HelpCircle,
   LogOut,
   Palette,
   Settings,
   UserRound,
-} from "lucide-react-native";import React, { useCallback, useState } from "react";
+  Zap,
+} from "lucide-react-native";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   Platform,
@@ -47,6 +50,8 @@ export default function TelaUsuario() {
   const texto = tema.texto;
   const secundario = tema.textoSecundario;
   const nome = dados?.nome || "Sua conta";
+  const xp = dados?.xp ?? 0;
+  const corCirculo = modoEscuro ? "#4A3A52" : "#FFE58C";
 
   const sair = useCallback(async () => {
     await supabase.auth.signOut();
@@ -132,21 +137,51 @@ export default function TelaUsuario() {
         >
           <ItemEstatistica
             rotulo="Moedas"
-            corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
+            corFundo={corCirculo}
             corRotulo={secundario}
-          />
+            descricao="Moedas"
+          >
+            <Coins
+              size={36}
+              color={modoEscuro ? "#FFD651" : "#7A4A00"}
+              strokeWidth={2.2}
+            />
+          </ItemEstatistica>
+
           <ItemEstatistica
             rotulo="Exp."
-            corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
+            corFundo={corCirculo}
             corRotulo={secundario}
+            descricao={`Experiência: ${xp} XP`}
             divisoria
-          />
+          >
+            <Text
+              style={[
+                styles.valorXp,
+                { color: modoEscuro ? "#FFFFFF" : "#3B2600", fontSize: fonte(24) },
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.5}
+            >
+              {xp}
+            </Text>
+          </ItemEstatistica>
+
           <ItemEstatistica
             rotulo="Energia"
-            corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
+            corFundo={corCirculo}
             corRotulo={secundario}
+            descricao="Energia"
             divisoria
-          />
+          >
+            <Zap
+              size={36}
+              color={modoEscuro ? "#E2B8FF" : "#4A1260"}
+              fill={modoEscuro ? "#C77DFF" : "#C77DFF"}
+              strokeWidth={2.2}
+            />
+          </ItemEstatistica>
         </View>
 
         <View
@@ -199,23 +234,29 @@ function ItemEstatistica({
   rotulo,
   corFundo,
   corRotulo,
+  descricao,
+  children,
   divisoria = false,
 }: {
   rotulo: string;
   corFundo: string;
   corRotulo: string;
+  descricao: string;
+  children?: React.ReactNode;
   divisoria?: boolean;
 }) {
   const { fonte } = useAcessibilidade();
   return (
-    <View style={styles.itemEstatistica}>
+    <View style={styles.itemEstatistica} accessible accessibilityLabel={descricao}>
       {divisoria ? (
         <View style={[styles.divisoriaVertical, { backgroundColor: "#E5E5E5" }]} />
       ) : null}
       <Text style={[styles.rotuloEstatistica, { color: corRotulo, fontSize: fonte(14) }]}>
         {rotulo}
       </Text>
-      <View style={[styles.circuloEstatistica, { backgroundColor: corFundo }]} />
+      <View style={[styles.circuloEstatistica, { backgroundColor: corFundo }]}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -336,6 +377,13 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  valorXp: {
+    width: "80%",
+    textAlign: "center",
+    fontFamily: "Poppins_900Black",
   },
   cartaoMenu: {
     marginTop: 16,

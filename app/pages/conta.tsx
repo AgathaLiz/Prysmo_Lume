@@ -12,6 +12,7 @@ import {
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,7 +24,14 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { BotaoApagarConta } from "@/components/BotaoApagarConta";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { FundoAmarelo } from "@/components/FundoAmarelo";
+import { ModalEditarConta, type CampoEdicao } from "@/components/ModalEditarConta";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import {
+  atualizarEmail,
+  atualizarNome,
+  atualizarSenha,
+  atualizarTelefone,
+} from "@/lib/conta";
 import {
   carregarPainel,
   formatarDataCurta,
@@ -35,6 +43,7 @@ export default function TelaConta() {
   const insets = useSafeAreaInsets();
   const { tema, modoEscuro, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [editando, setEditando] = useState<CampoEdicao | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -55,12 +64,58 @@ export default function TelaConta() {
   const nome = dados?.nome || "Sua conta";
   const status = dados?.provedor === "Google" ? "Conexão c. Google" : dados?.provedor || "E-mail e senha";
 
+  // Alert.alert não funciona no navegador (web), então usamos window.alert lá.
+  const avisar = (titulo: string, mensagem: string) => {
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined") window.alert(`${titulo}\n\n${mensagem}`);
+      return;
+    }
+    Alert.alert(titulo, mensagem);
+  };
+
   const avisarEdicao = (campo: string) => {
-    Alert.alert(
+    avisar(
       "Editar " + campo,
       "A edição desse dado estará disponível em breve. Fale com o suporte se precisar alterar agora."
     );
   };
+
+  const abrirEdicao = (campo: CampoEdicao) => {
+    if (dados?.provedor === "Google" && (campo === "email" || campo === "senha")) {
+      avisar("Conta Google", "O e-mail e a senha dessa conta são gerenciados pelo Google.");
+      return;
+    }
+    setEditando(campo);
+  };
+
+  const salvarEdicao = async (
+    campo: CampoEdicao,
+    v: Record<string, string>
+  ): Promise<string | null> => {
+    const resultado =
+      campo === "nome"
+        ? await atualizarNome(v.valor ?? "")
+        : campo === "telefone"
+        ? await atualizarTelefone(v.valor ?? "")
+        : campo === "email"
+        ? await atualizarEmail(v.valor ?? "")
+        : await atualizarSenha(v.atual ?? "", v.nova ?? "", v.confirmacao ?? "");
+
+    if (!resultado.ok) return resultado.erro;
+
+    setDados(await carregarPainel());
+    if (resultado.mensagem) avisar("Pronto", resultado.mensagem);
+    return null;
+  };
+
+  const valorAtualEdicao =
+    editando === "nome"
+      ? dados?.nome ?? ""
+      : editando === "telefone"
+      ? dados?.telefone ?? ""
+      : editando === "email"
+      ? dados?.email ?? ""
+      : "";
 
   return (
     <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
@@ -113,31 +168,30 @@ export default function TelaConta() {
             icone={<Mail size={21} color={texto} />}
             rotulo="E-mail"
             valor={dados?.email || "Não informado"}
-            onEdit={() => avisarEdicao("e-mail")}
+            onEdit={() => abrirEdicao("email")}
           />
           <Campo
             icone={<UserRound size={21} color={texto} />}
             rotulo="Nome completo"
             valor={dados?.nome || "Não informado"}
-            onEdit={() => avisarEdicao("nome")}
+            onEdit={() => abrirEdicao("nome")}
           />
           <Campo
             icone={<Phone size={21} color={texto} />}
             rotulo="Telefone"
             valor={dados?.telefone || "Não informado"}
-            onEdit={() => avisarEdicao("telefone")}
+            onEdit={() => abrirEdicao("telefone")}
           />
           <Campo
             icone={<KeyRound size={21} color={texto} />}
             rotulo="Senha"
             valor="••••••••"
-            onEdit={() => avisarEdicao("senha")}
+            onEdit={() => abrirEdicao("senha")}
           />
           <Campo
             icone={<Cake size={21} color={texto} />}
             rotulo="Data de nascimento"
             valor={formatarDataNascimento(dados?.nascimento ?? null) || "Não informado"}
-            onEdit={() => avisarEdicao("data de nascimento")}
             ultimo
           />
         </View>
@@ -163,6 +217,13 @@ export default function TelaConta() {
 
         <BotaoApagarConta />
       </ScrollView>
+
+      <ModalEditarConta
+        campo={editando}
+        valorAtual={valorAtualEdicao}
+        aoFechar={() => setEditando(null)}
+        aoSalvar={salvarEdicao}
+      />
     </SafeAreaView>
   );
 }
@@ -177,7 +238,7 @@ function Campo({
   icone: React.ReactNode;
   rotulo: string;
   valor: string;
-  onEdit: () => void;
+  onEdit?: () => void;
   ultimo?: boolean;
 }) {
   const { tema, fonte } = useAcessibilidade();
@@ -200,15 +261,19 @@ function Campo({
           {valor}
         </Text>
       </View>
-      <Pressable
-        hitSlop={10}
-        onPress={onEdit}
-        accessibilityRole="button"
-        accessibilityLabel={`Editar ${rotulo}`}
-        style={styles.botaoLapis}
-      >
-        <Pencil size={19} color={tema.textoSecundario} />
-      </Pressable>
+      {onEdit ? (
+        <Pressable
+          hitSlop={10}
+          onPress={onEdit}
+          accessibilityRole="button"
+          accessibilityLabel={`Editar ${rotulo}`}
+          style={styles.botaoLapis}
+        >
+          <Pencil size={19} color={tema.textoSecundario} />
+        </Pressable>
+      ) : (
+        <View style={styles.botaoLapis} />
+      )}
     </View>
   );
 }

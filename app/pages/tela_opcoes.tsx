@@ -158,6 +158,65 @@ export default function TelaOpcoes() {
           />
         </View>
 
+        <View
+          style={[
+            styles.cartaoCalendario,
+            { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#7A4A00" },
+          ]}
+        >
+          <View style={styles.cabecalhoCalendario}>
+            <Text style={[styles.nomeMes, { color: texto, fontSize: fonte(24) }]}>
+              {MESES[mes]}
+            </Text>
+            <Text style={[styles.ano, { color: secundario, fontSize: fonte(16) }]}>
+              {ano}
+            </Text>
+          </View>
+
+          <View style={[styles.linhaDivisoria, { backgroundColor: texto }]} />
+
+          <View style={styles.gradeCalendario}>
+            {celulas.map((dia, indice) => {
+              if (dia === null) {
+                return <View key={`vazio-${indice}`} style={styles.celula} />;
+              }
+
+              const chave = chaveData(ano, mes, dia);
+              const ativo = diasAtivos.has(chave);
+
+              return (
+                <View key={chave} style={styles.celula}>
+                  {ativo ? (
+                    <LinearGradient
+                      colors={["#C77DFF", "#F3A6B8", "#FFD36E"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.diaCalendario, styles.diaAtivo]}
+                    >
+                      <Text style={[styles.numeroDiaAtivo, { fontSize: fonte(12) }]}>
+                        {String(dia).padStart(2, "0")}
+                      </Text>
+                    </LinearGradient>
+                  ) : (
+                    <View
+                      style={[
+                        styles.diaCalendario,
+                        {
+                          backgroundColor: modoEscuro ? "#3D2A46" : "#E8E4EA",
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.numeroDia, { color: texto, fontSize: fonte(12) }]}>
+                        {String(dia).padStart(2, "0")}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
         {conquistas.length > 0 && (
           <View
             style={[
@@ -249,65 +308,6 @@ export default function TelaOpcoes() {
             })}
           </View>
         )}
-
-        <View
-          style={[
-            styles.cartaoCalendario,
-            { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#7A4A00" },
-          ]}
-        >
-          <View style={styles.cabecalhoCalendario}>
-            <Text style={[styles.nomeMes, { color: texto, fontSize: fonte(24) }]}>
-              {MESES[mes]}
-            </Text>
-            <Text style={[styles.ano, { color: secundario, fontSize: fonte(16) }]}>
-              {ano}
-            </Text>
-          </View>
-
-          <View style={[styles.linhaDivisoria, { backgroundColor: texto }]} />
-
-          <View style={styles.gradeCalendario}>
-            {celulas.map((dia, indice) => {
-              if (dia === null) {
-                return <View key={`vazio-${indice}`} style={styles.celula} />;
-              }
-
-              const chave = chaveData(ano, mes, dia);
-              const ativo = diasAtivos.has(chave);
-
-              return (
-                <View key={chave} style={styles.celula}>
-                  {ativo ? (
-                    <LinearGradient
-                      colors={["#C77DFF", "#F3A6B8", "#FFD36E"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[styles.diaCalendario, styles.diaAtivo]}
-                    >
-                      <Text style={[styles.numeroDiaAtivo, { fontSize: fonte(12) }]}>
-                        {String(dia).padStart(2, "0")}
-                      </Text>
-                    </LinearGradient>
-                  ) : (
-                    <View
-                      style={[
-                        styles.diaCalendario,
-                        {
-                          backgroundColor: modoEscuro ? "#3D2A46" : "#E8E4EA",
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.numeroDia, { color: texto, fontSize: fonte(12) }]}>
-                        {String(dia).padStart(2, "0")}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
