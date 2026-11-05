@@ -4,6 +4,7 @@ import { ChevronLeft, Eye, EyeOff } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -87,7 +88,12 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-            
+      <ScrollView
+        style={styles.rolagem}
+        contentContainerStyle={styles.conteudo}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
       
       {/* Botão para voltar */}
         <TouchableOpacity
@@ -172,10 +178,9 @@ export default function LoginScreen() {
         <Text style={styles.botaoTexto}>{carregando ? "Entrando..." : "Entrar"}</Text>
       </TouchableOpacity>
 
-    
-      
-        <PageFlow total={4} currentIndex={1} />
-      
+      </ScrollView>
+
+      <PageFlow total={4} currentIndex={1} />
     </View>
   );
 }
@@ -183,10 +188,18 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#E9B8FF",
+  },
+
+  rolagem: {
+    flex: 1,
+  },
+
+  conteudo: {
+    flexGrow: 1,
     paddingHorizontal: 25,
     justifyContent: "center",
-    paddingBottom: 80,
-    backgroundColor: "#E9B8FF",
+    paddingBottom: 100,
   },
 
   
@@ -200,6 +213,7 @@ const styles = StyleSheet.create({
 
   textoContainer: {
     flex: 1,
+    minWidth: 0,
     paddingRight: 10,
     marginLeft: 20,
 },
@@ -231,6 +245,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     marginBottom: 15,
+    maxWidth: "100%",
+    overflow: "hidden",
     shadowColor: "black",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
@@ -240,6 +256,7 @@ const styles = StyleSheet.create({
 
   input: {
     flex: 1,
+    minWidth: 0,
     paddingVertical: 16,
     color: "#303030",
     fontSize: 20,
@@ -252,6 +269,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
+    maxWidth: "100%",
+    overflow: "hidden",
     shadowColor: "black",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
@@ -261,6 +280,7 @@ const styles = StyleSheet.create({
 
   senhaInput: {
     flex: 1,
+    minWidth: 0,
     paddingVertical: 16,
     color: "#303030",
     fontSize: 20,
