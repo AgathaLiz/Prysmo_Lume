@@ -2,12 +2,16 @@ import { useFocusEffect, useRouter } from "expo-router";
 import {
   Accessibility,
   ChevronRight,
+  Coins,
   HelpCircle,
   LogOut,
   Palette,
   Settings,
+  Sparkles,
   UserRound,
-} from "lucide-react-native";import React, { useCallback, useState } from "react";
+  Zap,
+} from "lucide-react-native";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   Platform,
@@ -134,17 +138,22 @@ export default function TelaUsuario() {
             rotulo="Moedas"
             corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
             corRotulo={secundario}
+            icone={<Coins size={34} color={tema.roxoEscuro} />}
           />
           <ItemEstatistica
             rotulo="Exp."
             corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
             corRotulo={secundario}
+            icone={<Sparkles size={28} color={tema.roxoEscuro} />}
+            valor={dados?.xp ?? 0}
+            corValor={modoEscuro ? "#F4EDF8" : "#32064F"}
             divisoria
           />
           <ItemEstatistica
             rotulo="Energia"
             corFundo={modoEscuro ? "#4A3A52" : "#FFE58C"}
             corRotulo={secundario}
+            icone={<Zap size={34} color={tema.roxoEscuro} />}
             divisoria
           />
         </View>
@@ -199,11 +208,17 @@ function ItemEstatistica({
   rotulo,
   corFundo,
   corRotulo,
+  icone,
+  valor,
+  corValor,
   divisoria = false,
 }: {
   rotulo: string;
   corFundo: string;
   corRotulo: string;
+  icone: React.ReactNode;
+  valor?: number;
+  corValor?: string;
   divisoria?: boolean;
 }) {
   const { fonte } = useAcessibilidade();
@@ -215,7 +230,20 @@ function ItemEstatistica({
       <Text style={[styles.rotuloEstatistica, { color: corRotulo, fontSize: fonte(14) }]}>
         {rotulo}
       </Text>
-      <View style={[styles.circuloEstatistica, { backgroundColor: corFundo }]} />
+      <View style={[styles.circuloEstatistica, { backgroundColor: corFundo }]}>
+        {icone}
+        {valor !== undefined ? (
+          <Text
+            style={[
+              styles.valorCirculo,
+              { color: corValor ?? corRotulo, fontSize: fonte(16) },
+            ]}
+            numberOfLines={1}
+          >
+            {valor}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -336,6 +364,12 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  valorCirculo: {
+    fontFamily: "Poppins_800ExtraBold",
   },
   cartaoMenu: {
     marginTop: 16,

@@ -27,6 +27,11 @@ type Props = {
   pose?: keyof typeof IMAGENS;
   /** Deixa o balão em amarelo, como um destaque. */
   destaque?: boolean;
+  /**
+   * Versão enxuta: cabe no rodapé (simulação) ou no topo das perguntas
+   * sem empurrar o conteúdo para fora da tela. O texto continua acessível.
+   */
+  pequeno?: boolean;
   estilo?: StyleProp<ViewStyle>;
 };
 
@@ -42,6 +47,7 @@ export function TutorialMimi({
   titulo = "Mimi explica",
   pose = "ensinando",
   destaque = false,
+  pequeno = false,
   estilo,
 }: Props) {
   const { tema, fonte } = useAcessibilidade();
@@ -59,7 +65,7 @@ export function TutorialMimi({
     >
       <Image
         source={IMAGENS[pose]}
-        style={styles.mascote}
+        style={pequeno ? styles.mascotePequeno : styles.mascote}
         resizeMode="contain"
         accessible={false}
         importantForAccessibility="no"
@@ -68,6 +74,7 @@ export function TutorialMimi({
       <View
         style={[
           styles.balao,
+          pequeno ? styles.balaoPequeno : null,
           {
             backgroundColor: destaque ? tema.amareloSuave : tema.cartao,
             borderColor: destaque ? tema.amareloSuave : tema.borda,
@@ -77,13 +84,17 @@ export function TutorialMimi({
         <Text
           style={[
             styles.rotulo,
-            { color: corRotulo, fontSize: fonte(13) },
+            { color: corRotulo, fontSize: fonte(pequeno ? 11 : 14) },
           ]}
         >
           {titulo.toUpperCase()}
         </Text>
         <Text
-          style={[styles.texto, { color: corTexto, fontSize: fonte(18) }]}
+          style={[
+            styles.texto,
+            { color: corTexto, fontSize: fonte(pequeno ? 16 : 20) },
+          ]}
+          numberOfLines={pequeno ? 4 : undefined}
         >
           {fala}
         </Text>
@@ -103,6 +114,11 @@ const styles = StyleSheet.create({
     height: 104,
     flexShrink: 0,
   },
+  mascotePequeno: {
+    width: 46,
+    height: 66,
+    flexShrink: 0,
+  },
   balao: {
     flex: 1,
     borderRadius: 22,
@@ -110,6 +126,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     gap: 4,
+  },
+  balaoPequeno: {
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 2,
   },
   rotulo: {
     fontFamily: "Poppins_800ExtraBold",

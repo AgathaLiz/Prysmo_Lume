@@ -1,11 +1,14 @@
 import {
   BatteryFull,
+  Camera,
   Car,
   ChevronRight,
   Mail,
   MessageCircle,
   Phone,
+  RefreshCw,
   Save,
+  Send,
   User,
   UserPlus,
   Users,
@@ -142,6 +145,13 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
               cor="#C62828"
               Icone={Mail}
             />
+            <App
+              {...props}
+              alvo="app_camera"
+              nome="Câmera"
+              cor="#37474F"
+              Icone={Camera}
+            />
           </View>
         </View>
       )}
@@ -238,6 +248,84 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
             <Text style={[styles.nomeContato, { color: COR_TEXTO, fontSize: fonte(17) }]}>
               João
             </Text>
+          </View>
+        </View>
+      )}
+
+      {tela === "mensagens" && (
+        <View style={styles.telaConteudo}>
+          <Text style={[styles.tituloTela, { color: COR_TEXTO, fontSize: fonte(17) }]}>
+            Mensagens
+          </Text>
+
+          <Text style={[styles.legenda, { color: COR_SECUNDARIA, fontSize: fonte(14) }]}>
+            Toque em uma conversa
+          </Text>
+
+          <Alvo
+            {...props}
+            alvo="conversa_maria"
+            rotulo="Conversa com Maria"
+            estilo={styles.contato}
+          >
+            <View style={[styles.avatar, { backgroundColor: "#1976D2" }]}>
+              <MessageCircle size={20} color="#FFFFFF" />
+            </View>
+            <Text style={[styles.nomeContato, { color: COR_TEXTO, fontSize: fonte(17) }]}>
+              Maria
+            </Text>
+          </Alvo>
+
+          <Alvo
+            {...props}
+            alvo="conversa_joao"
+            rotulo="Conversa com João"
+            estilo={styles.contato}
+          >
+            <View style={[styles.avatar, { backgroundColor: "#2E7D32" }]}>
+              <MessageCircle size={20} color="#FFFFFF" />
+            </View>
+            <Text style={[styles.nomeContato, { color: COR_TEXTO, fontSize: fonte(17) }]}>
+              João
+            </Text>
+          </Alvo>
+        </View>
+      )}
+
+      {tela === "conversa" && (
+        <View style={styles.telaConteudo}>
+          <Text style={[styles.tituloTela, { color: COR_TEXTO, fontSize: fonte(17) }]}>
+            Maria
+          </Text>
+
+          <View style={styles.balaoRecebido}>
+            <Text style={[styles.textoBalao, { color: COR_TEXTO, fontSize: fonte(14) }]}>
+              Oi! Como você está?
+            </Text>
+          </View>
+
+          <View style={styles.composeConversa}>
+            <Alvo
+              {...props}
+              alvo="campo_mensagem"
+              rotulo="Campo para escrever a mensagem"
+              estilo={[styles.campoMensagem, { borderColor: COR_BORDA }]}
+            >
+              <Text
+                style={[styles.textoCampo, { color: COR_SECUNDARIA, fontSize: fonte(14) }]}
+              >
+                Escreva uma mensagem
+              </Text>
+            </Alvo>
+
+            <Alvo
+              {...props}
+              alvo="botao_enviar_mensagem"
+              rotulo="Botão enviar mensagem"
+              estilo={styles.botaoEnviarMensagem}
+            >
+              <Send size={20} color="#FFFFFF" />
+            </Alvo>
           </View>
         </View>
       )}
@@ -391,6 +479,55 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
           </Alvo>
         </View>
       )}
+
+      {tela === "camera" && (
+        <View style={styles.telaCamera}>
+          <View style={styles.visorCamera}>
+            <View style={styles.ceuCamera} />
+            <View style={styles.solCamera} />
+            <View style={styles.morroCamera} />
+            <View style={styles.morroCameraFundo} />
+
+            <Text style={[styles.tituloCamera, { fontSize: fonte(14) }]}>
+              Câmera
+            </Text>
+
+            <Text style={[styles.legendaCamera, { fontSize: fonte(13) }]}>
+              Aponte para o que quer fotografar
+            </Text>
+          </View>
+
+          <View style={styles.controlesCamera}>
+            <Alvo
+              {...props}
+              alvo="foto_galeria"
+              rotulo="Miniatura da foto tirada"
+              estilo={styles.miniaturaCamera}
+            >
+              <View style={styles.ceuMiniatura} />
+              <View style={styles.chaoMiniatura} />
+            </Alvo>
+
+            <Alvo
+              {...props}
+              alvo="botao_foto"
+              rotulo="Botão para tirar a foto"
+              estilo={styles.botaoFoto}
+            >
+              <View style={styles.mioloBotaoFoto} />
+            </Alvo>
+
+            <Alvo
+              {...props}
+              alvo="botao_virar_camera"
+              rotulo="Botão para virar a câmera"
+              estilo={styles.botaoVirarCamera}
+            >
+              <RefreshCw size={20} color="#FFFFFF" />
+            </Alvo>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -535,6 +672,40 @@ const styles = StyleSheet.create({
   nomeContato: {
     fontFamily: "Poppins_600SemiBold",
   },
+  balaoRecebido: {
+    alignSelf: "flex-start",
+    maxWidth: "85%",
+    backgroundColor: "#F4F4F4",
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  textoBalao: {
+    fontFamily: "Poppins_600SemiBold",
+  },
+  composeConversa: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: "auto",
+    paddingBottom: 8,
+  },
+  campoMensagem: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  botaoEnviarMensagem: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#1976D2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   botaoNovoContato: {
     flexDirection: "row",
     alignItems: "center",
@@ -637,5 +808,115 @@ const styles = StyleSheet.create({
   },
   textoOpcao: {
     fontFamily: "Poppins_600SemiBold",
+  },
+  telaCamera: {
+    flex: 1,
+    backgroundColor: "#111111",
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  visorCamera: {
+    flex: 1,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#8EC5E8",
+  },
+  ceuCamera: {
+    flex: 1,
+    backgroundColor: "#8EC5E8",
+  },
+  solCamera: {
+    position: "absolute",
+    top: 22,
+    right: 26,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#FFE082",
+  },
+  morroCamera: {
+    position: "absolute",
+    bottom: -34,
+    left: -26,
+    width: 200,
+    height: 140,
+    borderRadius: 100,
+    backgroundColor: "#2E7D32",
+  },
+  morroCameraFundo: {
+    position: "absolute",
+    bottom: -52,
+    right: -40,
+    width: 220,
+    height: 150,
+    borderRadius: 110,
+    backgroundColor: "#1B5E20",
+  },
+  tituloCamera: {
+    position: "absolute",
+    top: 10,
+    left: 14,
+    color: "#FFFFFF",
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  legendaCamera: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 10,
+    textAlign: "center",
+    color: "#FFFFFF",
+    fontFamily: "Poppins_600SemiBold",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  controlesCamera: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+  },
+  miniaturaCamera: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#8EC5E8",
+  },
+  ceuMiniatura: {
+    flex: 1,
+  },
+  chaoMiniatura: {
+    height: 16,
+    backgroundColor: "#2E7D32",
+  },
+  botaoFoto: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 4,
+    borderColor: "#FFFFFF",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mioloBotaoFoto: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#FFFFFF",
+  },
+  botaoVirarCamera: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#37474F",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
