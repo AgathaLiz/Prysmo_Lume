@@ -36,7 +36,9 @@ export async function irParaProximaTela() {
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  router.replace(data ? "/auth/tela_preferencias" : ("/auth/completar_perfil" as any));
+  // Quem já tem conta cai direto no bem-vindo; a tela de preferências fica
+  // só para quem acabou de criar a conta (fluxo de cadastro/completar perfil).
+  router.replace(data ? "/onboarding/bem_vindo" : ("/auth/completar_perfil" as any));
 }
 
 async function entrarComProvedor(provider: "google" | "facebook") {
