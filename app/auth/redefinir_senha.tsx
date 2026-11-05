@@ -13,6 +13,7 @@ export default function RedefinirSenhaScreen() {
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [codigoConfirmado, setCodigoConfirmado] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
@@ -178,7 +179,11 @@ export default function RedefinirSenhaScreen() {
               autoCapitalize="none"
               style={styles.input}
             />
-            <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+            <TouchableOpacity
+              onPress={() => setMostrarSenha(!mostrarSenha)}
+              accessibilityRole="button"
+              accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+            >
               {mostrarSenha ? (
                 <EyeOff size={22} color="#303030" />
               ) : (
@@ -194,10 +199,23 @@ export default function RedefinirSenhaScreen() {
               placeholderTextColor="#303030"
               value={confirmarSenha}
               onChangeText={setConfirmarSenha}
-              secureTextEntry={!mostrarSenha}
+              secureTextEntry={!mostrarConfirmarSenha}
               autoCapitalize="none"
               style={styles.input}
             />
+            <TouchableOpacity
+              onPress={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"
+              }
+            >
+              {mostrarConfirmarSenha ? (
+                <EyeOff size={22} color="#303030" />
+              ) : (
+                <Eye size={22} color="#303030" />
+              )}
+            </TouchableOpacity>
           </View>
 
           {erro !== "" && <Text style={styles.erro}>{erro}</Text>}

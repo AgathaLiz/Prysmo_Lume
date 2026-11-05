@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import {
   Calendar,
+  Eye,
+  EyeOff,
   Lock,
   Mail,
   Phone,
@@ -34,6 +36,8 @@ export default function CadastroScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [erros, setErros] = useState({
   nome: "",
   nascimento: "",
@@ -215,35 +219,61 @@ router.replace({
   {erros.email ? <Text style={styles.errorText}>{erros.email}</Text> : null}
 </View>
 
-  <View style={styles.row}>
-    <View style={[styles.inputWrapper, styles.halfInput]}>
-      <Lock size={20} color="#303030" style={styles.icon} />
-      <TextInput
-        placeholder="Criar senha"
-        placeholderTextColor="#303030"
-        secureTextEntry
-        value={senha}
-        onChangeText={setSenha}
-        style={[styles.input, styles.inputWithIcon]}
-      />
-    </View>
-
-    <View style={[styles.inputWrapper, styles.halfInput]}>
-      <Lock size={20} color="#303030" style={styles.icon} />
-      <TextInput
-        placeholder="Repetir senha"
-        placeholderTextColor="#303030"
-        secureTextEntry
-        value={confirmarSenha}
-        onChangeText={setConfirmarSenha}
-        style={[styles.input, styles.inputWithIcon]}
-      />
-    </View>
+  <View style={styles.inputWrapper}>
+    <Lock size={20} color="#303030" style={styles.icon} />
+    <TextInput
+      placeholder="Criar senha"
+      placeholderTextColor="#303030"
+      secureTextEntry={!mostrarSenha}
+      value={senha}
+      onChangeText={setSenha}
+      autoCapitalize="none"
+      style={[styles.input, styles.inputWithIcon, styles.inputWithEye]}
+    />
+    <TouchableOpacity
+      style={styles.eyeButton}
+      onPress={() => setMostrarSenha(!mostrarSenha)}
+      accessibilityRole="button"
+      accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+    >
+      {mostrarSenha ? (
+        <EyeOff size={20} color="#303030" />
+      ) : (
+        <Eye size={20} color="#303030" />
+      )}
+    </TouchableOpacity>
+    {erros.senha ? <Text style={styles.errorText}>{erros.senha}</Text> : null}
   </View>
 
-  {/* Erros das senhas */}
-  {erros.senha ? <Text style={styles.errorText}>{erros.senha}</Text> : null}
-  {erros.confirmarSenha ? <Text style={styles.errorText}>{erros.confirmarSenha}</Text> : null}
+  <View style={styles.inputWrapper}>
+    <Lock size={20} color="#303030" style={styles.icon} />
+    <TextInput
+      placeholder="Repetir senha"
+      placeholderTextColor="#303030"
+      secureTextEntry={!mostrarConfirmarSenha}
+      value={confirmarSenha}
+      onChangeText={setConfirmarSenha}
+      autoCapitalize="none"
+      style={[styles.input, styles.inputWithIcon, styles.inputWithEye]}
+    />
+    <TouchableOpacity
+      style={styles.eyeButton}
+      onPress={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+      accessibilityRole="button"
+      accessibilityLabel={
+        mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"
+      }
+    >
+      {mostrarConfirmarSenha ? (
+        <EyeOff size={20} color="#303030" />
+      ) : (
+        <Eye size={20} color="#303030" />
+      )}
+    </TouchableOpacity>
+    {erros.confirmarSenha ? (
+      <Text style={styles.errorText}>{erros.confirmarSenha}</Text>
+    ) : null}
+  </View>
 
   {/* Erro geral do cadastro */}
   {erroGeral ? <Text style={styles.errorText}>{erroGeral}</Text> : null}
@@ -413,6 +443,18 @@ icon: {
 inputWithIcon: {
   paddingLeft: 45,
   color: "#303030",
+},
+
+inputWithEye: {
+  paddingRight: 44,
+},
+
+eyeButton: {
+  position: "absolute",
+  right: 8,
+  top: 11,
+  padding: 10,
+  zIndex: 1,
 },
 
 });
