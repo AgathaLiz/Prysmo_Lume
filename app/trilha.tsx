@@ -485,66 +485,6 @@ export default function TrilhaScreen() {
             )}
           </View>
 
-          {exemplo && (
-            <View style={styles.cartaoExemplo}>
-              <Sparkles size={18} color={TrilhaCores.estrela} />
-              <Text style={[styles.textoExemplo, { fontSize: fonte(14) }]}>
-                Conteúdo de exemplo. Quando o banco tiver lições, elas aparecem
-                aqui.
-              </Text>
-            </View>
-          )}
-
-          {/* Galáxias: uma aba por nível */}
-          {secoes.length > 0 && (
-            <View style={styles.linhaAbas}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.abasConteudo}
-                style={styles.abasRolagem}
-              >
-                {secoes.map((secao, indice) => {
-                  const ativa = indice === indiceSelecionado;
-                  return (
-                    <TouchableOpacity
-                      key={secao.niveis_id}
-                      onPress={() => escolherNivel(indice)}
-                      accessibilityRole="tab"
-                      accessibilityLabel={`Galáxia ${indice + 1}: ${secao.nome}. ${secao.resumo}`}
-                      accessibilityState={{ selected: ativa }}
-                      style={[
-                        styles.aba,
-                        ativa ? styles.abaAtiva : styles.abaInativa,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.textoAba,
-                          {
-                            color: ativa
-                              ? TrilhaCores.textoAbaAtiva
-                              : TrilhaCores.textoSecundario,
-                            fontSize: fonte(15),
-                          },
-                        ]}
-                      >
-                        Galáxia {indice + 1}
-                      </Text>
-                      {ativa && (
-                        <Star
-                          size={14}
-                          color={TrilhaCores.textoAbaAtiva}
-                          fill={TrilhaCores.textoAbaAtiva}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-
           {mensagemVazia !== "" && (
             <View style={styles.cartaoVazio}>
               <Star size={34} color={TrilhaCores.estrela} />

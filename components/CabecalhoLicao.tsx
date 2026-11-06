@@ -38,9 +38,16 @@ export function CabecalhoLicao({
           onPress={onFechar}
           accessibilityRole="button"
           accessibilityLabel="Sair da lição"
-          style={[styles.iconeBotao, { borderColor: tema.borda }]}
+          style={[
+            styles.iconeBotao,
+            {
+              borderColor: tema.amarelo,
+              backgroundColor: tema.amarelo,
+              shadowColor: tema.amarelo,
+            },
+          ]}
         >
-          <X size={26} color={tema.texto} />
+          <X size={30} color="#32064F" strokeWidth={3} />
         </TouchableOpacity>
 
         <Text
@@ -110,6 +117,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 5,
   },
   titulo: {
     flex: 1,

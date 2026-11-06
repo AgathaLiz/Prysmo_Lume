@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   CheckCircle2,
   ChevronRight,
@@ -22,7 +23,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   ScrollView,
@@ -35,6 +35,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BotaoGrande } from "@/components/BotaoGrande";
 import { CabecalhoLicao } from "@/components/CabecalhoLicao";
+import { MolduraCelular } from "@/components/MolduraCelular";
 import { PlayerVideo } from "@/components/PlayerVideo";
 import { SimuladorCelular } from "@/components/SimuladorCelular";
 import { TutorialMimi } from "@/components/TutorialMimi";
@@ -57,6 +58,7 @@ import {
 } from "@/lib/nota";
 import { obterUsuarioId, salvarResultadoLicao } from "@/lib/progresso";
 import { normalizarCenario, type CenarioSimulacao } from "@/lib/simulacao";
+import { cenarioParaLicao } from "@/lib/simulacoes-licao";
 import { supabase } from "@/lib/supabase";
 import {
   AULA_EXEMPLO_ID,
@@ -192,50 +194,52 @@ function montarQuestoesExemplo(): Questao[] {
   }));
 }
 
-/** Espaço reservado do vídeo, com a moldura de celular do design. */
+/**
+ * Espaço reservado do vídeo, com a moldura de celular do design.
+ * O celular ocupa a tela: barra de status, notch, área cinza com os
+ * controles e a barra de progresso com o preenchimento em gradiente.
+ */
 function EspacoVideo({ titulo }: { titulo: string }) {
-  const { tema, fonte } = useAcessibilidade();
+  const { fonte } = useAcessibilidade();
 
   return (
-    <View
-      accessible
-      accessibilityLabel={`Espaço do vídeo ${titulo}. O vídeo ainda não está disponível.`}
-      style={styles.molduraVideo}
-    >
-      <View style={styles.telaVideo}>
-        <View style={styles.notchVideo} />
-
+    <MolduraCelular preencher>
+      <View
+        accessible
+        accessibilityLabel={`Vídeo da lição ${titulo}. O vídeo ainda não está disponível.`}
+        style={styles.areaVideo}
+      >
         <View style={styles.controlesVideo}>
           <View style={styles.controleVideo}>
-            <RotateCcw size={32} color="#C9C9C9" />
+            <RotateCcw size={34} color="#BDBDBD" />
             <Text style={[styles.controleVideoTexto, { fontSize: fonte(11) }]}>
               10
             </Text>
           </View>
 
-          <Pause size={40} color="#C9C9C9" />
+          <Pause size={42} color="#BDBDBD" />
 
           <View style={styles.controleVideo}>
-            <RotateCw size={32} color="#C9C9C9" />
+            <RotateCw size={34} color="#BDBDBD" />
             <Text style={[styles.controleVideoTexto, { fontSize: fonte(11) }]}>
               10
             </Text>
-          </View>
-        </View>
-
-        <View style={styles.rodapeVideo}>
-          <View style={[styles.etiquetaVideo, { backgroundColor: tema.amareloSuave }]}>
-            <Text style={[styles.textoEtiqueta, { color: "#32064F", fontSize: fonte(11) }]}>
-              VÍDEO EM BREVE
-            </Text>
-          </View>
-
-          <View style={styles.barraVideo}>
-            <View style={styles.barraVideoPreenchida} />
           </View>
         </View>
       </View>
-    </View>
+
+      <View style={styles.progressoArea} pointerEvents="none">
+        <View style={styles.progressoTrilha}>
+          <LinearGradient
+            colors={["#C77DFF", "#FFB45E"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.progressoPreenchido}
+          />
+          <View style={styles.progressoKnob} />
+        </View>
+      </View>
+    </MolduraCelular>
   );
 }
 
@@ -257,6 +261,7 @@ export default function LicaoScreen() {
 
   const [etapa, setEtapa] = useState<Etapa>("intro");
   const [ajudaVisivel, setAjudaVisivel] = useState(false);
+  const [sairVisivel, setSairVisivel] = useState(false);
 
   // Questionário
   const [indiceQuestao, setIndiceQuestao] = useState(0);
@@ -269,6 +274,7 @@ export default function LicaoScreen() {
   const [certaId, setCertaId] = useState<number | null>(null);
   const [acertou, setAcertou] = useState(false);
   const [verificando, setVerificando] = useState(false);
+  const [erroVerificar, setErroVerificar] = useState("");
 
   // Simulação
   const [notaSimulacao, setNotaSimulacao] = useState<number | null>(null);
@@ -467,7 +473,11 @@ export default function LicaoScreen() {
 
       const perguntas = usarExemplo ? montarQuestoesExemplo() : perguntasBanco;
 
-      const cenarioFinal = usarExemplo ? CENARIO_EXEMPLO : cenarioEncontrado;
+      // Toda lição tem simulação. Sem cenário no banco, escolhemos um que
+      // combine com o nome da lição (mensagem, ligação, Uber, e-mail, câmera...).
+      const cenarioFinal = usarExemplo
+        ? CENARIO_EXEMPLO
+        : cenarioEncontrado ?? cenarioParaLicao(aulaFinal.nome);
 
       setExemplo(usarExemplo);
       setLicao(respostaLicao.data);
@@ -486,14 +496,14 @@ export default function LicaoScreen() {
     void carregarLicao();
   }, [carregarLicao]);
 
-  // Quais etapas esta lição realmente tem (montadas a partir dos dados).
+  // Toda lição tem vídeo e simulação. O questionário entra quando há
+  // perguntas cadastradas.
   const etapasConteudo = useMemo<Etapa[]>(() => {
-    const lista: Etapa[] = [];
-    if (temVideo) lista.push("video");
+    const lista: Etapa[] = ["video"];
     if (questoes.length > 0) lista.push("questionario");
-    if (cenario) lista.push("simulacao");
+    lista.push("simulacao");
     return lista;
-  }, [temVideo, questoes.length, cenario]);
+  }, [questoes.length]);
 
   const totalEtapas = etapasConteudo.length;
   const indiceEtapaAtual = etapasConteudo.indexOf(etapa);
@@ -522,12 +532,11 @@ export default function LicaoScreen() {
   const acertouQuestao = verificado && acertou;
 
   const passosDaIntro = useMemo(() => {
-    const lista: string[] = [];
-    if (temVideo) lista.push("Assistir a um vídeo");
+    const lista: string[] = ["Assistir a um vídeo"];
     if (questoes.length > 0) lista.push("Responder algumas perguntas");
-    if (cenario) lista.push("Praticar no celular de mentirinha");
+    lista.push("Praticar no celular de mentirinha");
     return lista;
-  }, [temVideo, questoes.length, cenario]);
+  }, [questoes.length]);
 
   /** O que a Mimi fala em cada etapa. Muda junto com o que está na tela. */
   const falaMimi = useMemo(() => {
@@ -564,7 +573,7 @@ export default function LicaoScreen() {
     }
 
     if (etapa === "simulacao") {
-      return "Agora é a sua vez. Leia a instrução em cima e toque na parte do celular que combina com ela. Se errar, aparece uma dica e você tenta de novo.";
+      return "Agora é a sua vez. Leia a instrução e toque na parte certa do celular.";
     }
 
     if (etapa === "ofensiva") {
@@ -803,6 +812,7 @@ export default function LicaoScreen() {
     }
 
     setVerificando(true);
+    setErroVerificar("");
     let correta = false;
     let idCerta: number | null = null;
 
@@ -820,7 +830,7 @@ export default function LicaoScreen() {
       if (error || !data || data.length === 0) {
         console.log("Erro ao verificar a resposta:", error?.message);
         setVerificando(false);
-        Alert.alert("Ops", "Não foi possível verificar agora. Tente de novo.");
+        setErroVerificar("Não foi possível verificar agora. Tente de novo.");
         return;
       }
 
@@ -857,6 +867,7 @@ export default function LicaoScreen() {
     setVerificado(false);
     setCertaId(null);
     setAcertou(false);
+    setErroVerificar("");
   }
 
   function finalizarSimulacao(erros: number) {
@@ -870,10 +881,7 @@ export default function LicaoScreen() {
   }
 
   function pedirParaSair() {
-    Alert.alert("Quer sair?", "Você poderá voltar depois.", [
-      { text: "Ficar", style: "cancel" },
-      { text: "Sair", style: "destructive", onPress: sair },
-    ]);
+    setSairVisivel(true);
   }
 
   function irParaTrilha() {
@@ -889,7 +897,7 @@ export default function LicaoScreen() {
           titulo="Lição"
           etapaAtual={null}
           totalEtapas={0}
-          onFechar={pedirParaSair}
+          onFechar={sair}
           onAjuda={() => setAjudaVisivel(true)}
         />
         <View style={styles.centro}>
@@ -941,7 +949,7 @@ export default function LicaoScreen() {
           titulo="Lição"
           etapaAtual={null}
           totalEtapas={0}
-          onFechar={pedirParaSair}
+          onFechar={sair}
           onAjuda={() => setAjudaVisivel(true)}
         />
         <View style={styles.centro}>
@@ -1017,11 +1025,12 @@ export default function LicaoScreen() {
         }}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.conteudoTela}
-        showsVerticalScrollIndicator={false}
-      >
-        {etapa === "intro" && (
+      {etapa === "intro" && (
+        <ScrollView
+          style={styles.rolagemEtapa}
+          contentContainerStyle={styles.conteudoRolavel}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.secao}>
             <TutorialMimi fala={falaMimi} destaque />
 
@@ -1094,22 +1103,12 @@ export default function LicaoScreen() {
               onPress={comecar}
             />
           </View>
-        )}
+        </ScrollView>
+      )}
 
-        {etapa === "video" && (
-          <View style={styles.secao}>
-            <TutorialMimi fala={falaMimi} pose="direita" />
-
-            <Text style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(24) }]}>
-              {conteudo?.titulo?.trim() || "Assista ao vídeo"}
-            </Text>
-
-            {conteudo?.descricao ? (
-              <Text style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}>
-                {conteudo.descricao}
-              </Text>
-            ) : null}
-
+      {etapa === "video" && (
+        <View style={styles.etapa}>
+          <View style={styles.areaMidia}>
             {conteudo?.url_arquivo ? (
               <PlayerVideo url={conteudo.url_arquivo} />
             ) : (
@@ -1117,25 +1116,23 @@ export default function LicaoScreen() {
                 titulo={conteudo?.titulo?.trim() || "Vídeo da lição"}
               />
             )}
-
-            <BotaoGrande
-              titulo="Continuar"
-              icone={<ChevronRight size={24} color={tema.texto} />}
-              onPress={() => irParaProximaEtapa("video")}
-            />
-            <Text style={[styles.textoCalma, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
-              Você pode continuar sem assistir até o fim.
-            </Text>
           </View>
-        )}
+
+          <BotaoGrande
+            titulo="Continuar"
+            icone={<ChevronRight size={24} color={tema.texto} />}
+            onPress={() => irParaProximaEtapa("video")}
+          />
+        </View>
+      )}
 
         {etapa === "questionario" && questaoAtual && (
-          <View style={styles.secao}>
-            <TutorialMimi fala={falaMimi} pose="frente" />
+        <View style={styles.etapa}>
+          <TutorialMimi fala={falaMimi} pose="frente" pequeno />
 
-            <Text style={[styles.contador, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
-              Pergunta {indiceQuestao + 1} de {questoes.length}
-            </Text>
+          <Text style={[styles.contador, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
+            Pergunta {indiceQuestao + 1} de {questoes.length}
+          </Text>
 
             <View style={[styles.barra, { backgroundColor: tema.borda }]}>
               <View
@@ -1213,70 +1210,89 @@ export default function LicaoScreen() {
               );
             })}
 
-            {verificado && (
-              <View
-                style={[
-                  styles.feedback,
-                  {
-                    backgroundColor: acertouQuestao
-                      ? tema.sucessoFundo
-                      : tema.erroFundo,
-                  },
-                ]}
-                accessibilityLiveRegion="polite"
-              >
-                {acertouQuestao ? (
-                  <CheckCircle2 size={26} color={tema.sucesso} />
-                ) : (
-                  <XCircle size={26} color={tema.erro} />
-                )}
-                <Text
+            <View style={styles.acoesQuiz}>
+              {verificado && (
+                <View
                   style={[
-                    styles.textoFeedback,
+                    styles.feedback,
                     {
-                      color: acertouQuestao ? tema.sucesso : tema.erro,
-                      fontSize: fonte(18),
+                      backgroundColor: acertouQuestao
+                        ? tema.sucessoFundo
+                        : tema.erroFundo,
                     },
                   ]}
+                  accessibilityLiveRegion="polite"
                 >
-                  {acertouQuestao
-                    ? "Isso mesmo! Você acertou."
-                    : alternativaCerta
-                      ? `Quase! A resposta certa é: ${alternativaCerta.texto}`
-                      : "Vamos seguir em frente."}
+                  {acertouQuestao ? (
+                    <CheckCircle2 size={26} color={tema.sucesso} />
+                  ) : (
+                    <XCircle size={26} color={tema.erro} />
+                  )}
+                  <Text
+                    style={[
+                      styles.textoFeedback,
+                      {
+                        color: acertouQuestao ? tema.sucesso : tema.erro,
+                        fontSize: fonte(18),
+                      },
+                    ]}
+                  >
+                    {acertouQuestao
+                      ? "Isso mesmo! Você acertou."
+                      : alternativaCerta
+                        ? `Quase! A resposta certa é: ${alternativaCerta.texto}`
+                        : "Vamos seguir em frente."}
+                  </Text>
+                </View>
+              )}
+
+              {erroVerificar !== "" && (
+                <Text
+                  style={[
+                    styles.erroVerificar,
+                    { color: tema.erro, fontSize: fonte(15) },
+                  ]}
+                  accessibilityLiveRegion="polite"
+                >
+                  {erroVerificar}
                 </Text>
-              </View>
-            )}
+              )}
 
-            {!verificado ? (
-              <BotaoGrande
-                titulo={verificando ? "Verificando..." : "Verificar"}
-                onPress={verificarResposta}
-                desabilitado={selecionada === null || verificando}
-              />
-            ) : (
-              <BotaoGrande
-                titulo={
-                  indiceQuestao >= questoes.length - 1 ? "Ver resultado" : "Próxima"
-                }
-                icone={<ChevronRight size={24} color={tema.texto} />}
-                onPress={avancarQuestao}
-              />
-            )}
+              {!verificado ? (
+                <BotaoGrande
+                  titulo={verificando ? "Verificando..." : "Verificar"}
+                  onPress={verificarResposta}
+                  desabilitado={selecionada === null || verificando}
+                />
+              ) : (
+                <BotaoGrande
+                  titulo={
+                    indiceQuestao >= questoes.length - 1 ? "Ver resultado" : "Próxima"
+                  }
+                  icone={<ChevronRight size={24} color={tema.texto} />}
+                  onPress={avancarQuestao}
+                />
+              )}
+            </View>
           </View>
         )}
 
-        {etapa === "simulacao" && cenario && (
-          <View style={styles.secao}>
-            <Text style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(24) }]}>
-              {cenario.titulo?.trim() || "Pratique no celular"}
-            </Text>
-            <TutorialMimi fala={falaMimi} pose="esquerda" />
-            <SimuladorCelular cenario={cenario} onFinalizar={finalizarSimulacao} />
-          </View>
-        )}
+      {etapa === "simulacao" && cenario && (
+        <View style={styles.etapa}>
+          <SimuladorCelular
+            cenario={cenario}
+            onFinalizar={finalizarSimulacao}
+            preencher
+          />
+        </View>
+      )}
 
         {etapa === "resultado" && (
+        <ScrollView
+          style={styles.rolagemEtapa}
+          contentContainerStyle={styles.conteudoRolavel}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.secao}>
             <Image
               source={aprovado ? MIMI_FEEDBACK : MIMI_FEEDBACK_TRISTE}
@@ -1495,9 +1511,15 @@ export default function LicaoScreen() {
               />
             )}
           </View>
-        )}
+        </ScrollView>
+      )}
 
-        {etapa === "ofensiva" && (
+      {etapa === "ofensiva" && (
+        <ScrollView
+          style={styles.rolagemEtapa}
+          contentContainerStyle={styles.conteudoRolavel}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.secao}>
             <Image
               source={LUZ_OFENSIVA}
@@ -1571,9 +1593,8 @@ export default function LicaoScreen() {
 
             <BotaoGrande titulo="Continuar" variante="roxo" onPress={irParaTrilha} />
           </View>
-        )}
-
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {/* Ajuda de cada etapa */}
       <Modal
@@ -1600,6 +1621,40 @@ export default function LicaoScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Confirmação de saída (funciona na web, onde Alert não abre) */}
+      <Modal
+        visible={sairVisivel}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSairVisivel(false)}
+      >
+        <View style={styles.fundoModal}>
+          <View
+            style={[styles.cartaoAjuda, { backgroundColor: tema.cartao }]}
+            accessibilityViewIsModal
+          >
+            <Text style={[styles.tituloAjuda, { color: tema.texto, fontSize: fonte(24) }]}>
+              Quer sair?
+            </Text>
+            <Text style={[styles.textoAjuda, { color: tema.textoSecundario, fontSize: fonte(19) }]}>
+              Você pode voltar depois. O que já fez nesta lição fica guardado.
+            </Text>
+            <BotaoGrande
+              titulo="Continuar na lição"
+              onPress={() => setSairVisivel(false)}
+            />
+            <BotaoGrande
+              titulo="Sair da lição"
+              variante="contorno"
+              onPress={() => {
+                setSairVisivel(false);
+                sair();
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1608,9 +1663,22 @@ const styles = StyleSheet.create({
   tela: {
     flex: 1,
   },
-  conteudoTela: {
+  rolagemEtapa: {
+    flex: 1,
+  },
+  conteudoRolavel: {
     padding: 18,
-    paddingBottom: 48,
+    paddingBottom: 24,
+  },
+  etapa: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  areaMidia: {
+    flex: 1,
   },
   secao: {
     gap: 14,
@@ -1648,36 +1716,11 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_800ExtraBold",
     letterSpacing: 0.5,
   },
-  molduraVideo: {
-    alignSelf: "center",
-    width: "100%",
-    maxWidth: 260,
-    aspectRatio: 9 / 19.5,
-    backgroundColor: "#1A1A1A",
-    borderRadius: 44,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  telaVideo: {
+  areaVideo: {
     flex: 1,
     backgroundColor: "#E6E6E6",
-    borderRadius: 36,
-    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-  },
-  notchVideo: {
-    position: "absolute",
-    top: 0,
-    width: 86,
-    height: 22,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-    backgroundColor: "#1A1A1A",
   },
   controlesVideo: {
     flexDirection: "row",
@@ -1693,31 +1736,31 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     color: "#BDBDBD",
   },
-  rodapeVideo: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    bottom: 16,
-    alignItems: "center",
-    gap: 8,
+  progressoArea: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 14,
+    backgroundColor: "#FFFFFF",
   },
-  barraVideo: {
-    width: "100%",
-    height: 8,
-    borderRadius: 4,
+  progressoTrilha: {
+    height: 12,
+    borderRadius: 6,
     backgroundColor: "#1A1A1A",
-    overflow: "hidden",
+    justifyContent: "center",
   },
-  barraVideoPreenchida: {
-    width: "38%",
+  progressoPreenchido: {
+    width: "18%",
     height: "100%",
-    borderRadius: 4,
-    backgroundColor: "#C77DFF",
+    borderRadius: 6,
   },
-  etiquetaVideo: {
-    borderRadius: 999,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
+  progressoKnob: {
+    position: "absolute",
+    left: "18%",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginLeft: -6,
+    backgroundColor: "#FFB45E",
   },
   tituloSecao: {
     fontFamily: "Poppins_800ExtraBold",
@@ -1765,9 +1808,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   alternativa: {
-    minHeight: 64,
+    minHeight: 60,
     borderRadius: 18,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -1782,6 +1825,14 @@ const styles = StyleSheet.create({
   textoAlternativa: {
     flex: 1,
     fontFamily: "Poppins_600SemiBold",
+  },
+  acoesQuiz: {
+    marginTop: "auto",
+    gap: 8,
+  },
+  erroVerificar: {
+    fontFamily: "Poppins_600SemiBold",
+    textAlign: "center",
   },
   feedback: {
     flexDirection: "row",

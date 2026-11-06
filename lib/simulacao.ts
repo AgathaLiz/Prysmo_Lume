@@ -30,7 +30,10 @@ export type TelaFicticia =
   | "contatos"
   | "novo_contato"
   | "uber"
-  | "email";
+  | "email"
+  | "mensagens"
+  | "conversa"
+  | "camera";
 
 export function telaDoAlvo(alvo: string): TelaFicticia | null {
   if (alvo.startsWith("app_")) return "home";
@@ -43,6 +46,21 @@ export function telaDoAlvo(alvo: string): TelaFicticia | null {
     alvo === "botao_salvar_contato"
   ) {
     return "novo_contato";
+  }
+
+  // Mensagens: lista de conversas -> conversa aberta.
+  if (alvo.startsWith("conversa_")) return "mensagens";
+  if (alvo === "campo_mensagem" || alvo === "botao_enviar_mensagem") {
+    return "conversa";
+  }
+
+  // Câmera: visor com o disparador e a miniatura da última foto.
+  if (
+    alvo === "botao_foto" ||
+    alvo === "botao_virar_camera" ||
+    alvo === "foto_galeria"
+  ) {
+    return "camera";
   }
 
   if (

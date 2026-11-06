@@ -82,7 +82,8 @@ export default function LoginScreen() {
   if (perfil.papel === "admin") {
     router.replace("/");               // ajuste para a sua rota de admin
   } else {
-    router.replace("/auth/tela_preferencias");
+    // Já tem conta: vai direto para o bem-vindo 
+    router.replace("/onboarding/bem_vindo" as any);
   }
 }
 
