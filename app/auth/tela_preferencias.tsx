@@ -223,7 +223,7 @@ export default function TelaPreferencias() {
         >
           <RotateCcw size={22} color="#303030" strokeWidth={2.3} />
           <Text style={[styles.textoReset, { fontSize: fonte(18) }]}>
-            Voltar ao Padrão
+            Redefinir
           </Text>
         </Pressable>
 
