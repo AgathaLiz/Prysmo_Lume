@@ -1,4 +1,9 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useNavigation,
+  useRouter,
+} from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   CheckCircle2,
@@ -25,6 +30,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -82,6 +88,9 @@ const MIMI_FEEDBACK = require("../../assets/Lume/Mimi/Png/mimi-de-frente.png");
 const MIMI_FEEDBACK_TRISTE = require("../../assets/Lume/Mimi/Png/mimi-pra-baixo.png");
 const LUZ_OFENSIVA = require("../../assets/Lume/Outros elementos/Png/luz-acesa.png");
 const ESTRELA_DIA = require("../../assets/Lume/Outros elementos/Png/estrela-cinco-pontas.png");
+
+/** Quantos erros a pessoa pode cometer no questionário antes de a lição reiniciar. */
+const VIDAS_MAXIMAS = 2;
 
 // `correta` só existe na lição de exemplo local. As lições do banco NÃO
 // recebem essa coluna: o servidor confere a resposta (função verificar_resposta).
@@ -246,7 +255,8 @@ function EspacoVideo({ titulo }: { titulo: string }) {
 export default function LicaoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { tema, fonte, audioDescricao, falar } = useAcessibilidade();
+  const { tema, fonte, audioDescricao, falar, pararFala } = useAcessibilidade();
+  const navigation = useNavigation();
 
   const idLicao = Number(id);
 
@@ -275,6 +285,10 @@ export default function LicaoScreen() {
   const [acertou, setAcertou] = useState(false);
   const [verificando, setVerificando] = useState(false);
   const [erroVerificar, setErroVerificar] = useState("");
+  const [explicacao, setExplicacao] = useState("");
+  const [explicacaoCerta, setExplicacaoCerta] = useState("");
+  const [feedbackVisivel, setFeedbackVisivel] = useState(false);
+  const [vidas, setVidas] = useState(VIDAS_MAXIMAS);
 
   // Simulação
   const [notaSimulacao, setNotaSimulacao] = useState<number | null>(null);
@@ -285,6 +299,18 @@ export default function LicaoScreen() {
   const [xpGanho, setXpGanho] = useState(0);
   const [erroSalvar, setErroSalvar] = useState("");
   const salvouRef = useRef(false);
+
+  // Saída da lição: o progresso só é salvo no fim, então sair no meio perde tudo.
+  const emProgresso =
+    etapa === "video" ||
+    etapa === "questionario" ||
+    etapa === "simulacao" ||
+    (etapa === "resultado" && !salvo);
+  const emProgressoRef = useRef(emProgresso);
+  emProgressoRef.current = emProgresso;
+  const permitirSaidaRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const acaoPendenteRef = useRef<any>(null);
 
   // Ofensiva (dias seguidos), lida do servidor na etapa final
   const [ofensiva, setOfensiva] = useState(0);
@@ -530,6 +556,26 @@ export default function LicaoScreen() {
   const alternativaCerta =
     alternativas.find((a) => a.alternativas_id === certaId) ?? null;
   const acertouQuestao = verificado && acertou;
+  const semVidas = verificado && !acertou && vidas <= 0;
+
+  // O botão depois da última pergunta depende do que vem a seguir.
+  const etapaDepoisDoQuiz =
+    etapasConteudo[etapasConteudo.indexOf("questionario") + 1] ?? "resultado";
+  const ultimaPergunta = indiceQuestao >= questoes.length - 1;
+  const rotuloAvancar = !ultimaPergunta
+    ? "Próxima"
+    : etapaDepoisDoQuiz === "resultado"
+      ? "Ver resultado"
+      : "Ir para a prática";
+
+  const tituloFeedback = acertouQuestao
+    ? "Isso mesmo!"
+    : semVidas
+      ? "Acabaram suas vidas"
+      : "Quase!";
+  const mensagemFeedback = acertouQuestao
+    ? explicacao || "Você escolheu a resposta certa. Muito bem!"
+    : explicacao || "Essa alternativa não é a correta.";
 
   const passosDaIntro = useMemo(() => {
     const lista: string[] = ["Assistir a um vídeo"];
@@ -563,13 +609,13 @@ export default function LicaoScreen() {
         return "Leia a pergunta e toque na resposta que parece certa. Depois toque em Verificar. Não tem pressa.";
       }
 
-      const ultimaPergunta = indiceQuestao >= questoes.length - 1;
-      const botao = ultimaPergunta ? "Ver resultado" : "Próxima";
-
       if (acertouQuestao) {
-        return `Isso mesmo! Você acertou. Toque em ${botao} para continuar.`;
+        return `Isso mesmo! Você acertou. Toque em ${rotuloAvancar} para continuar.`;
       }
-      return `Quase! A resposta certa está marcada em verde. Toque em ${botao} e vamos juntos.`;
+      if (semVidas) {
+        return "Suas vidas acabaram, mas tudo bem. Toque em Tentar de novo e vamos recomeçar juntos.";
+      }
+      return `Quase! A resposta certa está marcada em verde. Toque em ${rotuloAvancar} e vamos juntos.`;
     }
 
     if (etapa === "simulacao") {
@@ -595,8 +641,8 @@ export default function LicaoScreen() {
     passosDaIntro,
     verificado,
     acertouQuestao,
-    indiceQuestao,
-    questoes.length,
+    semVidas,
+    rotuloAvancar,
     erroSalvar,
     salvando,
     aprovado,
@@ -644,6 +690,51 @@ export default function LicaoScreen() {
     notaFinalCalculada,
     falaMimi,
   ]);
+
+  // Para qualquer fala ao trocar de etapa, ao sair da tela e ao fechar a lição.
+  useEffect(() => {
+    pararFala();
+  }, [etapa, pararFala]);
+
+  useEffect(() => {
+    return () => {
+      pararFala();
+    };
+  }, [pararFala]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        pararFala();
+      };
+    }, [pararFala])
+  );
+
+  // Voltar (botão do aparelho, gesto ou seta do navegador) no meio da lição
+  // pede confirmação em vez de perder o progresso sem avisar.
+  useEffect(() => {
+    const remover = navigation.addListener("beforeRemove", (evento) => {
+      if (permitirSaidaRef.current || !emProgressoRef.current) return;
+      evento.preventDefault();
+      acaoPendenteRef.current = evento.data.action;
+      setSairVisivel(true);
+    });
+    return remover;
+  }, [navigation]);
+
+  // Na web, avisa também ao fechar ou recarregar a aba.
+  useEffect(() => {
+    if (Platform.OS !== "web" || !emProgresso || typeof window === "undefined") {
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const aoFechar = (evento: any) => {
+      evento.preventDefault();
+      evento.returnValue = "";
+    };
+    window.addEventListener("beforeunload", aoFechar);
+    return () => window.removeEventListener("beforeunload", aoFechar);
+  }, [emProgresso]);
 
   // Audio-descrição: lê a pergunta e o resultado sozinho.
   useEffect(() => {
@@ -797,6 +888,11 @@ export default function LicaoScreen() {
     setCertaId(null);
     setAcertou(false);
     setVerificando(false);
+    setErroVerificar("");
+    setExplicacao("");
+    setExplicacaoCerta("");
+    setFeedbackVisivel(false);
+    setVidas(VIDAS_MAXIMAS);
 
     if (pularVideo) {
       const semVideo = etapasConteudo.find((item) => item !== "video");
@@ -815,6 +911,8 @@ export default function LicaoScreen() {
     setErroVerificar("");
     let correta = false;
     let idCerta: number | null = null;
+    let textoExplicacao = "";
+    let textoExplicacaoCerta = "";
 
     if (selecionada < 0) {
       // Lição de exemplo local: o gabarito está no próprio app.
@@ -836,18 +934,38 @@ export default function LicaoScreen() {
 
       correta = data[0].acertou;
       idCerta = data[0].alternativa_correta_id;
+      // Colunas novas da função: se o banco ainda não foi atualizado, ficam vazias.
+      textoExplicacao = String(data[0].explicacao ?? "").trim();
+      textoExplicacaoCerta = String(data[0].explicacao_correta ?? "").trim();
     }
 
     setAcertou(correta);
     setCertaId(idCerta);
+    setExplicacao(textoExplicacao);
+    setExplicacaoCerta(textoExplicacaoCerta);
     setVerificado(true);
     setVerificando(false);
+    setFeedbackVisivel(true);
 
     if (correta) {
       setAcertos((total) => total + 1);
-      if (audioDescricao) falar("Isso mesmo!");
-    } else if (audioDescricao) {
-      falar("Quase! Vamos ver a resposta certa.");
+    } else {
+      setVidas((atual) => Math.max(0, atual - 1));
+    }
+
+    if (audioDescricao) {
+      const textoCerta = alternativas.find(
+        (a) => a.alternativas_id === idCerta
+      )?.texto;
+      if (correta) {
+        falar(`Isso mesmo! ${textoExplicacao}`);
+      } else {
+        falar(
+          `Quase! A resposta certa é: ${textoCerta ?? ""}. ${
+            textoExplicacaoCerta || textoExplicacao
+          }`
+        );
+      }
     }
   }
 
@@ -855,6 +973,10 @@ export default function LicaoScreen() {
     if (!questaoAtual) return;
 
     const ultima = indiceQuestao >= questoes.length - 1;
+
+    setFeedbackVisivel(false);
+    setExplicacao("");
+    setExplicacaoCerta("");
 
     if (ultima) {
       setNotaQuiz(notaDoQuestionario(acertos, questoes.length));
@@ -876,12 +998,34 @@ export default function LicaoScreen() {
   }
 
   function sair() {
+    permitirSaidaRef.current = true;
+    pararFala();
     if (router.canGoBack()) router.back();
     else router.replace("/trilha" as any);
   }
 
   function pedirParaSair() {
+    // Antes de começar (ou depois de salvar) não há nada a perder.
+    if (!emProgressoRef.current) {
+      sair();
+      return;
+    }
     setSairVisivel(true);
+  }
+
+  function cancelarSaida() {
+    acaoPendenteRef.current = null;
+    setSairVisivel(false);
+  }
+
+  function confirmarSaida() {
+    setSairVisivel(false);
+    permitirSaidaRef.current = true;
+    pararFala();
+    const acao = acaoPendenteRef.current;
+    acaoPendenteRef.current = null;
+    if (acao) navigation.dispatch(acao);
+    else sair();
   }
 
   function irParaTrilha() {
@@ -1107,7 +1251,11 @@ export default function LicaoScreen() {
       )}
 
       {etapa === "video" && (
-        <View style={styles.etapa}>
+        <ScrollView
+          style={styles.rolagemEtapa}
+          contentContainerStyle={styles.conteudoEtapa}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.areaMidia}>
             {conteudo?.url_arquivo ? (
               <PlayerVideo url={conteudo.url_arquivo} />
@@ -1123,168 +1271,175 @@ export default function LicaoScreen() {
             icone={<ChevronRight size={24} color={tema.texto} />}
             onPress={() => irParaProximaEtapa("video")}
           />
-        </View>
+        </ScrollView>
       )}
 
-        {etapa === "questionario" && questaoAtual && (
-        <View style={styles.etapa}>
+      {etapa === "questionario" && questaoAtual && (
+        <ScrollView
+          style={styles.rolagemEtapa}
+          contentContainerStyle={styles.conteudoEtapa}
+          showsVerticalScrollIndicator={false}
+        >
           <TutorialMimi fala={falaMimi} pose="frente" pequeno />
 
-          <Text style={[styles.contador, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
-            Pergunta {indiceQuestao + 1} de {questoes.length}
-          </Text>
-
-            <View style={[styles.barra, { backgroundColor: tema.borda }]}>
-              <View
-                style={[
-                  styles.barraPreenchida,
-                  {
-                    width: `${Math.round(((indiceQuestao + (verificado ? 1 : 0)) / questoes.length) * 100)}%`,
-                    backgroundColor: tema.roxoEscuro,
-                  },
-                ]}
-              />
-            </View>
-
-            <Text style={[styles.pergunta, { color: tema.texto, fontSize: fonte(24) }]}>
-              {questaoAtual.pergunta}
+          <View style={styles.linhaTopoQuiz}>
+            <Text style={[styles.contador, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
+              Pergunta {indiceQuestao + 1} de {questoes.length}
             </Text>
-
-            {alternativas.map((alternativa) => {
-              const escolhida = selecionada === alternativa.alternativas_id;
-              const mostrarCerta =
-                verificado && alternativa.alternativas_id === certaId;
-              const mostrarErrada =
-                verificado &&
-                escolhida &&
-                alternativa.alternativas_id !== certaId;
-
-              return (
-                <TouchableOpacity
-                  key={alternativa.alternativas_id}
-                  onPress={() => {
-                    if (verificado || verificando) return;
-                    setSelecionada(alternativa.alternativas_id);
-                    if (audioDescricao) falar(alternativa.texto);
-                  }}
-                  disabled={verificado || verificando}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: escolhida, disabled: verificado }}
-                  accessibilityLabel={alternativa.texto}
-                  style={[
-                    styles.alternativa,
-                    {
-                      backgroundColor: tema.cartao,
-                      borderColor: escolhida ? tema.roxoEscuro : tema.borda,
-                      borderWidth: escolhida ? 3 : 1,
-                    },
-                    mostrarCerta && {
-                      borderColor: tema.sucesso,
-                      borderWidth: 3,
-                      backgroundColor: tema.sucessoFundo,
-                    },
-                    mostrarErrada && {
-                      borderColor: tema.erro,
-                      borderWidth: 3,
-                      backgroundColor: tema.erroFundo,
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.marcador,
-                      {
-                        borderColor: escolhida ? tema.roxoEscuro : tema.textoSecundario,
-                        backgroundColor: escolhida ? tema.roxoEscuro : "transparent",
-                      },
-                    ]}
-                  />
-
-                  <Text style={[styles.textoAlternativa, { color: tema.texto, fontSize: fonte(19) }]}>
-                    {alternativa.texto}
-                  </Text>
-
-                  {mostrarCerta && <CheckCircle2 size={26} color={tema.sucesso} />}
-                  {mostrarErrada && <XCircle size={26} color={tema.erro} />}
-                </TouchableOpacity>
-              );
-            })}
-
-            <View style={styles.acoesQuiz}>
-              {verificado && (
-                <View
-                  style={[
-                    styles.feedback,
-                    {
-                      backgroundColor: acertouQuestao
-                        ? tema.sucessoFundo
-                        : tema.erroFundo,
-                    },
-                  ]}
-                  accessibilityLiveRegion="polite"
-                >
-                  {acertouQuestao ? (
-                    <CheckCircle2 size={26} color={tema.sucesso} />
-                  ) : (
-                    <XCircle size={26} color={tema.erro} />
-                  )}
-                  <Text
-                    style={[
-                      styles.textoFeedback,
-                      {
-                        color: acertouQuestao ? tema.sucesso : tema.erro,
-                        fontSize: fonte(18),
-                      },
-                    ]}
-                  >
-                    {acertouQuestao
-                      ? "Isso mesmo! Você acertou."
-                      : alternativaCerta
-                        ? `Quase! A resposta certa é: ${alternativaCerta.texto}`
-                        : "Vamos seguir em frente."}
-                  </Text>
-                </View>
-              )}
-
-              {erroVerificar !== "" && (
-                <Text
-                  style={[
-                    styles.erroVerificar,
-                    { color: tema.erro, fontSize: fonte(15) },
-                  ]}
-                  accessibilityLiveRegion="polite"
-                >
-                  {erroVerificar}
-                </Text>
-              )}
-
-              {!verificado ? (
-                <BotaoGrande
-                  titulo={verificando ? "Verificando..." : "Verificar"}
-                  onPress={verificarResposta}
-                  desabilitado={selecionada === null || verificando}
+            <View
+              style={styles.linhaVidas}
+              accessible
+              accessibilityLabel={`${vidas} de ${VIDAS_MAXIMAS} vidas`}
+            >
+              {Array.from({ length: VIDAS_MAXIMAS }).map((_, indice) => (
+                <Heart
+                  key={indice}
+                  size={28}
+                  color={indice < vidas ? tema.erro : tema.borda}
+                  fill={indice < vidas ? tema.erro : "transparent"}
+                  strokeWidth={2}
                 />
-              ) : (
-                <BotaoGrande
-                  titulo={
-                    indiceQuestao >= questoes.length - 1 ? "Ver resultado" : "Próxima"
-                  }
-                  icone={<ChevronRight size={24} color={tema.texto} />}
-                  onPress={avancarQuestao}
-                />
-              )}
+              ))}
             </View>
           </View>
-        )}
+
+          <View style={[styles.barra, { backgroundColor: tema.borda }]}>
+            <View
+              style={[
+                styles.barraPreenchida,
+                {
+                  width: `${Math.round(((indiceQuestao + (verificado ? 1 : 0)) / questoes.length) * 100)}%`,
+                  backgroundColor: tema.roxoEscuro,
+                },
+              ]}
+            />
+          </View>
+
+          <Text style={[styles.pergunta, { color: tema.texto, fontSize: fonte(24) }]}>
+            {questaoAtual.pergunta}
+          </Text>
+
+          {alternativas.map((alternativa) => {
+            const escolhida = selecionada === alternativa.alternativas_id;
+            const mostrarCerta =
+              verificado && alternativa.alternativas_id === certaId;
+            const mostrarErrada =
+              verificado &&
+              escolhida &&
+              alternativa.alternativas_id !== certaId;
+
+            return (
+              <TouchableOpacity
+                key={alternativa.alternativas_id}
+                onPress={() => {
+                  if (verificado || verificando) return;
+                  setSelecionada(alternativa.alternativas_id);
+                  if (audioDescricao) falar(alternativa.texto);
+                }}
+                disabled={verificado || verificando}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: escolhida, disabled: verificado }}
+                accessibilityLabel={alternativa.texto}
+                style={[
+                  styles.alternativa,
+                  {
+                    backgroundColor: tema.cartao,
+                    borderColor: escolhida ? tema.roxoEscuro : tema.borda,
+                    borderWidth: escolhida ? 3 : 1,
+                  },
+                  mostrarCerta && {
+                    borderColor: tema.sucesso,
+                    borderWidth: 3,
+                    backgroundColor: tema.sucessoFundo,
+                  },
+                  mostrarErrada && {
+                    borderColor: tema.erro,
+                    borderWidth: 3,
+                    backgroundColor: tema.erroFundo,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.marcador,
+                    {
+                      borderColor: escolhida ? tema.roxoEscuro : tema.textoSecundario,
+                      backgroundColor: escolhida ? tema.roxoEscuro : "transparent",
+                    },
+                  ]}
+                />
+
+                <Text style={[styles.textoAlternativa, { color: tema.texto, fontSize: fonte(19) }]}>
+                  {alternativa.texto}
+                </Text>
+
+                {mostrarCerta && <CheckCircle2 size={26} color={tema.sucesso} />}
+                {mostrarErrada && <XCircle size={26} color={tema.erro} />}
+              </TouchableOpacity>
+            );
+          })}
+
+          <View style={styles.acoesQuiz}>
+            {erroVerificar !== "" && (
+              <Text
+                style={[
+                  styles.erroVerificar,
+                  { color: tema.erro, fontSize: fonte(15) },
+                ]}
+                accessibilityLiveRegion="polite"
+              >
+                {erroVerificar}
+              </Text>
+            )}
+
+            {!verificado ? (
+              <BotaoGrande
+                titulo={verificando ? "Verificando..." : "Verificar"}
+                onPress={verificarResposta}
+                desabilitado={selecionada === null || verificando}
+              />
+            ) : (
+              <>
+                {!feedbackVisivel && (
+                  <BotaoGrande
+                    titulo="Ver explicação"
+                    variante="contorno"
+                    onPress={() => setFeedbackVisivel(true)}
+                  />
+                )}
+                {semVidas ? (
+                  <BotaoGrande
+                    titulo="Tentar de novo"
+                    icone={<RotateCcw size={24} color={tema.texto} />}
+                    onPress={() => reiniciar(true)}
+                  />
+                ) : (
+                  <BotaoGrande
+                    titulo={rotuloAvancar}
+                    icone={<ChevronRight size={24} color={tema.texto} />}
+                    onPress={avancarQuestao}
+                  />
+                )}
+              </>
+            )}
+          </View>
+        </ScrollView>
+      )}
 
       {etapa === "simulacao" && cenario && (
-        <View style={styles.etapa}>
-          <SimuladorCelular
-            cenario={cenario}
-            onFinalizar={finalizarSimulacao}
-            preencher
-          />
-        </View>
+        <ScrollView
+          style={styles.rolagemEtapa}
+          contentContainerStyle={styles.conteudoSimulacao}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.areaSimulacao}>
+            <SimuladorCelular
+              cenario={cenario}
+              onFinalizar={finalizarSimulacao}
+              preencher
+            />
+          </View>
+        </ScrollView>
       )}
 
         {etapa === "resultado" && (
@@ -1596,6 +1751,147 @@ export default function LicaoScreen() {
         </ScrollView>
       )}
 
+      {/* Resposta: acerto ou erro, grande e no centro da tela */}
+      <Modal
+        visible={feedbackVisivel && verificado && etapa === "questionario"}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFeedbackVisivel(false)}
+      >
+        <View style={styles.fundoModal}>
+          <ScrollView
+            style={styles.rolagemFeedback}
+            contentContainerStyle={styles.centroFeedback}
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={[
+                styles.cartaoFeedback,
+                {
+                  backgroundColor: tema.cartao,
+                  borderColor: acertouQuestao ? tema.sucesso : tema.erro,
+                },
+              ]}
+              accessibilityViewIsModal
+              accessibilityLiveRegion="polite"
+            >
+              {acertouQuestao ? (
+                <CheckCircle2 size={76} color={tema.sucesso} />
+              ) : (
+                <XCircle size={76} color={tema.erro} />
+              )}
+
+              <Text
+                style={[
+                  styles.tituloFeedback,
+                  {
+                    color: acertouQuestao ? tema.sucesso : tema.erro,
+                    fontSize: fonte(32),
+                  },
+                ]}
+              >
+                {tituloFeedback}
+              </Text>
+
+              <Text
+                style={[
+                  styles.corpoFeedback,
+                  { color: tema.texto, fontSize: fonte(20) },
+                ]}
+              >
+                {mensagemFeedback}
+              </Text>
+
+              {!acertouQuestao && alternativaCerta && (
+                <View
+                  style={[
+                    styles.caixaRespostaCerta,
+                    { backgroundColor: tema.sucessoFundo, borderColor: tema.sucesso },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.rotuloRespostaCerta,
+                      { color: tema.sucesso, fontSize: fonte(15) },
+                    ]}
+                  >
+                    A resposta certa é
+                  </Text>
+                  <Text
+                    style={[
+                      styles.textoRespostaCerta,
+                      { color: tema.texto, fontSize: fonte(19) },
+                    ]}
+                  >
+                    {alternativaCerta.texto}
+                  </Text>
+                  {explicacaoCerta !== "" && explicacaoCerta !== explicacao && (
+                    <Text
+                      style={[
+                        styles.corpoFeedback,
+                        { color: tema.texto, fontSize: fonte(17) },
+                      ]}
+                    >
+                      {explicacaoCerta}
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {!acertouQuestao && (
+                <View
+                  style={styles.linhaVidas}
+                  accessible
+                  accessibilityLabel={`${vidas} de ${VIDAS_MAXIMAS} vidas`}
+                >
+                  {Array.from({ length: VIDAS_MAXIMAS }).map((_, indice) => (
+                    <Heart
+                      key={indice}
+                      size={30}
+                      color={indice < vidas ? tema.erro : tema.borda}
+                      fill={indice < vidas ? tema.erro : "transparent"}
+                      strokeWidth={2}
+                    />
+                  ))}
+                </View>
+              )}
+
+              {!acertouQuestao && (
+                <Text
+                  style={[
+                    styles.corpoFeedback,
+                    { color: tema.textoSecundario, fontSize: fonte(17) },
+                  ]}
+                >
+                  {semVidas
+                    ? "Suas vidas acabaram. Vamos recomeçar as perguntas, sem pressa."
+                    : `Você ainda tem ${vidas} ${vidas === 1 ? "vida" : "vidas"}.`}
+                </Text>
+              )}
+
+              {semVidas ? (
+                <BotaoGrande
+                  titulo="Tentar de novo"
+                  icone={<RotateCcw size={24} color={tema.texto} />}
+                  onPress={() => reiniciar(true)}
+                />
+              ) : (
+                <BotaoGrande
+                  titulo={rotuloAvancar}
+                  icone={<ChevronRight size={24} color={tema.texto} />}
+                  onPress={avancarQuestao}
+                />
+              )}
+              <BotaoGrande
+                titulo="Ver as alternativas"
+                variante="contorno"
+                onPress={() => setFeedbackVisivel(false)}
+              />
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
       {/* Ajuda de cada etapa */}
       <Modal
         visible={ajudaVisivel}
@@ -1627,7 +1923,7 @@ export default function LicaoScreen() {
         visible={sairVisivel}
         transparent
         animationType="fade"
-        onRequestClose={() => setSairVisivel(false)}
+        onRequestClose={cancelarSaida}
       >
         <View style={styles.fundoModal}>
           <View
@@ -1638,19 +1934,17 @@ export default function LicaoScreen() {
               Quer sair?
             </Text>
             <Text style={[styles.textoAjuda, { color: tema.textoSecundario, fontSize: fonte(19) }]}>
-              Você pode voltar depois. O que já fez nesta lição fica guardado.
+              Se você sair agora, o progresso desta lição será perdido e você
+              vai precisar começar de novo.
             </Text>
             <BotaoGrande
               titulo="Continuar na lição"
-              onPress={() => setSairVisivel(false)}
+              onPress={cancelarSaida}
             />
             <BotaoGrande
-              titulo="Sair da lição"
+              titulo="Sair e perder o progresso"
               variante="contorno"
-              onPress={() => {
-                setSairVisivel(false);
-                sair();
-              }}
+              onPress={confirmarSaida}
             />
           </View>
         </View>
@@ -1679,6 +1973,74 @@ const styles = StyleSheet.create({
   },
   areaMidia: {
     flex: 1,
+    minHeight: 380,
+  },
+  conteudoEtapa: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
+    gap: 8,
+  },
+  conteudoSimulacao: {
+    flexGrow: 1,
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    paddingBottom: 12,
+  },
+  areaSimulacao: {
+    flex: 1,
+    minHeight: 680,
+  },
+  linhaTopoQuiz: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  linhaVidas: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  rolagemFeedback: {
+    flex: 1,
+  },
+  centroFeedback: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  cartaoFeedback: {
+    borderRadius: 28,
+    borderWidth: 3,
+    padding: 24,
+    gap: 14,
+    alignItems: "center",
+  },
+  tituloFeedback: {
+    fontFamily: "Poppins_800ExtraBold",
+    textAlign: "center",
+  },
+  corpoFeedback: {
+    fontFamily: "Poppins_600SemiBold",
+    textAlign: "center",
+  },
+  caixaRespostaCerta: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 2,
+    padding: 14,
+    gap: 4,
+    alignItems: "center",
+  },
+  rotuloRespostaCerta: {
+    fontFamily: "Poppins_800ExtraBold",
+    textAlign: "center",
+  },
+  textoRespostaCerta: {
+    fontFamily: "Poppins_800ExtraBold",
+    textAlign: "center",
   },
   secao: {
     gap: 14,
