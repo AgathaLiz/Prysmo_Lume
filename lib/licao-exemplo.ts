@@ -24,7 +24,7 @@ export type QuestaoExemplo = {
 export const CONTEUDO_EXEMPLO = {
   titulo: "Adicionar um contato no celular",
   descricao:
-    "Nesta lição você vai aprender a guardar o telefone de alguém importante. É mais fácil do que parece: a gente vê o caminho junto, um passo de cada vez.",
+    "Nesta lição você vai aprender a salvar o telefone de alguém importante. É mais fácil do que parece: a gente vê o caminho junto, um passo de cada vez.",
   // Ainda não temos o vídeo: o tipo "video" faz a tela reservar o espaço.
   url_arquivo: null,
   tipo: "video",
@@ -50,37 +50,43 @@ export const QUESTOES_EXEMPLO: QuestaoExemplo[] = [
 ];
 
 /**
- * Simulação simplificada: cinco toques, sempre com a instrução escrita
+ * Simulação simplificada: quatro toques, sempre com a instrução escrita
  * em cima e o elemento certo brilhando na tela do celular de mentirinha.
+ *
+ * O caminho é o do mockup: abrir o aplicativo Telefone, digitar o número,
+ * tocar no "+" para criar um contato novo e, por fim, preencher o nome
+ * para salvar. O que importa entre `**` aparece em roxo na instrução.
  */
 export const CENARIO_EXEMPLO: CenarioSimulacao = {
   titulo: "Vamos adicionar um contato",
   tela: "home",
   passos: [
     {
-      instrucao: "Toque no aplicativo Contatos.",
-      alvo: "app_contatos",
-      dica: "É o ícone roxo com uma pessoa desenhada.",
+      instrucao:
+        "Primeiro, toque no aplicativo **Telefone** (aquele de cor verde).",
+      alvo: "app_telefone",
+      dica: "É o ícone verde com um telefone desenhado.",
     },
     {
-      instrucao: "Toque em Novo contato.",
-      alvo: "botao_novo_contato",
-      dica: "Fica no topo da lista de contatos.",
+      instrucao:
+        "Em seguida, digite o **número de telefone** da pessoa que você deseja adicionar.",
+      alvo: "tecla_1",
+      tela: "discador",
+      dica: "É só tocar nos números, começando pelo 1.",
     },
     {
-      instrucao: "Toque no campo Nome.",
+      instrucao:
+        "Agora, clique no ícone **mais (+)** e em **Criar Novo Contato**.",
+      alvo: "botao_criar_contato",
+      tela: "discador",
+      dica: "O + fica no canto de cima da tela.",
+    },
+    {
+      instrucao:
+        "Por último, clique no campo **Nome** e em seguida, no **botão azul** para salvar.",
       alvo: "campo_nome",
-      dica: "É a primeira caixa branca da tela.",
-    },
-    {
-      instrucao: "Agora toque no campo Telefone.",
-      alvo: "campo_telefone",
-      dica: "Fica logo abaixo do nome.",
-    },
-    {
-      instrucao: "Por fim, toque em Salvar.",
-      alvo: "botao_salvar_contato",
-      dica: "É o botão roxo no fim da tela.",
+      tela: "novo_contato",
+      dica: "É a primeira caixinha branca. Depois é só o botão azul, lá em cima.",
     },
   ],
 };

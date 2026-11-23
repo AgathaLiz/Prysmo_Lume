@@ -1,22 +1,22 @@
-import {
-  CheckCircle2,
-  RefreshCw,
-  Volume2,
-  XCircle,
-} from "lucide-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { CheckCircle2, ChevronRight, XCircle } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
+  type ImageSourcePropType,
 } from "react-native";
 
+import { BarraStatus } from "@/components/BarraStatus";
+import { GRADIENTE_LICAO } from "@/components/BotaoGradiente";
 import { MolduraCelular } from "@/components/MolduraCelular";
 import { TelasFicticias } from "@/components/simulador/TelasFicticias";
-import { TutorialMimi } from "@/components/TutorialMimi";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import {
   telaDoAlvo,
@@ -24,40 +24,70 @@ import {
   type TelaFicticia,
 } from "@/lib/simulacao";
 
+const MIMI = require("../assets/Lume/Mimi/Png/mimi-sorrindo.png") as ImageSourcePropType;
+
+/** Largura dividida pela altura da Mimi (a imagem tem 157 x 219). */
+const PROPORCAO_MIMI = 157 / 219;
+
 type Props = {
   cenario: CenarioSimulacao;
   /** Recebe quantos erros a pessoa cometeu (usado na nota). */
   onFinalizar: (erros: number) => void;
+  /** Volta para a etapa anterior da lição (botão redondo do mockup). */
+  onVoltar?: () => void;
   /** Ocupa toda a altura disponível (o celular preenche a tela). */
   preencher?: boolean;
 };
 
 type Feedback = { tipo: "acerto" | "erro"; texto: string } | null;
 
+const PROPORCAO_TELEFONE = 9 / 19.5;
+const LARGURA_MAXIMA_TELEFONE = 340;
+/** Altura fixa do rodapé para o celular não mudar de tamanho entre passos. */
+const ALTURA_RODAPE = 58;
+const COR_TRILHA = "#303030";
+const COR_TEXTO = "#1A1A1A";
+
 /**
- * Celular de mentirinha.
+ * Celular de mentirinha da simulação.
  *
- * O aparelho fica na parte de cima da tela e o elemento certo recebe uma
- * borda/brilho. A instrução do passo vira a fala da Mimi, que fica logo
- * abaixo do celular (se sobrepondo de leve à moldura) para ficar bem
- * legível. Errar não pune: mostra a dica e deixa tentar de novo.
+ * O desenho segue o mockup: um cartão no topo com a Mimi e o que fazer agora,
+ * o botão redondo de voltar à esquerda e, embaixo, "Etapa X de N" com a barra
+ * de progresso em gradiente. O aparelho no meio é o mesmo de sempre.
+ *
+ * Errar não pune: mostra a dica no cartão e deixa tentar de novo.
  */
 export function SimuladorCelular({
   cenario,
   onFinalizar,
+  onVoltar,
   preencher = false,
 }: Props) {
   const { tema, fonte, audioDescricao, falar, pararFala } = useAcessibilidade();
+  const { width: larguraTela } = useWindowDimensions();
 
   const [indice, setIndice] = useState(0);
   const [erros, setErros] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [travado, setTravado] = useState(false);
+  const [espacoTelefone, setEspacoTelefone] = useState({
+    width: 0,
+    height: 0,
+  });
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const passo = cenario.passos[indice];
   const total = cenario.passos.length;
+
+  // Medidas proporcionais à largura da tela, como nas outras telas da lição.
+  const margem = Math.round(larguraTela * 0.05);
+  const alturaTrilha = Math.round(larguraTela * 0.03);
+  const ladoChevron = Math.min(58, Math.round(larguraTela * 0.15));
+  const iconeChevron = Math.round(ladoChevron * 0.52);
+  const larguraMimi = Math.round(larguraTela * 0.15);
+  const alturaMimi = Math.round(larguraMimi / PROPORCAO_MIMI);
+  const iconeFeedback = Math.round(larguraTela * 0.055);
 
   // Limpa o timer e cala a Mimi ao sair da tela.
   useEffect(() => {
@@ -67,20 +97,12 @@ export function SimuladorCelular({
     };
   }, [pararFala]);
 
-  // A Mimi lê a instrução de cada passo em voz alta, por conta própria.
+  // A Mimi só fala sozinha quando a audio-descrição está ligada nas
+  // preferências. Quem quiser ouvir fora disso toca no cartão da instrução.
   useEffect(() => {
-    if (!passo) return;
+    if (!audioDescricao || !passo) return;
     falar(passo.instrucao);
-  }, [passo, falar]);
-
-  const recomecar = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
-    pararFala();
-    setIndice(0);
-    setErros(0);
-    setFeedback(null);
-    setTravado(false);
-  }, [pararFala]);
+  }, [audioDescricao, passo, falar]);
 
   function aoTocar(alvo: string) {
     if (travado || !passo) return;
@@ -122,55 +144,73 @@ export function SimuladorCelular({
     (cenario.tela as TelaFicticia | undefined) ??
     "home";
 
+  // O celular precisa caber tanto na largura quanto na altura disponíveis.
+  // Assim ele não estoura a tela em aparelhos estreitos nem em telas baixas.
+  const larguraDisponivel = Math.max(0, espacoTelefone.width - 8);
+  const alturaDisponivel = Math.max(0, espacoTelefone.height - 8);
+  const larguraTelefone = Math.min(
+    larguraDisponivel,
+    alturaDisponivel * PROPORCAO_TELEFONE,
+    LARGURA_MAXIMA_TELEFONE
+  );
+  const alturaTelefone = larguraTelefone / PROPORCAO_TELEFONE;
+  const telefoneMedido = larguraTelefone > 0 && alturaTelefone > 0;
+
+  // O botão de voltar acompanha o topo do celular, como no mockup.
+  const topoTelefone = Math.max(
+    0,
+    (espacoTelefone.height - alturaTelefone) / 2
+  );
+  const topoChevron = Math.round(topoTelefone + alturaTelefone * 0.08);
+
+  const etapaAtual = indice + 1;
+  const progresso = total > 0 ? etapaAtual / total : 0;
+
+  const textoParaOuvir = feedback
+    ? feedback.tipo === "acerto"
+      ? "Muito bem!"
+      : `Não foi esse. ${feedback.texto}`
+    : passo.instrucao;
+
   return (
     <View style={[styles.container, preencher && styles.containerPreencher]}>
-      <View style={styles.areaCelular}>
-        {/* Celular mais curto para a Mimi caber embaixo sem cobrir a tela. */}
-        <View style={styles.areaTelefone}>
-          <MolduraCelular preencher semBarraStatus>
-            <ScrollView
-              style={styles.rolagem}
-              contentContainerStyle={{ flexGrow: 1 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              <TelasFicticias
-                tela={tela}
-                alvoAtual={passo.alvo}
-                onToque={aoTocar}
-                desabilitado={travado}
-              />
-            </ScrollView>
-          </MolduraCelular>
-        </View>
+      <BarraStatus />
 
-        {/* Rodapé da Mimi: fica fora do celular e se sobrepõe de leve. */}
-        <View style={styles.rodape}>
-          <View
-            style={styles.areaMimi}
-            pointerEvents="none"
-          >
+      <View style={[styles.corpo, { paddingHorizontal: margem }]}>
+        {/* Cartão de instrução: a Mimi e o que fazer agora. Tocar nele
+            repete a fala, para quem não usa a audio-descrição. */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {
+            pararFala();
+            falar(textoParaOuvir);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Instrução: ${textoParaOuvir}`}
+          accessibilityHint="Toque para ouvir de novo"
+          style={[
+            styles.cartao,
+            { backgroundColor: tema.cartao, borderColor: tema.borda },
+          ]}
+        >
+          <Image
+            source={MIMI}
+            style={{ width: larguraMimi, height: alturaMimi }}
+            resizeMode="contain"
+          />
+
+          <View style={styles.cartaoTexto}>
             {feedback ? (
-              <View
-                style={[
-                  styles.feedback,
-                  {
-                    backgroundColor:
-                      feedback.tipo === "acerto"
-                        ? tema.sucessoFundo
-                        : tema.erroFundo,
-                  },
-                ]}
-                accessibilityLiveRegion="polite"
-              >
-                {feedback.tipo === "acerto" ? (
-                  <CheckCircle2 size={24} color={tema.sucesso} />
-                ) : (
-                  <XCircle size={24} color={tema.erro} />
-                )}
-                <View style={styles.feedbackTextos}>
+              <>
+                <View style={styles.linhaFeedback}>
+                  {feedback.tipo === "acerto" ? (
+                    <CheckCircle2 size={iconeFeedback} color={tema.sucesso} />
+                  ) : (
+                    <XCircle size={iconeFeedback} color={tema.erro} />
+                  )}
                   <Text
                     style={[
-                      styles.textoFeedback,
+                      styles.textoInstrucao,
                       {
                         color:
                           feedback.tipo === "acerto" ? tema.sucesso : tema.erro,
@@ -178,54 +218,135 @@ export function SimuladorCelular({
                       },
                     ]}
                   >
-                    {feedback.texto}
+                    {feedback.tipo === "acerto" ? "Muito bem!" : "Não foi esse."}
                   </Text>
-                  {feedback.tipo === "erro" && (
-                    <Text
-                      style={[
-                        styles.dica,
-                        { color: tema.textoSecundario, fontSize: fonte(13) },
-                      ]}
-                    >
-                      Toque de novo. Não tem pressa.
-                    </Text>
-                  )}
                 </View>
-              </View>
+
+                {feedback.tipo === "erro" && (
+                  <Text
+                    style={[
+                      styles.textoDica,
+                      { color: tema.texto, fontSize: fonte(14) },
+                    ]}
+                  >
+                    {feedback.texto} Toque de novo. Não tem pressa.
+                  </Text>
+                )}
+              </>
             ) : (
-              <TutorialMimi
-                fala={passo.instrucao}
-                titulo={`Passo ${indice + 1} de ${total}`}
-                pose="esquerda"
-              />
+              <Text
+                style={[
+                  styles.textoInstrucao,
+                  { color: COR_TEXTO, fontSize: fonte(16) },
+                ]}
+              >
+                <InstrucaoMarcada texto={passo.instrucao} />
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.areaCelular}>
+          <View
+            style={styles.areaTelefone}
+            onLayout={(evento) => {
+              const { width, height } = evento.nativeEvent.layout;
+              setEspacoTelefone((atual) => {
+                if (
+                  Math.abs(atual.width - width) < 1 &&
+                  Math.abs(atual.height - height) < 1
+                ) {
+                  return atual;
+                }
+                return { width, height };
+              });
+            }}
+          >
+            {telefoneMedido && (
+              <MolduraCelular
+                semBarraStatus
+                tamanho={{ width: larguraTelefone, height: alturaTelefone }}
+              >
+                <ScrollView
+                  style={styles.rolagem}
+                  contentContainerStyle={{ flexGrow: 1 }}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <TelasFicticias
+                    tela={tela}
+                    alvoAtual={passo.alvo}
+                    onToque={aoTocar}
+                    desabilitado={travado}
+                  />
+                </ScrollView>
+              </MolduraCelular>
             )}
           </View>
 
-          <View style={styles.controleLinha}>
+          {onVoltar && (
             <TouchableOpacity
-              onPress={() => falar(passo.instrucao)}
-              activeOpacity={0.8}
+              onPress={onVoltar}
+              activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel="Ouvir a instrução de novo"
+              accessibilityLabel="Voltar para a etapa anterior"
               style={[
-                styles.botaoControle,
-                { borderColor: tema.borda, backgroundColor: tema.cartao },
+                styles.chevron,
+                {
+                  top: topoChevron,
+                  width: ladoChevron,
+                  height: ladoChevron,
+                  borderRadius: ladoChevron / 2,
+                  backgroundColor: tema.cartao,
+                  borderColor: tema.borda,
+                },
               ]}
             >
-              <Volume2 size={20} color={tema.roxoEscuro} />
+              <ChevronRight size={iconeChevron} color={tema.texto} />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={recomecar}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Recomeçar simulação"
+          )}
+        </View>
+
+        {/* Rodapé fixo: "Etapa X de N" com a barra de progresso. */}
+        <View style={[styles.rodape, { height: ALTURA_RODAPE }]}>
+          <Text
+            style={[
+              styles.textoEtapa,
+              { color: COR_TEXTO, fontSize: fonte(13) },
+            ]}
+          >
+            Etapa {etapaAtual} de {total}
+          </Text>
+
+          <View
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityLabel={`Etapa ${etapaAtual} de ${total}`}
+            accessibilityValue={{ min: 0, max: total, now: etapaAtual }}
+            style={[
+              styles.trilha,
+              {
+                height: alturaTrilha,
+                borderRadius: alturaTrilha / 2,
+                marginTop: Math.round(larguraTela * 0.02),
+              },
+            ]}
+          >
+            <View
               style={[
-                styles.botaoControle,
-                { borderColor: tema.borda, backgroundColor: tema.cartao },
+                styles.preenchimento,
+                {
+                  width: `${progresso * 100}%`,
+                  borderRadius: alturaTrilha / 2,
+                },
               ]}
             >
-              <RefreshCw size={20} color={tema.roxoEscuro} />
-            </TouchableOpacity>
+              <LinearGradient
+                colors={GRADIENTE_LICAO}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.preenchimentoGradiente}
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -233,65 +354,119 @@ export function SimuladorCelular({
   );
 }
 
+/**
+ * Instrução com trechos destacados.
+ *
+ * O conteúdo marca o que importa entre `**`: esses pedaços ficam em roxo,
+ * como no mockup, e o resto fica no tom do texto.
+ */
+function InstrucaoMarcada({ texto }: { texto: string }) {
+  const { tema } = useAcessibilidade();
+  const partes = texto.split("**");
+
+  return (
+    <>
+      {partes.map((parte, posicao) =>
+        posicao % 2 === 1 ? (
+          <Text key={posicao} style={[styles.destaque, { color: tema.roxoEscuro }]}>
+            {parte}
+          </Text>
+        ) : (
+          <Text key={posicao}>{parte}</Text>
+        )
+      )}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
+    flex: 1,
+    minHeight: 0,
   },
   containerPreencher: {
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+  },
+  corpo: {
     flex: 1,
+    minHeight: 0,
+  },
+  cartao: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cartaoTexto: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  linhaFeedback: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  textoInstrucao: {
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  destaque: {
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  textoDica: {
+    fontFamily: "Poppins_600SemiBold",
   },
   areaCelular: {
     flex: 1,
+    minHeight: 0,
   },
   areaTelefone: {
     flex: 1,
+    minHeight: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  rodape: {
-    // Sobe um pouco para a Mimi encostar na borda inferior do celular.
-    marginTop: -18,
-  },
-  areaMimi: {
-    // Mantém a altura estável para o celular não pular no feedback.
-    minHeight: 104,
+  chevron: {
+    position: "absolute",
+    left: 0,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 4,
   },
   rolagem: {
     flex: 1,
   },
-  feedback: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 16,
-    padding: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  controleLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 8,
-  },
-  botaoControle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    alignItems: "center",
+  rodape: {
     justifyContent: "center",
   },
-  feedbackTextos: {
+  textoEtapa: {
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  trilha: {
+    backgroundColor: COR_TRILHA,
+    justifyContent: "center",
+  },
+  preenchimento: {
+    height: "100%",
+    overflow: "hidden",
+  },
+  preenchimentoGradiente: {
     flex: 1,
-    gap: 2,
-  },
-  textoFeedback: {
-    fontFamily: "Poppins_600SemiBold",
-  },
-  dica: {
-    fontFamily: "Poppins_300Light",
   },
 });

@@ -41,13 +41,13 @@ export function CabecalhoLicao({
           style={[
             styles.iconeBotao,
             {
-              borderColor: tema.amarelo,
-              backgroundColor: tema.amarelo,
-              shadowColor: tema.amarelo,
+              borderColor: tema.erro,
+              backgroundColor: tema.erro,
+              shadowColor: tema.erro,
             },
           ]}
         >
-          <X size={30} color="#32064F" strokeWidth={3} />
+          <X size={30} color="#FFFFFF" strokeWidth={3} />
         </TouchableOpacity>
 
         <Text

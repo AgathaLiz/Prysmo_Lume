@@ -4,48 +4,36 @@ import {
   useNavigation,
   useRouter,
 } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import {
-  CheckCircle2,
-  ChevronRight,
-  Heart,
-  Lock,
-  PartyPopper,
-  Pause,
-  RotateCcw,
-  RotateCw,
-  Sparkles,
-  Star,
-  Trophy,
-  XCircle,
-} from "lucide-react-native";
+import { Lock, Sparkles, X } from "lucide-react-native";
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BarraStatus } from "@/components/BarraStatus";
 import { BotaoGrande } from "@/components/BotaoGrande";
-import { CabecalhoLicao } from "@/components/CabecalhoLicao";
-import { MolduraCelular } from "@/components/MolduraCelular";
-import { PlayerVideo } from "@/components/PlayerVideo";
+import { IntroLicao } from "@/components/IntroLicao";
+import { OfensivaLicao } from "@/components/OfensivaLicao";
 import { PopupMuitoBem } from "@/components/PopupMuitoBem";
+import { QuizLicao } from "@/components/QuizLicao";
+import { ResultadoLicao } from "@/components/ResultadoLicao";
 import { SimuladorCelular } from "@/components/SimuladorCelular";
-import { TutorialMimi } from "@/components/TutorialMimi";
+import { VideoLicao } from "@/components/VideoLicao";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import {
   CONTEUDO_EXEMPLO,
@@ -56,7 +44,6 @@ import {
   ESTRELAS_MAXIMAS,
   NOTA_MINIMA_PADRAO,
   XP_POR_LICAO,
-  descreverEstrelas,
   estrelasDaNota,
   foiAprovado,
   notaDaSimulacao,
@@ -85,16 +72,12 @@ type Etapa =
   | "resultado"
   | "ofensiva";
 
-const MIMI_FEEDBACK = require("../../assets/Lume/Mimi/Png/mimi-de-frente.png");
-const MIMI_FEEDBACK_TRISTE = require("../../assets/Lume/Mimi/Png/mimi-pra-baixo.png");
-const LUZ_OFENSIVA = require("../../assets/Lume/Outros elementos/Png/luz-acesa.png");
-const ESTRELA_DIA = require("../../assets/Lume/Outros elementos/Png/estrela-cinco-pontas.png");
-
-/** Quantos erros a pessoa pode cometer no questionário antes de a lição reiniciar. */
-const VIDAS_MAXIMAS = 2;
-
 /** Acertos seguidos que merecem a comemoração "Muito bem!". */
 const ACERTOS_PARA_COMEMORAR = 2;
+
+/** Recado fixo da Mimi na abertura da lição (aparece no balão). */
+const FALA_INTRO =
+  "Oi! Eu sou a Mimi. Vou ficar com você em cada passo. Lembre-se, não há pressa, você pode repetir quantas vezes quiser.";
 
 // `correta` só existe na lição de exemplo local. As lições do banco NÃO
 // recebem essa coluna: o servidor confere a resposta (função verificar_resposta).
@@ -155,7 +138,7 @@ const AJUDA_POR_ETAPA: Record<Etapa, string> = {
   video:
     "Toque no botão de assistir no vídeo. Se quiser, veja de novo. Depois toque em Continuar.",
   questionario:
-    "Leia a pergunta e toque na resposta que você acha certa. Depois toque em Verificar. Não tem pressa.",
+    "Leia a pergunta e toque na resposta que você acha certa. Depois toque em Continuar. Não tem pressa.",
   simulacao:
     "Leia a instrução que aparece em cima e toque na parte do celular que combina com ela.",
   resultado:
@@ -208,51 +191,46 @@ function montarQuestoesExemplo(): Questao[] {
 }
 
 /**
- * Espaço reservado do vídeo, com a moldura de celular do design.
- * O celular ocupa a tela: barra de status, notch, área cinza com os
- * controles e a barra de progresso com o preenchimento em gradiente.
+ * Moldura das telas de estado da lição (carregando, bloqueada, erro e sem
+ * conteúdo). Segue o mesmo desenho das etapas: barra de status, fundo
+ * branco e o X de sair no canto, sem o cabeçalho antigo.
  */
-function EspacoVideo({ titulo }: { titulo: string }) {
-  const { fonte } = useAcessibilidade();
+function TelaEstado({
+  onFechar,
+  children,
+}: {
+  onFechar: () => void;
+  children: ReactNode;
+}) {
+  const { width: larguraTela } = useWindowDimensions();
+  const margem = Math.round(larguraTela * 0.05);
+  const ladoX = Math.min(64, Math.round(larguraTela * 0.16));
 
   return (
-    <MolduraCelular preencher>
-      <View
-        accessible
-        accessibilityLabel={`Vídeo da lição ${titulo}. O vídeo ainda não está disponível.`}
-        style={styles.areaVideo}
-      >
-        <View style={styles.controlesVideo}>
-          <View style={styles.controleVideo}>
-            <RotateCcw size={34} color="#BDBDBD" />
-            <Text style={[styles.controleVideoTexto, { fontSize: fonte(11) }]}>
-              10
-            </Text>
-          </View>
+    <SafeAreaView style={[styles.tela, { backgroundColor: "#FFFFFF" }]}>
+      <BarraStatus />
 
-          <Pause size={42} color="#BDBDBD" />
-
-          <View style={styles.controleVideo}>
-            <RotateCw size={34} color="#BDBDBD" />
-            <Text style={[styles.controleVideoTexto, { fontSize: fonte(11) }]}>
-              10
-            </Text>
-          </View>
-        </View>
+      <View style={[styles.estadoTopo, { paddingHorizontal: margem }]}>
+        <TouchableOpacity
+          onPress={onFechar}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Sair da lição"
+          style={[
+            styles.botaoSairEstado,
+            {
+              width: ladoX,
+              height: ladoX,
+              borderRadius: Math.round(ladoX * 0.28),
+            },
+          ]}
+        >
+          <X size={Math.round(ladoX * 0.55)} color="#FFFFFF" strokeWidth={3} />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.progressoArea} pointerEvents="none">
-        <View style={styles.progressoTrilha}>
-          <LinearGradient
-            colors={["#C77DFF", "#FFB45E"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.progressoPreenchido}
-          />
-          <View style={styles.progressoKnob} />
-        </View>
-      </View>
-    </MolduraCelular>
+      <View style={styles.centro}>{children}</View>
+    </SafeAreaView>
   );
 }
 
@@ -271,7 +249,7 @@ export default function LicaoScreen() {
   const [questoes, setQuestoes] = useState<Questao[]>([]);
   const [cenario, setCenario] = useState<CenarioSimulacao | null>(null);
   const [bloqueada, setBloqueada] = useState(false);
-  const [exemplo, setExemplo] = useState(false);
+
 
   const [etapa, setEtapa] = useState<Etapa>("intro");
   const [ajudaVisivel, setAjudaVisivel] = useState(false);
@@ -293,7 +271,6 @@ export default function LicaoScreen() {
   const [erroVerificar, setErroVerificar] = useState("");
   const [explicacao, setExplicacao] = useState("");
   const [explicacaoCerta, setExplicacaoCerta] = useState("");
-  const [vidas, setVidas] = useState(VIDAS_MAXIMAS);
 
   // Simulação
   const [notaSimulacao, setNotaSimulacao] = useState<number | null>(null);
@@ -304,7 +281,6 @@ export default function LicaoScreen() {
   const [xpGanho, setXpGanho] = useState(0);
   const [erroSalvar, setErroSalvar] = useState("");
   const salvouRef = useRef(false);
-  const rolagemQuizRef = useRef<ScrollView>(null);
 
   // Saída da lição: o progresso só é salvo no fim, então sair no meio perde tudo.
   const emProgresso =
@@ -346,7 +322,6 @@ export default function LicaoScreen() {
     // Lição de demonstração da trilha de exemplo. Não consulta o banco,
     // porque ela é montada só para dar para testar o fluxo completo.
     if (idLicao === LICAO_EXEMPLO_ID) {
-      setExemplo(true);
       setLicao(LICAO_EXEMPLO);
       setAula(AULA_EXEMPLO);
       setQuestoes(montarQuestoesExemplo());
@@ -511,7 +486,6 @@ export default function LicaoScreen() {
         ? CENARIO_EXEMPLO
         : cenarioEncontrado ?? cenarioParaLicao(aulaFinal.nome);
 
-      setExemplo(usarExemplo);
       setLicao(respostaLicao.data);
       setAula(aulaFinal);
       setQuestoes(perguntas);
@@ -537,10 +511,6 @@ export default function LicaoScreen() {
     return lista;
   }, [questoes.length]);
 
-  const totalEtapas = etapasConteudo.length;
-  const indiceEtapaAtual = etapasConteudo.indexOf(etapa);
-  const etapaAtualNumero = indiceEtapaAtual >= 0 ? indiceEtapaAtual + 1 : null;
-
   const questaoAtual = questoes[indiceQuestao] ?? null;
 
   // Embaralha uma vez por pergunta (não muda a cada toque).
@@ -559,29 +529,7 @@ export default function LicaoScreen() {
   const diasSeguidos = Math.max(1, ofensiva);
 
   // O gabarito vem do servidor, só depois de a pessoa verificar a resposta.
-  const alternativaCerta =
-    alternativas.find((a) => a.alternativas_id === certaId) ?? null;
   const acertouQuestao = verificado && acertou;
-  const semVidas = verificado && !acertou && vidas <= 0;
-
-  // O botão depois da última pergunta depende do que vem a seguir.
-  const etapaDepoisDoQuiz =
-    etapasConteudo[etapasConteudo.indexOf("questionario") + 1] ?? "resultado";
-  const ultimaPergunta = indiceQuestao >= questoes.length - 1;
-  const rotuloAvancar = !ultimaPergunta
-    ? "Próxima"
-    : etapaDepoisDoQuiz === "resultado"
-      ? "Ver resultado"
-      : "Ir para a prática";
-
-  const tituloFeedback = acertouQuestao
-    ? "Isso mesmo!"
-    : semVidas
-      ? "Acabaram suas vidas"
-      : "Quase!";
-  const mensagemFeedback = acertouQuestao
-    ? explicacao || "Você escolheu a resposta certa. Muito bem!"
-    : explicacao || "Essa alternativa não é a correta.";
 
   const passosDaIntro = useMemo(() => {
     const lista: string[] = ["Assistir a um vídeo"];
@@ -593,17 +541,7 @@ export default function LicaoScreen() {
   /** O que a Mimi fala em cada etapa. Muda junto com o que está na tela. */
   const falaMimi = useMemo(() => {
     if (etapa === "intro") {
-      if (passosDaIntro.length === 0) {
-        return "Oi! Eu sou a Mimi. Vou ficar com você nesta lição. Não há pressa.";
-      }
-
-      const ultimoPasso = passosDaIntro[passosDaIntro.length - 1];
-      const listaPassos =
-        passosDaIntro.length === 1
-          ? ultimoPasso
-          : `${passosDaIntro.slice(0, -1).join(", ")} e ${ultimoPasso}`;
-
-      return `Oi! Eu sou a Mimi. Vou ficar com você em cada passo: ${listaPassos.toLowerCase()}. Não há pressa.`;
+      return FALA_INTRO;
     }
 
     if (etapa === "video") {
@@ -612,16 +550,14 @@ export default function LicaoScreen() {
 
     if (etapa === "questionario") {
       if (!verificado) {
-        return "Leia a pergunta e toque na resposta que parece certa. Depois toque em Verificar. Não tem pressa.";
+        return "Leia a pergunta e toque na resposta que parece certa. Depois toque em Continuar. Não tem pressa.";
       }
 
       if (acertouQuestao) {
-        return `Isso mesmo! Você acertou. Toque em ${rotuloAvancar} para continuar.`;
+        return "Isso mesmo! Você acertou. Toque em Continuar para seguir.";
       }
-      if (semVidas) {
-        return "Suas vidas acabaram, mas tudo bem. Toque em Tentar de novo e vamos recomeçar juntos.";
-      }
-      return `Quase! A resposta certa está marcada em verde. Toque em ${rotuloAvancar} e vamos juntos.`;
+
+      return "Quase! A resposta certa está marcada em verde. Toque em Continuar e vamos juntos.";
     }
 
     if (etapa === "simulacao") {
@@ -644,11 +580,8 @@ export default function LicaoScreen() {
     return `Você ganhou ${estrelas} de ${ESTRELAS_MAXIMAS} estrelas. Quase lá! Vamos praticar de novo?`;
   }, [
     etapa,
-    passosDaIntro,
     verificado,
     acertouQuestao,
-    semVidas,
-    rotuloAvancar,
     erroSalvar,
     salvando,
     aprovado,
@@ -742,23 +675,16 @@ export default function LicaoScreen() {
     return () => window.removeEventListener("beforeunload", aoFechar);
   }, [emProgresso]);
 
-  // Audio-descrição: lê a pergunta e o resultado sozinho.
+  // Audio-descrição: lê a introdução e a pergunta sozinho, mas só quando a
+  // pessoa ligou essa opção nas preferências. Sem a opção, a leitura fica
+  // por conta dos botões de som de cada tela.
   useEffect(() => {
     if (!audioDescricao) return;
+    if (etapa === "intro" && textoOuvir) falar(textoOuvir);
     if (etapa === "questionario" && textoOuvir) falar(textoOuvir);
     if (etapa === "resultado" && textoOuvir) falar(textoOuvir);
     if (etapa === "ofensiva" && textoOuvir) falar(textoOuvir);
   }, [audioDescricao, etapa, textoOuvir, falar]);
-
-  // Depois de verificar, o feedback fica logo acima do botão de avançar.
-  // Rola até o fim para garantir que ele apareça na tela.
-  useEffect(() => {
-    if (!verificado || etapa !== "questionario") return;
-    const temporizador = setTimeout(() => {
-      rolagemQuizRef.current?.scrollToEnd({ animated: true });
-    }, 180);
-    return () => clearTimeout(temporizador);
-  }, [verificado, etapa]);
 
   /** Descobre se esta é a última lição do nível e qual nível liberar. */
   async function descobrirProximoNivel(
@@ -889,14 +815,7 @@ export default function LicaoScreen() {
     setEtapa(etapasConteudo[0] ?? "resultado");
   }
 
-  function reiniciar(pularVideo: boolean) {
-    salvouRef.current = false;
-    setSalvo(false);
-    setErroSalvar("");
-    setXpGanho(0);
-    setConquistasNovas([]);
-    setNotaQuiz(null);
-    setNotaSimulacao(null);
+  function resetarQuiz() {
     setIndiceQuestao(0);
     setSelecionada(null);
     setVerificado(false);
@@ -909,7 +828,17 @@ export default function LicaoScreen() {
     setErroVerificar("");
     setExplicacao("");
     setExplicacaoCerta("");
-    setVidas(VIDAS_MAXIMAS);
+  }
+
+  function reiniciar(pularVideo: boolean) {
+    salvouRef.current = false;
+    setSalvo(false);
+    setErroSalvar("");
+    setXpGanho(0);
+    setConquistasNovas([]);
+    setNotaQuiz(null);
+    setNotaSimulacao(null);
+    resetarQuiz();
 
     if (pularVideo) {
       const semVideo = etapasConteudo.find((item) => item !== "video");
@@ -974,8 +903,6 @@ export default function LicaoScreen() {
 
     if (correta) {
       setAcertos((total) => total + 1);
-    } else {
-      setVidas((atual) => Math.max(0, atual - 1));
     }
 
     if (audioDescricao) {
@@ -1014,6 +941,41 @@ export default function LicaoScreen() {
     setCertaId(null);
     setAcertou(false);
     setErroVerificar("");
+  }
+
+  /** Um único botão: verifica a resposta antes e avança depois. */
+  function continuarQuiz() {
+    if (verificado) {
+      avancarQuestao();
+      return;
+    }
+
+    if (selecionada === null) {
+      setErroVerificar("Escolha uma resposta para continuar.");
+      return;
+    }
+
+    void verificarResposta();
+  }
+
+  /** Volta para a etapa anterior da lição (normalmente o vídeo). */
+  function voltarEtapaAnterior() {
+    const posicao = etapasConteudo.indexOf("questionario");
+    const anterior = posicao > 0 ? etapasConteudo[posicao - 1] : null;
+    if (anterior) setEtapa(anterior);
+  }
+
+  /** Volta para a etapa anterior da lição a partir da simulação. */
+  function voltarDaSimulacao() {
+    const posicao = etapasConteudo.indexOf("simulacao");
+    const anterior = posicao > 0 ? etapasConteudo[posicao - 1] : null;
+    if (anterior) setEtapa(anterior);
+  }
+
+  /** Recomeça o quiz do zero, sem sair da etapa. */
+  function recomecarQuiz() {
+    pararFala();
+    resetarQuiz();
   }
 
   function finalizarSimulacao(erros: number) {
@@ -1060,824 +1022,183 @@ export default function LicaoScreen() {
 
   if (carregando) {
     return (
-      <SafeAreaView style={[styles.tela, { backgroundColor: tema.fundo }]}>
-        <CabecalhoLicao
-          titulo="Lição"
-          etapaAtual={null}
-          totalEtapas={0}
-          onFechar={sair}
-          onAjuda={() => setAjudaVisivel(true)}
-        />
-        <View style={styles.centro}>
-          <ActivityIndicator size="large" color={tema.roxoEscuro} />
-          <Text style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(19) }]}>
-            Preparando sua lição...
-          </Text>
-        </View>
-      </SafeAreaView>
+      <TelaEstado onFechar={sair}>
+        <ActivityIndicator size="large" color={tema.roxoEscuro} />
+        <Text style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(19) }]}>
+          Preparando sua lição...
+        </Text>
+      </TelaEstado>
     );
   }
 
   if (bloqueada) {
     return (
-      <SafeAreaView style={[styles.tela, { backgroundColor: tema.fundo }]}>
-        <CabecalhoLicao
-          titulo={tituloLicao}
-          etapaAtual={null}
-          totalEtapas={0}
-          onFechar={sair}
-          onAjuda={() => setAjudaVisivel(true)}
+      <TelaEstado onFechar={sair}>
+        <Lock size={52} color={tema.textoSecundario} />
+        <Text
+          style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(22) }]}
+        >
+          Esta lição ainda está bloqueada
+        </Text>
+        <Text
+          style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}
+        >
+          Termine a lição anterior para abrir esta. Sem pressa!
+        </Text>
+        <BotaoGrande
+          titulo="Voltar para a trilha"
+          onPress={sair}
+          estilo={styles.botaoCentro}
         />
-        <View style={styles.centro}>
-          <Lock size={52} color={tema.textoSecundario} />
-          <Text
-            style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(22) }]}
-          >
-            Esta lição ainda está bloqueada
-          </Text>
-          <Text
-            style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}
-          >
-            Termine a lição anterior para abrir esta. Sem pressa!
-          </Text>
-          <BotaoGrande
-            titulo="Voltar para a trilha"
-            onPress={sair}
-            estilo={styles.botaoCentro}
-          />
-        </View>
-      </SafeAreaView>
+      </TelaEstado>
     );
   }
 
   if (erro || !licao || !aula) {
     return (
-      <SafeAreaView style={[styles.tela, { backgroundColor: tema.fundo }]}>
-        <CabecalhoLicao
-          titulo="Lição"
-          etapaAtual={null}
-          totalEtapas={0}
-          onFechar={sair}
-          onAjuda={() => setAjudaVisivel(true)}
+      <TelaEstado onFechar={sair}>
+        <Text style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(19) }]}>
+          {erro || "Não encontramos esta lição."}
+        </Text>
+        <BotaoGrande
+          titulo="Tentar de novo"
+          onPress={() => void carregarLicao()}
+          estilo={styles.botaoCentro}
         />
-        <View style={styles.centro}>
-          <Text style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(19) }]}>
-            {erro || "Não encontramos esta lição."}
-          </Text>
-          <BotaoGrande
-            titulo="Tentar de novo"
-            onPress={() => void carregarLicao()}
-            estilo={styles.botaoCentro}
-          />
-          <BotaoGrande
-            titulo="Voltar para a trilha"
-            variante="contorno"
-            onPress={sair}
-          />
-        </View>
-      </SafeAreaView>
+        <BotaoGrande
+          titulo="Voltar para a trilha"
+          variante="contorno"
+          onPress={sair}
+        />
+      </TelaEstado>
     );
   }
 
   // Lição sem nenhum conteúdo ainda: não deixa "concluir" sem aprender nada.
   if (semConteudo) {
     return (
-      <SafeAreaView style={[styles.tela, { backgroundColor: tema.fundo }]}>
-        <CabecalhoLicao
-          titulo={tituloLicao}
-          etapaAtual={null}
-          totalEtapas={0}
-          onFechar={sair}
-          onAjuda={() => setAjudaVisivel(true)}
+      <TelaEstado onFechar={sair}>
+        <Sparkles size={52} color={tema.roxoEscuro} />
+        <Text
+          style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(22) }]}
+        >
+          Esta lição ainda está sendo preparada
+        </Text>
+        <Text
+          style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}
+        >
+          Em breve ela terá vídeo, perguntas e prática. Enquanto isso,
+          você pode voltar para a trilha.
+        </Text>
+        <BotaoGrande
+          titulo="Voltar para a trilha"
+          onPress={sair}
+          estilo={styles.botaoCentro}
         />
-        <View style={styles.centro}>
-          <Sparkles size={52} color={tema.roxoEscuro} />
-          <Text
-            style={[styles.textoStatus, { color: tema.texto, fontSize: fonte(22) }]}
-          >
-            Esta lição ainda está sendo preparada
-          </Text>
-          <Text
-            style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}
-          >
-            Em breve ela terá vídeo, perguntas e prática. Enquanto isso,
-            você pode voltar para a trilha.
-          </Text>
-          <BotaoGrande
-            titulo="Voltar para a trilha"
-            onPress={sair}
-            estilo={styles.botaoCentro}
-          />
-        </View>
-      </SafeAreaView>
+      </TelaEstado>
     );
   }
 
   // ---------- Conteúdo ----------
 
+  // Cada etapa desenha o próprio topo (barra de status e botão de sair da
+  // vez), então a tela da lição é sempre branca e não tem cabeçalho comum.
   return (
-    <SafeAreaView style={[styles.tela, { backgroundColor: tema.fundo }]}>
-      <CabecalhoLicao
-        titulo={tituloLicao}
-        etapaAtual={
-          (etapa === "resultado" || etapa === "ofensiva") && totalEtapas > 0
-            ? totalEtapas
-            : etapaAtualNumero
-        }
-        totalEtapas={totalEtapas}
-        textoOuvir={textoOuvir || undefined}
-        onFechar={pedirParaSair}
-        onAjuda={() => {
-          setAjudaVisivel(true);
-          if (audioDescricao) falar(AJUDA_POR_ETAPA[etapa]);
-        }}
-      />
-
+    <SafeAreaView style={[styles.tela, { backgroundColor: "#FFFFFF" }]}>
       {etapa === "intro" && (
-        <ScrollView
-          style={styles.rolagemEtapa}
-          contentContainerStyle={styles.conteudoRolavel}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.secao}>
-            <TutorialMimi fala={falaMimi} destaque />
-
-            <Text style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(26) }]}>
-              Nesta lição você vai:
-            </Text>
-
-            {exemplo && (
-              <View style={[styles.etiquetaExemplo, { backgroundColor: tema.amareloSuave }]}>
-                <Sparkles size={18} color="#32064F" />
-                <Text style={[styles.textoEtiqueta, { color: "#32064F", fontSize: fonte(14) }]}>
-                  LIÇÃO DE EXEMPLO
-                </Text>
-              </View>
-            )}
-
-            {conteudo && (conteudo.titulo || conteudo.descricao) ? (
-              <View
-                style={[
-                  styles.cartaoTexto,
-                  { backgroundColor: tema.cartao, borderColor: tema.borda },
-                ]}
-              >
-                {conteudo.titulo?.trim() ? (
-                  <Text
-                    style={[styles.tituloSecao, { color: tema.texto, fontSize: fonte(22) }]}
-                  >
-                    {conteudo.titulo}
-                  </Text>
-                ) : null}
-                {conteudo.descricao?.trim() ? (
-                  <Text
-                    style={[
-                      styles.texto,
-                      { color: tema.textoSecundario, fontSize: fonte(18) },
-                    ]}
-                  >
-                    {conteudo.descricao}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-
-            {passosDaIntro.length === 0 ? (
-              <Text style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(18) }]}>
-                Esta lição não tem vídeo, perguntas nem simulação. Toque em
-                continuar para concluir.
-              </Text>
-            ) : (
-              passosDaIntro.map((passo, indice) => (
-                <View key={passo} style={styles.linhaPasso}>
-                  <View style={[styles.numeroPasso, { backgroundColor: tema.roxo }]}>
-                    <Text style={[styles.numeroTexto, { color: "#32064F", fontSize: fonte(18) }]}>
-                      {indice + 1}
-                    </Text>
-                  </View>
-                  <Text style={[styles.textoPasso, { color: tema.texto, fontSize: fonte(20) }]}>
-                    {passo}
-                  </Text>
-                </View>
-              ))
-            )}
-
-            <Text style={[styles.textoCalma, { color: tema.textoSecundario, fontSize: fonte(17) }]}>
-              Não há pressa. Você pode repetir quantas vezes quiser.
-            </Text>
-
-            <BotaoGrande
-              titulo={etapasConteudo.length === 0 ? "Concluir lição" : "Vamos começar"}
-              onPress={comecar}
-            />
-          </View>
-        </ScrollView>
+        <IntroLicao
+          titulo={conteudo?.titulo?.trim() || tituloLicao}
+          descricao={conteudo?.descricao?.trim() || ""}
+          fala={FALA_INTRO}
+          etapaAtual={1}
+          totalEtapas={etapasConteudo.length + 1}
+          onFechar={pedirParaSair}
+          onContinuar={comecar}
+        />
       )}
 
       {etapa === "video" && (
-        <ScrollView
-          style={styles.rolagemEtapa}
-          contentContainerStyle={styles.conteudoEtapa}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.areaMidia}>
-            {conteudo?.url_arquivo ? (
-              <PlayerVideo url={conteudo.url_arquivo} />
-            ) : (
-              <EspacoVideo
-                titulo={conteudo?.titulo?.trim() || "Vídeo da lição"}
-              />
-            )}
-          </View>
-
-          <BotaoGrande
-            titulo="Continuar"
-            icone={<ChevronRight size={24} color={tema.texto} />}
-            onPress={() => irParaProximaEtapa("video")}
-          />
-        </ScrollView>
+        <VideoLicao
+          titulo={conteudo?.titulo?.trim() || "Vídeo da lição"}
+          url={conteudo?.url_arquivo ?? null}
+          onFechar={pedirParaSair}
+          onContinuar={() => irParaProximaEtapa("video")}
+        />
       )}
 
       {etapa === "questionario" && questaoAtual && (
-        <ScrollView
-          ref={rolagemQuizRef}
-          style={styles.rolagemEtapa}
-          contentContainerStyle={styles.conteudoEtapa}
-          showsVerticalScrollIndicator={false}
-        >
-          <TutorialMimi fala={falaMimi} pose="frente" pequeno />
-
-          <View style={styles.linhaTopoQuiz}>
-            <Text style={[styles.contador, { color: tema.textoSecundario, fontSize: fonte(16) }]}>
-              Pergunta {indiceQuestao + 1} de {questoes.length}
-            </Text>
-            <View
-              style={styles.linhaVidas}
-              accessible
-              accessibilityLabel={`${vidas} de ${VIDAS_MAXIMAS} vidas`}
-            >
-              {Array.from({ length: VIDAS_MAXIMAS }).map((_, indice) => (
-                <Heart
-                  key={indice}
-                  size={28}
-                  color={indice < vidas ? tema.erro : tema.borda}
-                  fill={indice < vidas ? tema.erro : "transparent"}
-                  strokeWidth={2}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={[styles.barra, { backgroundColor: tema.borda }]}>
-            <View
-              style={[
-                styles.barraPreenchida,
-                {
-                  width: `${Math.round(((indiceQuestao + (verificado ? 1 : 0)) / questoes.length) * 100)}%`,
-                  backgroundColor: tema.roxoEscuro,
-                },
-              ]}
-            />
-          </View>
-
-          <Text style={[styles.pergunta, { color: tema.texto, fontSize: fonte(24) }]}>
-            {questaoAtual.pergunta}
-          </Text>
-
-          {alternativas.map((alternativa) => {
-            const escolhida = selecionada === alternativa.alternativas_id;
-            const mostrarCerta =
-              verificado && alternativa.alternativas_id === certaId;
-            const mostrarErrada =
-              verificado &&
-              escolhida &&
-              alternativa.alternativas_id !== certaId;
-
-            return (
-              <TouchableOpacity
-                key={alternativa.alternativas_id}
-                onPress={() => {
-                  if (verificado || verificando) return;
-                  setSelecionada(alternativa.alternativas_id);
-                  if (audioDescricao) falar(alternativa.texto);
-                }}
-                disabled={verificado || verificando}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: escolhida, disabled: verificado }}
-                accessibilityLabel={alternativa.texto}
-                style={[
-                  styles.alternativa,
-                  {
-                    backgroundColor: tema.cartao,
-                    borderColor: escolhida ? tema.roxoEscuro : tema.borda,
-                    borderWidth: escolhida ? 3 : 1,
-                  },
-                  mostrarCerta && {
-                    borderColor: tema.sucesso,
-                    borderWidth: 3,
-                    backgroundColor: tema.sucessoFundo,
-                  },
-                  mostrarErrada && {
-                    borderColor: tema.erro,
-                    borderWidth: 3,
-                    backgroundColor: tema.erroFundo,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.marcador,
-                    {
-                      borderColor: escolhida ? tema.roxoEscuro : tema.textoSecundario,
-                      backgroundColor: escolhida ? tema.roxoEscuro : "transparent",
-                    },
-                  ]}
-                />
-
-                <Text style={[styles.textoAlternativa, { color: tema.texto, fontSize: fonte(19) }]}>
-                  {alternativa.texto}
-                </Text>
-
-                {mostrarCerta && <CheckCircle2 size={26} color={tema.sucesso} />}
-                {mostrarErrada && <XCircle size={26} color={tema.erro} />}
-              </TouchableOpacity>
-            );
-          })}
-
-          <View style={styles.acoesQuiz}>
-            {erroVerificar !== "" && (
-              <Text
-                style={[
-                  styles.erroVerificar,
-                  { color: tema.erro, fontSize: fonte(15) },
-                ]}
-                accessibilityLiveRegion="polite"
-              >
-                {erroVerificar}
-              </Text>
-            )}
-
-            {!verificado ? (
-              <BotaoGrande
-                titulo={verificando ? "Verificando..." : "Verificar"}
-                onPress={verificarResposta}
-                desabilitado={selecionada === null || verificando}
-              />
-            ) : (
-              <>
-                <View
-                  style={[
-                    styles.feedbackResposta,
-                    {
-                      backgroundColor: acertouQuestao
-                        ? tema.sucessoFundo
-                        : tema.erroFundo,
-                      borderColor: acertouQuestao ? tema.sucesso : tema.erro,
-                    },
-                  ]}
-                  accessibilityLiveRegion="polite"
-                >
-                  <View style={styles.linhaTituloFeedback}>
-                    {acertouQuestao ? (
-                      <CheckCircle2 size={26} color={tema.sucesso} />
-                    ) : (
-                      <XCircle size={26} color={tema.erro} />
-                    )}
-                    <Text
-                      style={[
-                        styles.tituloFeedback,
-                        {
-                          color: acertouQuestao ? tema.sucesso : tema.erro,
-                          fontSize: fonte(20),
-                        },
-                      ]}
-                    >
-                      {tituloFeedback}
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={[
-                      styles.corpoFeedback,
-                      { color: tema.texto, fontSize: fonte(16) },
-                    ]}
-                  >
-                    {mensagemFeedback}
-                  </Text>
-
-                  {!acertouQuestao && alternativaCerta && (
-                    <View
-                      style={[
-                        styles.caixaRespostaCerta,
-                        {
-                          backgroundColor: tema.sucessoFundo,
-                          borderColor: tema.sucesso,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.rotuloRespostaCerta,
-                          { color: tema.sucesso, fontSize: fonte(13) },
-                        ]}
-                      >
-                        A resposta certa é
-                      </Text>
-                      <Text
-                        style={[
-                          styles.textoRespostaCerta,
-                          { color: tema.texto, fontSize: fonte(16) },
-                        ]}
-                      >
-                        {alternativaCerta.texto}
-                      </Text>
-                      {explicacaoCerta !== "" && explicacaoCerta !== explicacao && (
-                        <Text
-                          style={[
-                            styles.corpoFeedback,
-                            { color: tema.texto, fontSize: fonte(15) },
-                          ]}
-                        >
-                          {explicacaoCerta}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  {!acertouQuestao && (
-                    <View
-                      style={styles.linhaVidas}
-                      accessible
-                      accessibilityLabel={`${vidas} de ${VIDAS_MAXIMAS} vidas`}
-                    >
-                      {Array.from({ length: VIDAS_MAXIMAS }).map((_, indice) => (
-                        <Heart
-                          key={indice}
-                          size={24}
-                          color={indice < vidas ? tema.erro : tema.borda}
-                          fill={indice < vidas ? tema.erro : "transparent"}
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </View>
-                  )}
-
-                  {!acertouQuestao && (
-                    <Text
-                      style={[
-                        styles.corpoFeedback,
-                        { color: tema.textoSecundario, fontSize: fonte(15) },
-                      ]}
-                    >
-                      {semVidas
-                        ? "Suas vidas acabaram. Vamos recomeçar as perguntas, sem pressa."
-                        : `Você ainda tem ${vidas} ${vidas === 1 ? "vida" : "vidas"}.`}
-                    </Text>
-                  )}
-                </View>
-
-                {semVidas ? (
-                  <BotaoGrande
-                    titulo="Tentar de novo"
-                    icone={<RotateCcw size={24} color={tema.texto} />}
-                    onPress={() => reiniciar(true)}
-                  />
-                ) : (
-                  <BotaoGrande
-                    titulo={rotuloAvancar}
-                    icone={<ChevronRight size={24} color={tema.texto} />}
-                    onPress={avancarQuestao}
-                  />
-                )}
-              </>
-            )}
-          </View>
-        </ScrollView>
+        <QuizLicao
+          pergunta={questaoAtual.pergunta}
+          alternativas={alternativas.map((alternativa) => ({
+            id: alternativa.alternativas_id,
+            texto: alternativa.texto,
+          }))}
+          selecionada={selecionada}
+          verificado={verificado}
+          certaId={certaId}
+          indice={indiceQuestao}
+          total={questoes.length}
+          verificando={verificando}
+          erro={erroVerificar}
+          podeVoltar={etapasConteudo.indexOf("questionario") > 0}
+          onSelecionar={(id) => {
+            if (verificado || verificando) return;
+            setSelecionada(id);
+            setErroVerificar("");
+            if (audioDescricao) {
+              const escolhida = alternativas.find(
+                (alternativa) => alternativa.alternativas_id === id
+              );
+              if (escolhida) falar(escolhida.texto);
+            }
+          }}
+          onContinuar={continuarQuiz}
+          onFechar={pedirParaSair}
+          onAjuda={() => {
+            setAjudaVisivel(true);
+            if (audioDescricao) falar(AJUDA_POR_ETAPA.questionario);
+          }}
+          onOuvir={() => falar(textoOuvir)}
+          onVoltar={voltarEtapaAnterior}
+          onRecomecar={recomecarQuiz}
+        />
       )}
 
       {etapa === "simulacao" && cenario && (
-        <ScrollView
-          style={styles.rolagemEtapa}
-          contentContainerStyle={styles.conteudoSimulacao}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.areaSimulacao}>
-            <SimuladorCelular
-              cenario={cenario}
-              onFinalizar={finalizarSimulacao}
-              preencher
-            />
-          </View>
-        </ScrollView>
+        <View style={styles.conteudoSimulacao}>
+          <SimuladorCelular
+            cenario={cenario}
+            onFinalizar={finalizarSimulacao}
+            onVoltar={voltarDaSimulacao}
+            preencher
+          />
+        </View>
       )}
 
-        {etapa === "resultado" && (
-        <ScrollView
-          style={styles.rolagemEtapa}
-          contentContainerStyle={styles.conteudoRolavel}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.secao}>
-            <Image
-              source={aprovado ? MIMI_FEEDBACK : MIMI_FEEDBACK_TRISTE}
-              style={styles.mimiFeedback}
-              resizeMode="contain"
-              accessible={false}
-            />
-
-            <Text
-              style={[styles.tituloResultado, { color: tema.texto, fontSize: fonte(32) }]}
-            >
-              {aprovado ? "Muito Bem!" : "Quase lá!"}
-            </Text>
-
-            <Text
-              style={[
-                styles.subtituloResultado,
-                { color: tema.textoSecundario, fontSize: fonte(18) },
-              ]}
-            >
-              {aprovado
-                ? "Você concluiu a lição. A Mimi está orgulhosa!"
-                : "Não desanime. Tente de novo, sem pressa."}
-            </Text>
-
-            <View style={styles.linhaEstatisticas}>
-              <View
-                style={[
-                  styles.cartaoEstatistica,
-                  { backgroundColor: tema.amareloSuave },
-                ]}
-              >
-                <Text style={[styles.rotuloEstatistica, { fontSize: fonte(17) }]}>
-                  {questoes.length > 0 ? "Acertos" : "Nota"}
-                </Text>
-                <View style={styles.caixaEstatistica}>
-                  <Text
-                    style={[styles.valorEstatistica, { fontSize: fonte(26) }]}
-                  >
-                    {questoes.length > 0
-                      ? `${acertos}/${questoes.length}`
-                      : `${notaFinalCalculada}%`}
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={[styles.cartaoEstatistica, { backgroundColor: tema.roxo }]}
-              >
-                <Text style={[styles.rotuloEstatistica, { fontSize: fonte(17) }]}>
-                  XP
-                </Text>
-                <View style={styles.caixaEstatistica}>
-                  <Text
-                    style={[styles.valorEstatistica, { fontSize: fonte(26) }]}
-                  >
-                    {salvando ? "..." : `+${xpGanho}`}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View
-              accessible
-              accessibilityLabel={`${estrelas} de ${ESTRELAS_MAXIMAS} estrelas`}
-              style={styles.linhaEstrelas}
-            >
-              {Array.from({ length: ESTRELAS_MAXIMAS }).map((_, indice) => (
-                <Star
-                  key={indice}
-                  size={34}
-                  color={indice < estrelas ? "#E0A800" : tema.borda}
-                  fill={indice < estrelas ? "#FFD651" : "transparent"}
-                  strokeWidth={2}
-                />
-              ))}
-            </View>
-
-            <Text
-              style={[
-                styles.estrelasTexto,
-                { color: tema.texto, fontSize: fonte(18) },
-              ]}
-            >
-              {descreverEstrelas(estrelas)}
-            </Text>
-
-            <View
-              style={[
-                styles.seloFase,
-                { backgroundColor: aprovado ? tema.sucessoFundo : tema.cartaoSuave },
-              ]}
-              accessibilityLiveRegion="polite"
-            >
-              {aprovado ? (
-                <PartyPopper size={24} color={tema.sucesso} />
-              ) : (
-                <Heart size={24} color={tema.roxoEscuro} />
-              )}
-              <Text
-                style={[
-                  styles.textoSelo,
-                  {
-                    color: aprovado ? tema.sucesso : tema.texto,
-                    fontSize: fonte(16),
-                  },
-                ]}
-              >
-                {aprovado
-                  ? "Você passou de fase!"
-                  : "Com 2 estrelas ou mais, a próxima lição abre."}
-              </Text>
-            </View>
-
-            {conquistasNovas.length > 0 && (
-              <View
-                style={[styles.seloFase, { backgroundColor: tema.amareloSuave }]}
-                accessibilityLiveRegion="polite"
-              >
-                <Trophy size={24} color="#32064F" />
-                <Text
-                  style={[
-                    styles.textoSelo,
-                    { color: "#32064F", fontSize: fonte(16) },
-                  ]}
-                >
-                  {conquistasNovas.length === 1
-                    ? "Nova conquista: "
-                    : "Novas conquistas: "}
-                  {conquistasNovas.join(", ")}
-                </Text>
-              </View>
-            )}
-
-            {aprovado && xpGanho === 0 && salvo && (
-              <Text
-                style={[
-                  styles.texto,
-                  { color: tema.textoSecundario, fontSize: fonte(16) },
-                ]}
-              >
-                Você já tinha ganhado o XP desta lição.
-              </Text>
-            )}
-
-            {exemplo && (
-              <Text
-                style={[
-                  styles.texto,
-                  { color: tema.textoSecundario, fontSize: fonte(15) },
-                ]}
-              >
-                Lição de exemplo: o resultado não é salvo.
-              </Text>
-            )}
-
-            {salvando && (
-              <View style={styles.linhaSalvando}>
-                <ActivityIndicator size="small" color={tema.roxoEscuro} />
-                <Text
-                  style={[
-                    styles.texto,
-                    { color: tema.textoSecundario, fontSize: fonte(16) },
-                  ]}
-                >
-                  Salvando seu resultado...
-                </Text>
-              </View>
-            )}
-
-            {erroSalvar !== "" && (
-              <View style={[styles.feedback, { backgroundColor: tema.erroFundo }]}>
-                <XCircle size={24} color={tema.erro} />
-                <Text
-                  style={[
-                    styles.textoFeedback,
-                    { color: tema.erro, fontSize: fonte(17) },
-                  ]}
-                >
-                  {erroSalvar}
-                </Text>
-              </View>
-            )}
-
-            {aprovado ? (
-              <BotaoGrande
-                titulo={salvando ? "Salvando..." : "Continuar"}
-                variante="roxo"
-                carregando={salvando}
-                desabilitado={erroSalvar !== ""}
-                onPress={() => setEtapa("ofensiva")}
-              />
-            ) : (
-              <>
-                <BotaoGrande
-                  titulo="Tentar de novo"
-                  icone={<RotateCcw size={24} color={tema.texto} />}
-                  onPress={() => reiniciar(true)}
-                />
-                {temVideo && (
-                  <BotaoGrande
-                    titulo="Ver o vídeo de novo"
-                    variante="contorno"
-                    onPress={() => reiniciar(false)}
-                  />
-                )}
-              </>
-            )}
-
-            {erroSalvar !== "" && (
-              <BotaoGrande
-                titulo="Tentar salvar de novo"
-                variante="contorno"
-                carregando={salvando}
-                onPress={() => void salvar()}
-              />
-            )}
-          </View>
-        </ScrollView>
+      {etapa === "resultado" && (
+        <ResultadoLicao
+          aprovado={aprovado}
+          comQuestoes={questoes.length > 0}
+          acertos={acertos}
+          totalQuestoes={questoes.length}
+          nota={notaFinalCalculada}
+          xp={xpGanho}
+          salvando={salvando}
+          erro={erroSalvar}
+          conquistas={conquistasNovas}
+          // Só a lição de demonstração (sem linha no banco) não é salva.
+          exemplo={licao?.licoes_id === LICAO_EXEMPLO_ID}
+          xpJaGanho={xpGanho === 0 && salvo}
+          temVideo={temVideo}
+          onContinuar={() => setEtapa("ofensiva")}
+          onTentarDeNovo={() => reiniciar(true)}
+          onVerVideo={() => reiniciar(false)}
+          onSalvarDeNovo={() => void salvar()}
+        />
       )}
 
       {etapa === "ofensiva" && (
-        <ScrollView
-          style={styles.rolagemEtapa}
-          contentContainerStyle={styles.conteudoRolavel}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.secao}>
-            <Image
-              source={LUZ_OFENSIVA}
-              style={styles.luzOfensiva}
-              resizeMode="contain"
-              accessible={false}
-            />
-
-            <Text
-              style={[styles.tituloResultado, { color: tema.texto, fontSize: fonte(30) }]}
-            >
-              Dias de Ofensiva
-            </Text>
-
-            <Text
-              style={[
-                styles.textoCalma,
-                { color: tema.textoSecundario, fontSize: fonte(17) },
-              ]}
-            >
-              {diasSeguidos === 1
-                ? "Você começou sua sequência hoje. Continue assim!"
-                : `Você está há ${diasSeguidos} dias seguidos. Continue assim!`}
-            </Text>
-
-            <View
-              accessible
-              accessibilityLabel={`Ofensiva de ${diasSeguidos} ${diasSeguidos === 1 ? "dia" : "dias"}.`}
-              style={[
-                styles.cartaoOfensiva,
-                { backgroundColor: tema.cartao, borderColor: tema.borda },
-              ]}
-            >
-              {[1, 2, 3, 4, 5].map((dia) => {
-                // Acende uma estrela por dia seguido (até 5, como no design).
-                const ativo = dia <= Math.min(diasSeguidos, 5);
-
-                return (
-                  <View key={dia} style={styles.diaOfensiva}>
-                    <Text
-                      style={[
-                        styles.rotuloDia,
-                        { color: tema.textoSecundario, fontSize: fonte(13) },
-                      ]}
-                    >
-                      Dia {dia}
-                    </Text>
-                    <View
-                      style={[
-                        styles.circuloDia,
-                        { backgroundColor: ativo ? "#FFD651" : tema.cartaoSuave },
-                      ]}
-                    >
-                      <Image
-                        source={ESTRELA_DIA}
-                        style={[styles.estrelaDia, { opacity: ativo ? 1 : 0.22 }]}
-                        resizeMode="contain"
-                        accessible={false}
-                      />
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            <Text
-              style={[styles.texto, { color: tema.textoSecundario, fontSize: fonte(16) }]}
-            >
-              Volte amanhã para manter a ofensiva.
-            </Text>
-
-            <BotaoGrande titulo="Continuar" variante="roxo" onPress={irParaTrilha} />
-          </View>
-        </ScrollView>
+        <OfensivaLicao dias={diasSeguidos} onContinuar={irParaTrilha} />
       )}
 
       {/* Comemoração de sequência: cartão pequeno, só para marcar a sequência */}
@@ -1886,6 +1207,12 @@ export default function LicaoScreen() {
         sequencia={sequenciaAcertos}
         aoFechar={() => {
           setComemoracaoVisivel(false);
+          // Se o pop-up apareceu na última pergunta, já segue para a
+          // simulação: sem isso a pessoa precisaria tocar em "Continuar"
+          // duas vezes depois de fechar a comemoração.
+          if (verificado && indiceQuestao >= questoes.length - 1) {
+            avancarQuestao();
+          }
         }}
       />
 
@@ -1940,7 +1267,7 @@ export default function LicaoScreen() {
             />
             <BotaoGrande
               titulo="Sair e perder o progresso"
-              variante="contorno"
+              variante="perigo"
               onPress={confirmarSaida}
             />
           </View>
@@ -1954,88 +1281,24 @@ const styles = StyleSheet.create({
   tela: {
     flex: 1,
   },
-  rolagemEtapa: {
-    flex: 1,
-  },
-  conteudoRolavel: {
-    padding: 18,
-    paddingBottom: 24,
-  },
-  etapa: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  areaMidia: {
-    flex: 1,
-    minHeight: 380,
-  },
-  conteudoEtapa: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
-    gap: 8,
-  },
-  conteudoSimulacao: {
-    flexGrow: 1,
-    paddingHorizontal: 6,
+  estadoTopo: {
     paddingTop: 6,
-    paddingBottom: 12,
-  },
-  areaSimulacao: {
-    flex: 1,
-    minHeight: 680,
-  },
-  linhaTopoQuiz: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  linhaVidas: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  feedbackResposta: {
-    width: "100%",
-    borderRadius: 16,
-    borderWidth: 2,
-    padding: 12,
-    gap: 8,
-  },
-  linhaTituloFeedback: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  tituloFeedback: {
-    fontFamily: "Poppins_800ExtraBold",
-    flexShrink: 1,
-  },
-  corpoFeedback: {
-    fontFamily: "Poppins_600SemiBold",
-  },
-  caixaRespostaCerta: {
-    width: "100%",
-    borderRadius: 14,
-    borderWidth: 2,
-    padding: 10,
-    gap: 2,
     alignItems: "flex-start",
   },
-  rotuloRespostaCerta: {
-    fontFamily: "Poppins_800ExtraBold",
+  botaoSairEstado: {
+    backgroundColor: "#E23B2E",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  textoRespostaCerta: {
-    fontFamily: "Poppins_800ExtraBold",
-  },
-  secao: {
-    gap: 14,
+  conteudoSimulacao: {
+    flex: 1,
+    minHeight: 0,
+    paddingBottom: 4,
   },
   centro: {
     flex: 1,
@@ -2051,255 +1314,8 @@ const styles = StyleSheet.create({
   botaoCentro: {
     marginTop: 8,
   },
-  cartaoTexto: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    gap: 8,
-  },
-  etiquetaExemplo: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  textoEtiqueta: {
-    fontFamily: "Poppins_800ExtraBold",
-    letterSpacing: 0.5,
-  },
-  areaVideo: {
-    flex: 1,
-    backgroundColor: "#E6E6E6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  controlesVideo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 26,
-  },
-  controleVideo: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  controleVideoTexto: {
-    marginTop: -4,
-    fontFamily: "Poppins_600SemiBold",
-    color: "#BDBDBD",
-  },
-  progressoArea: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 14,
-    backgroundColor: "#FFFFFF",
-  },
-  progressoTrilha: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#1A1A1A",
-    justifyContent: "center",
-  },
-  progressoPreenchido: {
-    width: "18%",
-    height: "100%",
-    borderRadius: 6,
-  },
-  progressoKnob: {
-    position: "absolute",
-    left: "18%",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginLeft: -6,
-    backgroundColor: "#FFB45E",
-  },
-  tituloSecao: {
-    fontFamily: "Poppins_800ExtraBold",
-  },
   texto: {
     fontFamily: "Poppins_300Light",
-  },
-  textoCalma: {
-    fontFamily: "Poppins_600SemiBold",
-    textAlign: "center",
-  },
-  linhaPasso: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  numeroPasso: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numeroTexto: {
-    fontFamily: "Poppins_800ExtraBold",
-  },
-  textoPasso: {
-    flex: 1,
-    fontFamily: "Poppins_600SemiBold",
-  },
-  contador: {
-    fontFamily: "Poppins_600SemiBold",
-  },
-  barra: {
-    height: 10,
-    borderRadius: 5,
-    overflow: "hidden",
-  },
-  barraPreenchida: {
-    height: "100%",
-    borderRadius: 5,
-  },
-  pergunta: {
-    fontFamily: "Poppins_800ExtraBold",
-    marginTop: 4,
-  },
-  alternativa: {
-    minHeight: 60,
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  marcador: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-  },
-  textoAlternativa: {
-    flex: 1,
-    fontFamily: "Poppins_600SemiBold",
-  },
-  acoesQuiz: {
-    marginTop: "auto",
-    gap: 8,
-  },
-  erroVerificar: {
-    fontFamily: "Poppins_600SemiBold",
-    textAlign: "center",
-  },
-  feedback: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 16,
-    padding: 14,
-  },
-  textoFeedback: {
-    flex: 1,
-    fontFamily: "Poppins_600SemiBold",
-  },
-  linhaEstrelas: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  estrelasTexto: {
-    fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
-  },
-  seloFase: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 16,
-    padding: 14,
-  },
-  textoSelo: {
-    fontFamily: "Poppins_600SemiBold",
-    flexShrink: 1,
-  },
-  tituloResultado: {
-    fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
-  },
-  mimiFeedback: {
-    alignSelf: "center",
-    width: 190,
-    height: 245,
-  },
-  subtituloResultado: {
-    fontFamily: "Poppins_300Light",
-    textAlign: "center",
-  },
-  linhaEstatisticas: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cartaoEstatistica: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 10,
-    gap: 8,
-    alignItems: "center",
-  },
-  rotuloEstatistica: {
-    fontFamily: "Poppins_800ExtraBold",
-    color: "#32064F",
-  },
-  caixaEstatistica: {
-    width: "100%",
-    borderRadius: 12,
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    alignItems: "center",
-  },
-  valorEstatistica: {
-    fontFamily: "Poppins_800ExtraBold",
-    color: "#32064F",
-  },
-  luzOfensiva: {
-    alignSelf: "center",
-    width: 190,
-    height: 190,
-    marginTop: 6,
-  },
-  cartaoOfensiva: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    gap: 4,
-  },
-  diaOfensiva: {
-    flex: 1,
-    alignItems: "center",
-    gap: 8,
-  },
-  rotuloDia: {
-    fontFamily: "Poppins_600SemiBold",
-  },
-  circuloDia: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  estrelaDia: {
-    width: 30,
-    height: 30,
-  },
-  linhaSalvando: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
   },
   fundoModal: {
     flex: 1,

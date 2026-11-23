@@ -86,7 +86,6 @@ export function PopupMuitoBem({ visivel, sequencia, aoFechar }: Props) {
             titulo="Continuar"
             variante="roxo"
             onPress={aoFechar}
-            estilo={styles.botao}
           />
         </View>
       </View>
@@ -138,9 +137,5 @@ const styles = StyleSheet.create({
   },
   sequencia: {
     fontFamily: "Poppins_600SemiBold",
-  },
-  botao: {
-    minHeight: 48,
-    paddingVertical: 8,
   },
 });

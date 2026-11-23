@@ -6,6 +6,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Plus,
   RefreshCw,
   Save,
   Send,
@@ -13,6 +14,7 @@ import {
   UserPlus,
   Users,
   Wifi,
+  X,
 } from "lucide-react-native";
 import type { ComponentType, ReactNode } from "react";
 import {
@@ -33,6 +35,21 @@ const COR_TEXTO = "#303030";
 const COR_SECUNDARIA = "#8A8080";
 const COR_BORDA = "#D9D9D9";
 const COR_SUAVE = "#F4F4F4";
+
+/** Teclado do discador: três colunas por linha, como num telefone. */
+const TECLAS_DISCADOR = [
+  ["1", "2", "3"],
+  ["4", "5", "6"],
+  ["7", "8", "9"],
+  ["*", "0", "#"],
+];
+
+/** Teclado de enfeite do formulário de contato (aparece com o campo aberto). */
+const LINHAS_TECLADO = [
+  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+  ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+  ["z", "x", "c", "v", "b", "n", "m"],
+];
 
 type Props = {
   tela: TelaFicticia;
@@ -210,6 +227,71 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
         </View>
       )}
 
+      {tela === "discador" && (
+        <View style={styles.telaConteudo}>
+          <View style={styles.cabecalhoDiscador}>
+            <Text
+              style={[styles.tituloTela, { color: COR_TEXTO, fontSize: fonte(17) }]}
+            >
+              Telefone
+            </Text>
+
+            <Alvo
+              {...props}
+              alvo="botao_criar_contato"
+              rotulo="Botão de mais, criar novo contato"
+              estilo={styles.botaoMais}
+            >
+              <Plus size={22} color="#FFFFFF" />
+            </Alvo>
+          </View>
+
+          <View style={styles.visorDiscador}>
+            <Text
+              style={[styles.legendaDiscador, { color: COR_SECUNDARIA, fontSize: fonte(12) }]}
+            >
+              Para praticar, digite esse número:
+            </Text>
+            <Text style={[styles.numeroDiscador, { fontSize: fonte(22) }]}>
+              13 981872884
+            </Text>
+          </View>
+
+          <View style={styles.tecladoDiscador}>
+            {TECLAS_DISCADOR.map((linha, posicaoLinha) => (
+              <View key={posicaoLinha} style={styles.linhaTeclado}>
+                {linha.map((tecla) => (
+                  <Alvo
+                    key={tecla}
+                    {...props}
+                    alvo={`tecla_${tecla}`}
+                    rotulo={`Tecla ${tecla}`}
+                    estilo={styles.teclaDiscador}
+                  >
+                    <Text
+                      style={[styles.textoTecla, { color: COR_TEXTO, fontSize: fonte(18) }]}
+                    >
+                      {tecla}
+                    </Text>
+                  </Alvo>
+                ))}
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.areaLigarDiscador}>
+            <Alvo
+              {...props}
+              alvo="botao_ligar"
+              rotulo="Botão verde para ligar"
+              estilo={styles.botaoLigar}
+            >
+              <Phone size={28} color="#FFFFFF" />
+            </Alvo>
+          </View>
+        </View>
+      )}
+
       {tela === "contatos" && (
         <View style={styles.telaConteudo}>
           <Text style={[styles.tituloTela, { color: COR_TEXTO, fontSize: fonte(17) }]}>
@@ -332,9 +414,38 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
 
       {tela === "novo_contato" && (
         <View style={styles.telaConteudo}>
-          <Text style={[styles.tituloTela, { color: COR_TEXTO, fontSize: fonte(17) }]}>
-            Novo contato
-          </Text>
+          <View style={styles.cabecalhoContato}>
+            <View style={styles.iconeFecharContato}>
+              <X size={20} color={COR_TEXTO} />
+            </View>
+
+            <Text
+              style={[
+                styles.tituloContato,
+                { color: COR_TEXTO, fontSize: fonte(16) },
+              ]}
+            >
+              Novo Contato
+            </Text>
+
+            <Alvo
+              {...props}
+              alvo="botao_salvar_contato"
+              rotulo="Botão azul para salvar o contato"
+              estilo={styles.botaoSalvarAzul}
+            >
+              <Save size={20} color="#FFFFFF" />
+            </Alvo>
+          </View>
+
+          <View style={styles.areaFotoContato}>
+            <View style={styles.avatarContato}>
+              <User size={32} color="#FFFFFF" />
+            </View>
+            <Text style={[styles.adicionarFoto, { fontSize: fonte(12) }]}>
+              Adicionar Foto
+            </Text>
+          </View>
 
           <Alvo
             {...props}
@@ -350,6 +461,21 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
             </Text>
           </Alvo>
 
+          <View style={[styles.campoContato, { borderColor: COR_BORDA }]}>
+            <Text style={[styles.rotuloCampo, { color: COR_SECUNDARIA, fontSize: fonte(12) }]}>
+              Nome fonético
+            </Text>
+            <Text style={[styles.valorCampo, { color: COR_TEXTO, fontSize: fonte(17) }]}>
+              Maria
+            </Text>
+          </View>
+
+          <View style={[styles.campoContato, { borderColor: COR_BORDA }]}>
+            <Text style={[styles.rotuloCampo, { color: COR_SECUNDARIA, fontSize: fonte(12) }]}>
+              Sobrenome
+            </Text>
+          </View>
+
           <Alvo
             {...props}
             alvo="campo_telefone"
@@ -364,21 +490,7 @@ export function TelasFicticias({ tela, alvoAtual, onToque, desabilitado }: Props
             </Text>
           </Alvo>
 
-          <Alvo
-            {...props}
-            alvo="botao_salvar_contato"
-            rotulo="Botão Salvar contato"
-            estilo={styles.botaoSalvarContato}
-          >
-            <Save size={20} color="#FFFFFF" />
-            <Text style={[styles.textoBotaoContato, { fontSize: fonte(16) }]}>
-              Salvar
-            </Text>
-          </Alvo>
-
-          <Text style={[styles.legenda, { color: COR_SECUNDARIA, fontSize: fonte(13) }]}>
-            Confira os dados e toque em Salvar
-          </Text>
+          <TecladoDecorativo />
         </View>
       )}
 
@@ -588,6 +700,35 @@ function App({
   );
 }
 
+/** Teclado de enfeite: dá a ideia do campo aberto, como no mockup. */
+function TecladoDecorativo() {
+  const { fonte } = useAcessibilidade();
+
+  return (
+    <View style={styles.teclado}>
+      <View style={styles.linhaSugestoes}>
+        {["Maria", "Mário", "Marina"].map((sugestao) => (
+          <View key={sugestao} style={styles.sugestao}>
+            <Text style={[styles.textoSugestao, { fontSize: fonte(12) }]}>
+              {sugestao}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      {LINHAS_TECLADO.map((linha, posicao) => (
+        <View key={posicao} style={styles.linhaTeclasLetras}>
+          {linha.map((tecla) => (
+            <View key={tecla} style={styles.teclaLetra}>
+              <Text style={styles.textoTeclaLetra}>{tecla}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   alvo: {
     borderWidth: 3,
@@ -734,16 +875,87 @@ const styles = StyleSheet.create({
   valorCampo: {
     fontFamily: "Poppins_600SemiBold",
   },
-  botaoSalvarContato: {
+  cabecalhoContato: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
-    backgroundColor: "#7B1FA2",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+  },
+  iconeFecharContato: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tituloContato: {
+    flex: 1,
+    textAlign: "center",
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  botaoSalvarAzul: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1976D2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  areaFotoContato: {
+    alignItems: "center",
+    gap: 4,
     marginTop: 2,
+  },
+  avatarContato: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#BDBDBD",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  adicionarFoto: {
+    color: "#1976D2",
+    fontFamily: "Poppins_600SemiBold",
+  },
+  teclado: {
+    marginTop: "auto",
+    backgroundColor: "#D6D3D1",
+    borderRadius: 10,
+    padding: 6,
+    gap: 6,
+  },
+  linhaSugestoes: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+  },
+  sugestao: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  textoSugestao: {
+    color: COR_TEXTO,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  linhaTeclasLetras: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 4,
+  },
+  teclaLetra: {
+    flex: 1,
+    height: 26,
+    maxWidth: 30,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textoTeclaLetra: {
+    fontSize: 13,
+    color: COR_TEXTO,
+    fontFamily: "Poppins_600SemiBold",
   },
   areaLigar: {
     alignItems: "center",
@@ -757,6 +969,60 @@ const styles = StyleSheet.create({
     backgroundColor: "#2E7D32",
     alignItems: "center",
     justifyContent: "center",
+  },
+  cabecalhoDiscador: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  botaoMais: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1976D2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  visorDiscador: {
+    backgroundColor: COR_SUAVE,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    gap: 2,
+  },
+  legendaDiscador: {
+    fontFamily: "Poppins_600SemiBold",
+    textAlign: "center",
+  },
+  numeroDiscador: {
+    color: "#891CC0",
+    fontFamily: "Poppins_800ExtraBold",
+    textAlign: "center",
+  },
+  tecladoDiscador: {
+    gap: 10,
+    marginTop: 2,
+  },
+  linhaTeclado: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+  },
+  teclaDiscador: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COR_SUAVE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textoTecla: {
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  areaLigarDiscador: {
+    alignItems: "center",
+    marginTop: 2,
   },
   campo: {
     borderWidth: 2,

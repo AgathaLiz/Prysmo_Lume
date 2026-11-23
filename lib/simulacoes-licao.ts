@@ -22,22 +22,22 @@ export const CENARIO_MENSAGEM: CenarioSimulacao = {
   tela: "home",
   passos: [
     {
-      instrucao: "Toque no aplicativo Mensagens.",
+      instrucao: "Toque no aplicativo **Mensagens**.",
       alvo: "app_mensagens",
       dica: "É o ícone azul com um balão de conversa.",
     },
     {
-      instrucao: "Toque na conversa da Maria.",
+      instrucao: "Toque na conversa da **Maria**.",
       alvo: "conversa_maria",
       dica: "É a primeira conversa da lista.",
     },
     {
-      instrucao: "Toque no campo de escrever a mensagem.",
+      instrucao: "Toque no **campo de escrever** a mensagem.",
       alvo: "campo_mensagem",
       dica: "Fica na parte de baixo da tela.",
     },
     {
-      instrucao: "Escreva sua mensagem e toque em Enviar.",
+      instrucao: "Escreva sua mensagem e toque em **Enviar**.",
       alvo: "botao_enviar_mensagem",
       dica: "O botão azul com a seta.",
     },
@@ -50,17 +50,17 @@ export const CENARIO_TELEFONE: CenarioSimulacao = {
   tela: "home",
   passos: [
     {
-      instrucao: "Toque no aplicativo Telefone.",
+      instrucao: "Toque no aplicativo **Telefone**.",
       alvo: "app_telefone",
       dica: "É o ícone verde com um telefone.",
     },
     {
-      instrucao: "Toque no contato da Maria.",
+      instrucao: "Toque no contato da **Maria**.",
       alvo: "contato_maria",
       dica: "É o primeiro nome da lista.",
     },
     {
-      instrucao: "Toque no botão verde para ligar.",
+      instrucao: "Toque no **botão verde** para ligar.",
       alvo: "botao_ligar",
       dica: "É o círculo verde com o telefone.",
     },
@@ -73,17 +73,17 @@ export const CENARIO_UBER: CenarioSimulacao = {
   tela: "home",
   passos: [
     {
-      instrucao: "Toque no aplicativo Uber.",
+      instrucao: "Toque no aplicativo **Uber**.",
       alvo: "app_uber",
       dica: "É o ícone preto com um carro.",
     },
     {
-      instrucao: "Toque no campo e escreva o destino.",
+      instrucao: "Toque no campo e escreva o **destino**.",
       alvo: "campo_destino",
       dica: "É a caixa branca no topo da tela.",
     },
     {
-      instrucao: "Toque em Pedir carro.",
+      instrucao: "Toque em **Pedir carro**.",
       alvo: "botao_pedir_uber",
       dica: "É o botão preto no fim da tela.",
     },
@@ -96,17 +96,18 @@ export const CENARIO_CAMERA: CenarioSimulacao = {
   tela: "home",
   passos: [
     {
-      instrucao: "Toque no aplicativo Câmera.",
+      instrucao: "Toque no aplicativo **Câmera**.",
       alvo: "app_camera",
       dica: "É o ícone cinza com o desenho de uma câmera.",
     },
     {
-      instrucao: "Aponte para o que quer fotografar e toque no botão branco.",
+      instrucao:
+        "Aponte para o que quer fotografar e toque no **botão branco**.",
       alvo: "botao_foto",
       dica: "É o círculo branco grande, no meio embaixo.",
     },
     {
-      instrucao: "Toque na miniatura para ver a foto que você tirou.",
+      instrucao: "Toque na **miniatura** para ver a foto que você tirou.",
       alvo: "foto_galeria",
       dica: "É o quadradinho no canto esquerdo, embaixo.",
     },
@@ -119,17 +120,17 @@ export const CENARIO_EMAIL: CenarioSimulacao = {
   tela: "home",
   passos: [
     {
-      instrucao: "Toque no aplicativo E-mail.",
+      instrucao: "Toque no aplicativo **E-mail**.",
       alvo: "app_email",
       dica: "É o ícone vermelho com um envelope.",
     },
     {
-      instrucao: "Toque no e-mail do Banco Lume para ler.",
+      instrucao: "Toque no **e-mail do Banco Lume** para ler.",
       alvo: "email_suspeito",
       dica: "Ele pede para clicar num link. Desconfie!",
     },
     {
-      instrucao: "Não toque no link. Toque em Avisar um familiar.",
+      instrucao: "Não toque no **link**. Toque em **Avisar um familiar**.",
       alvo: "acao_avisar",
       dica: "É a última opção da lista.",
     },

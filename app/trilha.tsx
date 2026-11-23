@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import {
   ArrowLeft,
   HelpCircle,
+  Lock,
   Sparkles,
   Star,
   WifiOff,
@@ -13,6 +14,7 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Image,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -69,7 +71,7 @@ const ESTRELAS_FUNDO = [
 
 export default function TrilhaScreen() {
   const router = useRouter();
-  const { fonte, modoEscuro, recarregar } = useAcessibilidade();
+  const { fonte, modoEscuro, recarregar, tema } = useAcessibilidade();
   const insets = useSafeAreaInsets();
   const { width: largura, height: altura } = useWindowDimensions();
 
@@ -292,13 +294,6 @@ export default function TrilhaScreen() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secoes, indiceSelecionado]);
-
-  // Aviso de lição bloqueada desaparece sozinho.
-  useEffect(() => {
-    if (!aviso) return;
-    const timer = setTimeout(() => setAviso(""), 6000);
-    return () => clearTimeout(timer);
-  }, [aviso]);
 
   function fecharTutorial() {
     setTutorialVisivel(false);
@@ -591,18 +586,54 @@ export default function TrilhaScreen() {
       )}
 
       {aviso !== "" && (
-        <View
-          style={[
-            styles.aviso,
-            { bottom: Math.max(insets.bottom, 12) + 92 },
-          ]}
-          accessibilityLiveRegion="polite"
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          onRequestClose={() => setAviso("")}
         >
-          <Star size={20} color={TrilhaCores.estrela} />
-          <Text style={[styles.textoAviso, { fontSize: fonte(16) }]}>
-            {aviso}
-          </Text>
-        </View>
+          <View style={styles.fundoAviso}>
+            <View
+              style={[
+                styles.cartaoAviso,
+                { backgroundColor: tema.cartao, borderColor: tema.roxo },
+              ]}
+              accessibilityViewIsModal
+              accessibilityLiveRegion="polite"
+            >
+              <View style={styles.linhaAviso}>
+                <View
+                  style={[
+                    styles.seloAviso,
+                    { backgroundColor: tema.amarelo, borderColor: tema.destaque },
+                  ]}
+                >
+                  <Lock size={26} color="#32064F" strokeWidth={2.4} />
+                </View>
+                <Text
+                  style={[
+                    styles.tituloAviso,
+                    { color: tema.roxoEscuro, fontSize: fonte(24) },
+                  ]}
+                >
+                  Lição bloqueada
+                </Text>
+              </View>
+
+              <Text
+                style={[styles.textoAviso, { color: tema.texto, fontSize: fonte(18) }]}
+              >
+                {aviso}
+              </Text>
+
+              <BotaoGrande
+                titulo="Entendi"
+                variante="roxo"
+                onPress={() => setAviso("")}
+              />
+            </View>
+          </View>
+        </Modal>
       )}
 
       {/* Navegação flutuante: a mesma barra das demais telas do app */}
@@ -828,27 +859,46 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: TrilhaCores.estrela,
   },
-  aviso: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: TrilhaCores.estrela,
-    backgroundColor: "#2B0640",
-    padding: 16,
+  fundoAviso: {
+    flex: 1,
+    backgroundColor: "rgba(50, 6, 79, 0.35)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  cartaoAviso: {
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+    borderRadius: 24,
+    borderWidth: 3,
+    padding: 20,
+    gap: 14,
+    shadowColor: "#32064F",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 7,
+  },
+  linhaAviso: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    gap: 12,
+  },
+  seloAviso: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  tituloAviso: {
+    flex: 1,
+    fontFamily: "Poppins_800ExtraBold",
   },
   textoAviso: {
-    flex: 1,
     fontFamily: "Poppins_600SemiBold",
-    color: TrilhaCores.texto,
+    lineHeight: 26,
   },
 });

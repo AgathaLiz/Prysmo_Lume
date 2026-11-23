@@ -11,7 +11,7 @@ import {
 import { Medidas } from "@/constants/cores";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 
-type Variante = "amarelo" | "roxo" | "contorno";
+type Variante = "amarelo" | "roxo" | "contorno" | "perigo";
 
 type Props = {
   titulo: string;
@@ -29,6 +29,7 @@ type Props = {
  * Botão grande das telas novas. Segue o padrão das telas existentes:
  * fundo amarelo #FFD651, cantos arredondados e Poppins 800.
  * Altura mínima de 64 (acima dos 56 recomendados) por causa do tremor.
+ * A variante "perigo" usa o vermelho do tema para ações destrutivas.
  */
 export function BotaoGrande({
   titulo,
@@ -47,8 +48,11 @@ export function BotaoGrande({
       ? tema.amarelo
       : variante === "roxo"
         ? tema.roxo
-        : "transparent";
+        : variante === "perigo"
+          ? tema.erro
+          : "transparent";
 
+  const corTexto = variante === "perigo" ? "#FFFFFF" : tema.texto;
   const inativo = desabilitado || carregando;
 
   return (
@@ -65,21 +69,26 @@ export function BotaoGrande({
           backgroundColor: fundo,
           borderColor: variante === "contorno" ? tema.roxo : fundo,
           borderWidth: variante === "contorno" ? 2 : 0,
-          shadowColor: variante === "contorno" ? "transparent" : "#000",
+          shadowColor:
+            variante === "contorno"
+              ? "transparent"
+              : variante === "perigo"
+                ? tema.erro
+                : "#000",
           opacity: inativo ? 0.6 : 1,
         },
         estilo,
       ]}
     >
       {carregando ? (
-        <ActivityIndicator size="small" color={tema.texto} />
+        <ActivityIndicator size="small" color={corTexto} />
       ) : (
         icone
       )}
       <Text
         style={[
           styles.texto,
-          { color: tema.texto, fontSize: fonte(22) },
+          { color: corTexto, fontSize: fonte(22) },
         ]}
       >
         {titulo}

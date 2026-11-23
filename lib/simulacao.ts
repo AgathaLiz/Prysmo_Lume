@@ -27,6 +27,7 @@ export type CenarioSimulacao = {
 export type TelaFicticia =
   | "home"
   | "telefone"
+  | "discador"
   | "contatos"
   | "novo_contato"
   | "uber"
@@ -37,6 +38,16 @@ export type TelaFicticia =
 
 export function telaDoAlvo(alvo: string): TelaFicticia | null {
   if (alvo.startsWith("app_")) return "home";
+
+  // Discador: teclado numérico do aplicativo Telefone. As teclas só
+  // existem nessa tela, então qualquer tecla leva para cá.
+  if (
+    alvo === "botao_criar_contato" ||
+    alvo === "teclado_numerico" ||
+    alvo.startsWith("tecla_")
+  ) {
+    return "discador";
+  }
 
   // Salvar contato: lista de contatos -> formulário de novo contato.
   if (alvo === "botao_novo_contato") return "contatos";
@@ -66,8 +77,7 @@ export function telaDoAlvo(alvo: string): TelaFicticia | null {
   if (
     alvo.startsWith("contato_") ||
     alvo === "botao_ligar" ||
-    alvo === "botao_desligar" ||
-    alvo.startsWith("tecla_")
+    alvo === "botao_desligar"
   ) {
     return "telefone";
   }

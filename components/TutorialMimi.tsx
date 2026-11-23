@@ -28,10 +28,12 @@ type Props = {
   /** Deixa o balão em amarelo, como um destaque. */
   destaque?: boolean;
   /**
-   * Versão enxuta: cabe no rodapé (simulação) ou no topo das perguntas
-   * sem empurrar o conteúdo para fora da tela. O texto continua acessível.
+   * Versão enxuta: cabe no topo das perguntas sem empurrar o conteúdo
+   * para fora da tela. O texto continua acessível.
    */
   pequeno?: boolean;
+  /** Limite visual de linhas; o texto completo continua no leitor de tela. */
+  maxLinhas?: number;
   estilo?: StyleProp<ViewStyle>;
 };
 
@@ -48,6 +50,7 @@ export function TutorialMimi({
   pose = "ensinando",
   destaque = false,
   pequeno = false,
+  maxLinhas,
   estilo,
 }: Props) {
   const { tema, fonte } = useAcessibilidade();
@@ -94,7 +97,7 @@ export function TutorialMimi({
             styles.texto,
             { color: corTexto, fontSize: fonte(pequeno ? 16 : 20) },
           ]}
-          numberOfLines={pequeno ? 4 : undefined}
+          numberOfLines={maxLinhas ?? (pequeno ? 4 : undefined)}
         >
           {fala}
         </Text>

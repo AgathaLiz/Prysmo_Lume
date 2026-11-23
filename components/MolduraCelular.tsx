@@ -11,12 +11,14 @@ import {
 type Props = {
   children: ReactNode;
   /**
-   * Ocupa toda a altura que o pai oferecer (vídeo e simulação).
+   * Ocupa toda a altura que o pai oferecer (usado no vídeo).
    * Sem isso, a moldura mantém a proporção de um celular.
    */
   preencher?: boolean;
   /** Esconde a barra de status quando o conteúdo já desenha a própria. */
   semBarraStatus?: boolean;
+  /** Tamanho exato, calculado pela tela (simulação responsiva). */
+  tamanho?: { width: number; height: number };
   estilo?: StyleProp<ViewStyle>;
 };
 
@@ -31,13 +33,15 @@ export function MolduraCelular({
   children,
   preencher = false,
   semBarraStatus = false,
+  tamanho,
   estilo,
 }: Props) {
   return (
     <View
       style={[
         styles.moldura,
-        preencher ? styles.preencher : styles.proporcao,
+        preencher ? styles.preencher : tamanho ? null : styles.proporcao,
+        tamanho ? { width: tamanho.width, height: tamanho.height } : null,
         estilo,
       ]}
     >

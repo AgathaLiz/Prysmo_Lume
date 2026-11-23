@@ -216,13 +216,13 @@ export default function TelaUsuario() {
         <Pressable
           style={({ pressed }) => [
             styles.botaoSair,
-            { backgroundColor: tema.roxo, opacity: pressed ? 0.82 : 1 },
+            { backgroundColor: "#E23B2E", opacity: pressed ? 0.82 : 1 },
           ]}
           onPress={confirmarSaida}
           accessibilityRole="button"
           accessibilityLabel="Sair da conta"
         >
-          <LogOut size={30} color="#303030" strokeWidth={2.3} />
+          <LogOut size={30} color="#FFFFFF" strokeWidth={2.3} />
           <Text style={[styles.textoSair, { fontSize: fonte(24) }]}>Sair da Conta</Text>
         </Pressable>
       </ScrollView>
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
   textoSair: {
     fontFamily: "Poppins_900Black",
-    color: "#303030",
+    color: "#FFFFFF",
     flexShrink: 1,
     textAlign: "center",
   },
