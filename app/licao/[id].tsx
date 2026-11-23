@@ -43,6 +43,7 @@ import { BotaoGrande } from "@/components/BotaoGrande";
 import { CabecalhoLicao } from "@/components/CabecalhoLicao";
 import { MolduraCelular } from "@/components/MolduraCelular";
 import { PlayerVideo } from "@/components/PlayerVideo";
+import { PopupMuitoBem } from "@/components/PopupMuitoBem";
 import { SimuladorCelular } from "@/components/SimuladorCelular";
 import { TutorialMimi } from "@/components/TutorialMimi";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
@@ -91,6 +92,9 @@ const ESTRELA_DIA = require("../../assets/Lume/Outros elementos/Png/estrela-cinc
 
 /** Quantos erros a pessoa pode cometer no questionário antes de a lição reiniciar. */
 const VIDAS_MAXIMAS = 2;
+
+/** Acertos seguidos que merecem a comemoração "Muito bem!". */
+const ACERTOS_PARA_COMEMORAR = 2;
 
 // `correta` só existe na lição de exemplo local. As lições do banco NÃO
 // recebem essa coluna: o servidor confere a resposta (função verificar_resposta).
@@ -278,6 +282,8 @@ export default function LicaoScreen() {
   const [selecionada, setSelecionada] = useState<number | null>(null);
   const [verificado, setVerificado] = useState(false);
   const [acertos, setAcertos] = useState(0);
+  const [sequenciaAcertos, setSequenciaAcertos] = useState(0);
+  const [comemoracaoVisivel, setComemoracaoVisivel] = useState(false);
   const [notaQuiz, setNotaQuiz] = useState<number | null>(null);
 
   // Gabarito vindo do servidor (só depois de a pessoa responder)
@@ -287,7 +293,6 @@ export default function LicaoScreen() {
   const [erroVerificar, setErroVerificar] = useState("");
   const [explicacao, setExplicacao] = useState("");
   const [explicacaoCerta, setExplicacaoCerta] = useState("");
-  const [feedbackVisivel, setFeedbackVisivel] = useState(false);
   const [vidas, setVidas] = useState(VIDAS_MAXIMAS);
 
   // Simulação
@@ -299,6 +304,7 @@ export default function LicaoScreen() {
   const [xpGanho, setXpGanho] = useState(0);
   const [erroSalvar, setErroSalvar] = useState("");
   const salvouRef = useRef(false);
+  const rolagemQuizRef = useRef<ScrollView>(null);
 
   // Saída da lição: o progresso só é salvo no fim, então sair no meio perde tudo.
   const emProgresso =
@@ -744,6 +750,16 @@ export default function LicaoScreen() {
     if (etapa === "ofensiva" && textoOuvir) falar(textoOuvir);
   }, [audioDescricao, etapa, textoOuvir, falar]);
 
+  // Depois de verificar, o feedback fica logo acima do botão de avançar.
+  // Rola até o fim para garantir que ele apareça na tela.
+  useEffect(() => {
+    if (!verificado || etapa !== "questionario") return;
+    const temporizador = setTimeout(() => {
+      rolagemQuizRef.current?.scrollToEnd({ animated: true });
+    }, 180);
+    return () => clearTimeout(temporizador);
+  }, [verificado, etapa]);
+
   /** Descobre se esta é a última lição do nível e qual nível liberar. */
   async function descobrirProximoNivel(
     niveisId: number,
@@ -885,13 +901,14 @@ export default function LicaoScreen() {
     setSelecionada(null);
     setVerificado(false);
     setAcertos(0);
+    setSequenciaAcertos(0);
+    setComemoracaoVisivel(false);
     setCertaId(null);
     setAcertou(false);
     setVerificando(false);
     setErroVerificar("");
     setExplicacao("");
     setExplicacaoCerta("");
-    setFeedbackVisivel(false);
     setVidas(VIDAS_MAXIMAS);
 
     if (pularVideo) {
@@ -939,13 +956,21 @@ export default function LicaoScreen() {
       textoExplicacaoCerta = String(data[0].explicacao_correta ?? "").trim();
     }
 
+    const novaSequencia = correta ? sequenciaAcertos + 1 : 0;
+    setSequenciaAcertos(novaSequencia);
+
     setAcertou(correta);
     setCertaId(idCerta);
     setExplicacao(textoExplicacao);
     setExplicacaoCerta(textoExplicacaoCerta);
     setVerificado(true);
     setVerificando(false);
-    setFeedbackVisivel(true);
+
+    // Numa sequência, a comemoração aparece por cima da pergunta. O
+    // feedback normal continua na própria tela, junto do botão de avançar.
+    if (correta && novaSequencia === ACERTOS_PARA_COMEMORAR) {
+      setComemoracaoVisivel(true);
+    }
 
     if (correta) {
       setAcertos((total) => total + 1);
@@ -974,7 +999,6 @@ export default function LicaoScreen() {
 
     const ultima = indiceQuestao >= questoes.length - 1;
 
-    setFeedbackVisivel(false);
     setExplicacao("");
     setExplicacaoCerta("");
 
@@ -1276,6 +1300,7 @@ export default function LicaoScreen() {
 
       {etapa === "questionario" && questaoAtual && (
         <ScrollView
+          ref={rolagemQuizRef}
           style={styles.rolagemEtapa}
           contentContainerStyle={styles.conteudoEtapa}
           showsVerticalScrollIndicator={false}
@@ -1400,13 +1425,117 @@ export default function LicaoScreen() {
               />
             ) : (
               <>
-                {!feedbackVisivel && (
-                  <BotaoGrande
-                    titulo="Ver explicação"
-                    variante="contorno"
-                    onPress={() => setFeedbackVisivel(true)}
-                  />
-                )}
+                <View
+                  style={[
+                    styles.feedbackResposta,
+                    {
+                      backgroundColor: acertouQuestao
+                        ? tema.sucessoFundo
+                        : tema.erroFundo,
+                      borderColor: acertouQuestao ? tema.sucesso : tema.erro,
+                    },
+                  ]}
+                  accessibilityLiveRegion="polite"
+                >
+                  <View style={styles.linhaTituloFeedback}>
+                    {acertouQuestao ? (
+                      <CheckCircle2 size={26} color={tema.sucesso} />
+                    ) : (
+                      <XCircle size={26} color={tema.erro} />
+                    )}
+                    <Text
+                      style={[
+                        styles.tituloFeedback,
+                        {
+                          color: acertouQuestao ? tema.sucesso : tema.erro,
+                          fontSize: fonte(20),
+                        },
+                      ]}
+                    >
+                      {tituloFeedback}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.corpoFeedback,
+                      { color: tema.texto, fontSize: fonte(16) },
+                    ]}
+                  >
+                    {mensagemFeedback}
+                  </Text>
+
+                  {!acertouQuestao && alternativaCerta && (
+                    <View
+                      style={[
+                        styles.caixaRespostaCerta,
+                        {
+                          backgroundColor: tema.sucessoFundo,
+                          borderColor: tema.sucesso,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.rotuloRespostaCerta,
+                          { color: tema.sucesso, fontSize: fonte(13) },
+                        ]}
+                      >
+                        A resposta certa é
+                      </Text>
+                      <Text
+                        style={[
+                          styles.textoRespostaCerta,
+                          { color: tema.texto, fontSize: fonte(16) },
+                        ]}
+                      >
+                        {alternativaCerta.texto}
+                      </Text>
+                      {explicacaoCerta !== "" && explicacaoCerta !== explicacao && (
+                        <Text
+                          style={[
+                            styles.corpoFeedback,
+                            { color: tema.texto, fontSize: fonte(15) },
+                          ]}
+                        >
+                          {explicacaoCerta}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {!acertouQuestao && (
+                    <View
+                      style={styles.linhaVidas}
+                      accessible
+                      accessibilityLabel={`${vidas} de ${VIDAS_MAXIMAS} vidas`}
+                    >
+                      {Array.from({ length: VIDAS_MAXIMAS }).map((_, indice) => (
+                        <Heart
+                          key={indice}
+                          size={24}
+                          color={indice < vidas ? tema.erro : tema.borda}
+                          fill={indice < vidas ? tema.erro : "transparent"}
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </View>
+                  )}
+
+                  {!acertouQuestao && (
+                    <Text
+                      style={[
+                        styles.corpoFeedback,
+                        { color: tema.textoSecundario, fontSize: fonte(15) },
+                      ]}
+                    >
+                      {semVidas
+                        ? "Suas vidas acabaram. Vamos recomeçar as perguntas, sem pressa."
+                        : `Você ainda tem ${vidas} ${vidas === 1 ? "vida" : "vidas"}.`}
+                    </Text>
+                  )}
+                </View>
+
                 {semVidas ? (
                   <BotaoGrande
                     titulo="Tentar de novo"
@@ -1751,146 +1880,14 @@ export default function LicaoScreen() {
         </ScrollView>
       )}
 
-      {/* Resposta: acerto ou erro, grande e no centro da tela */}
-      <Modal
-        visible={feedbackVisivel && verificado && etapa === "questionario"}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFeedbackVisivel(false)}
-      >
-        <View style={styles.fundoModal}>
-          <ScrollView
-            style={styles.rolagemFeedback}
-            contentContainerStyle={styles.centroFeedback}
-            showsVerticalScrollIndicator={false}
-          >
-            <View
-              style={[
-                styles.cartaoFeedback,
-                {
-                  backgroundColor: tema.cartao,
-                  borderColor: acertouQuestao ? tema.sucesso : tema.erro,
-                },
-              ]}
-              accessibilityViewIsModal
-              accessibilityLiveRegion="polite"
-            >
-              {acertouQuestao ? (
-                <CheckCircle2 size={76} color={tema.sucesso} />
-              ) : (
-                <XCircle size={76} color={tema.erro} />
-              )}
-
-              <Text
-                style={[
-                  styles.tituloFeedback,
-                  {
-                    color: acertouQuestao ? tema.sucesso : tema.erro,
-                    fontSize: fonte(32),
-                  },
-                ]}
-              >
-                {tituloFeedback}
-              </Text>
-
-              <Text
-                style={[
-                  styles.corpoFeedback,
-                  { color: tema.texto, fontSize: fonte(20) },
-                ]}
-              >
-                {mensagemFeedback}
-              </Text>
-
-              {!acertouQuestao && alternativaCerta && (
-                <View
-                  style={[
-                    styles.caixaRespostaCerta,
-                    { backgroundColor: tema.sucessoFundo, borderColor: tema.sucesso },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.rotuloRespostaCerta,
-                      { color: tema.sucesso, fontSize: fonte(15) },
-                    ]}
-                  >
-                    A resposta certa é
-                  </Text>
-                  <Text
-                    style={[
-                      styles.textoRespostaCerta,
-                      { color: tema.texto, fontSize: fonte(19) },
-                    ]}
-                  >
-                    {alternativaCerta.texto}
-                  </Text>
-                  {explicacaoCerta !== "" && explicacaoCerta !== explicacao && (
-                    <Text
-                      style={[
-                        styles.corpoFeedback,
-                        { color: tema.texto, fontSize: fonte(17) },
-                      ]}
-                    >
-                      {explicacaoCerta}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {!acertouQuestao && (
-                <View
-                  style={styles.linhaVidas}
-                  accessible
-                  accessibilityLabel={`${vidas} de ${VIDAS_MAXIMAS} vidas`}
-                >
-                  {Array.from({ length: VIDAS_MAXIMAS }).map((_, indice) => (
-                    <Heart
-                      key={indice}
-                      size={30}
-                      color={indice < vidas ? tema.erro : tema.borda}
-                      fill={indice < vidas ? tema.erro : "transparent"}
-                      strokeWidth={2}
-                    />
-                  ))}
-                </View>
-              )}
-
-              {!acertouQuestao && (
-                <Text
-                  style={[
-                    styles.corpoFeedback,
-                    { color: tema.textoSecundario, fontSize: fonte(17) },
-                  ]}
-                >
-                  {semVidas
-                    ? "Suas vidas acabaram. Vamos recomeçar as perguntas, sem pressa."
-                    : `Você ainda tem ${vidas} ${vidas === 1 ? "vida" : "vidas"}.`}
-                </Text>
-              )}
-
-              {semVidas ? (
-                <BotaoGrande
-                  titulo="Tentar de novo"
-                  icone={<RotateCcw size={24} color={tema.texto} />}
-                  onPress={() => reiniciar(true)}
-                />
-              ) : (
-                <BotaoGrande
-                  titulo={rotuloAvancar}
-                  icone={<ChevronRight size={24} color={tema.texto} />}
-                  onPress={avancarQuestao}
-                />
-              )}
-              <BotaoGrande
-                titulo="Ver as alternativas"
-                variante="contorno"
-                onPress={() => setFeedbackVisivel(false)}
-              />
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
+      {/* Comemoração de sequência: cartão pequeno, só para marcar a sequência */}
+      <PopupMuitoBem
+        visivel={comemoracaoVisivel}
+        sequencia={sequenciaAcertos}
+        aoFechar={() => {
+          setComemoracaoVisivel(false);
+        }}
+      />
 
       {/* Ajuda de cada etapa */}
       <Modal
@@ -2004,43 +2001,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
   },
-  rolagemFeedback: {
-    flex: 1,
+  feedbackResposta: {
+    width: "100%",
+    borderRadius: 16,
+    borderWidth: 2,
+    padding: 12,
+    gap: 8,
   },
-  centroFeedback: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  cartaoFeedback: {
-    borderRadius: 28,
-    borderWidth: 3,
-    padding: 24,
-    gap: 14,
+  linhaTituloFeedback: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   tituloFeedback: {
     fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
+    flexShrink: 1,
   },
   corpoFeedback: {
     fontFamily: "Poppins_600SemiBold",
-    textAlign: "center",
   },
   caixaRespostaCerta: {
     width: "100%",
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 2,
-    padding: 14,
-    gap: 4,
-    alignItems: "center",
+    padding: 10,
+    gap: 2,
+    alignItems: "flex-start",
   },
   rotuloRespostaCerta: {
     fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
   },
   textoRespostaCerta: {
     fontFamily: "Poppins_800ExtraBold",
-    textAlign: "center",
   },
   secao: {
     gap: 14,
