@@ -9,11 +9,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { PageFlow } from "../../../components/PageFlow";
 
 export default function LoginSocialScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
+      <View style={[styles.topo, { top: insets.top + 8 }]}>
+        <BotaoVoltar
+          cor="#303030"
+          onPress={() => router.replace("/onboarding/tela_primeiro_acesso")}
+        />
+      </View>
          
       
       <View style={styles.ilustracaoBox}>
@@ -82,6 +92,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingBottom: 80,
     backgroundColor: "#E9B8FF",
+  },
+
+  topo: {
+    position: "absolute",
+    left: 20,
+    zIndex: 1,
   },
     
 
