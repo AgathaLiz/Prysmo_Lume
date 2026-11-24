@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Calendar, Phone, User } from "lucide-react-native";
+import { ArrowLeft, Calendar, Phone, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -10,10 +10,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { PageFlow } from "../../components/PageFlow";
 import { supabase } from "../../lib/supabase";
 
 export default function CompletarPerfilScreen() {
+  const insets = useSafeAreaInsets();
   const [nome, setNome] = useState("");
   const [nascimento, setNascimento] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -107,83 +110,118 @@ export default function CompletarPerfilScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.topContainer}>
-        <Image
-          source={require("../../assets/Lume/Mimi/Png/mimi-ensinando.png")}
-          style={styles.photoBox}
-        />
-        <View style={styles.messageBox}>
-          <Text style={styles.messageText}>
-            Falta pouco! Complete seus dados para continuar.
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.inputWrapper}>
-        <User size={20} color="#303030" style={styles.icon} />
-        <TextInput
-          placeholder="Nome"
-          placeholderTextColor="#303030"
-          value={nome}
-          onChangeText={setNome}
-          style={[styles.input, styles.inputWithIcon]}
-        />
-        {erros.nome ? <Text style={styles.errorText}>{erros.nome}</Text> : null}
-      </View>
-
-      <View style={styles.inputWrapper}>
-        <Calendar size={20} color="#303030" style={styles.icon} />
-        <TextInput
-          placeholder="Nascimento"
-          placeholderTextColor="#303030"
-          value={nascimento}
-          keyboardType="numeric"
-          maxLength={10}
-          onChangeText={(t) => setNascimento(mascaraData(t))}
-          style={[styles.input, styles.inputWithIcon]}
-        />
-        {erros.nascimento ? <Text style={styles.errorText}>{erros.nascimento}</Text> : null}
-      </View>
-
-      <View style={styles.inputWrapper}>
-        <Phone size={20} color="#303030" style={styles.icon} />
-        <TextInput
-          placeholder="Telefone"
-          placeholderTextColor="#303030"
-          value={telefone}
-          keyboardType="phone-pad"
-          maxLength={15}
-          onChangeText={(t) => setTelefone(mascaraTelefone(t))}
-          style={[styles.input, styles.inputWithIcon]}
-        />
-        {erros.telefone ? <Text style={styles.errorText}>{erros.telefone}</Text> : null}
-      </View>
-
-      {erroGeral ? <Text style={styles.errorText}>{erroGeral}</Text> : null}
-
+    <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.button, carregando && { opacity: 0.6 }]}
-        onPress={salvarPerfil}
-        disabled={carregando}
+        style={[styles.botaoVoltarTopo, { top: insets.top + 10 }]}
+        onPress={() => router.replace("/auth/login/contas" as any)}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
       >
-        <Text style={styles.buttonText}>{carregando ? "Salvando..." : "Continuar"}</Text>
+        <ArrowLeft size={26} color="#303030" strokeWidth={2.5} />
       </TouchableOpacity>
-    </ScrollView>
+
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 68, paddingBottom: 96 },
+        ]}
+      >
+        <View style={styles.topContainer}>
+          <Image
+            source={require("../../assets/Lume/Mimi/Png/mimi-ensinando.png")}
+            style={styles.photoBox}
+            resizeMode="contain"
+          />
+          <View style={styles.messageBox}>
+            <Text style={styles.messageText}>
+              Falta pouco! Complete seus dados para continuar.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <User size={20} color="#303030" style={styles.icon} />
+          <TextInput
+            placeholder="Nome"
+            placeholderTextColor="#5A535E"
+            value={nome}
+            onChangeText={setNome}
+            style={[styles.input, styles.inputWithIcon]}
+          />
+          {erros.nome ? <Text style={styles.errorText}>{erros.nome}</Text> : null}
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Calendar size={20} color="#303030" style={styles.icon} />
+          <TextInput
+            placeholder="Nascimento"
+            placeholderTextColor="#5A535E"
+            value={nascimento}
+            keyboardType="numeric"
+            maxLength={10}
+            onChangeText={(t) => setNascimento(mascaraData(t))}
+            style={[styles.input, styles.inputWithIcon]}
+          />
+          {erros.nascimento ? <Text style={styles.errorText}>{erros.nascimento}</Text> : null}
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Phone size={20} color="#303030" style={styles.icon} />
+          <TextInput
+            placeholder="Telefone"
+            placeholderTextColor="#5A535E"
+            value={telefone}
+            keyboardType="phone-pad"
+            maxLength={15}
+            onChangeText={(t) => setTelefone(mascaraTelefone(t))}
+            style={[styles.input, styles.inputWithIcon]}
+          />
+          {erros.telefone ? <Text style={styles.errorText}>{erros.telefone}</Text> : null}
+        </View>
+
+        {erroGeral ? <Text style={styles.errorText}>{erroGeral}</Text> : null}
+
+        <TouchableOpacity
+          style={[styles.button, carregando && { opacity: 0.6 }]}
+          onPress={salvarPerfil}
+          disabled={carregando}
+        >
+          <Text style={styles.buttonText}>{carregando ? "Salvando..." : "Continuar"}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      <PageFlow total={4} currentIndex={1} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E9B8FF",
+    backgroundColor: "#FFFFFF",
+  },
+  botaoVoltarTopo: {
+    position: "absolute",
+    left: 20,
+    zIndex: 5,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E5B4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 5,
   },
 
   scrollContent: {
-    paddingHorizontal: 25,
-    paddingTop: 60,
-    paddingBottom: 100,   // espaço extra no final pra não cortar o último campo
-    
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 22,
   },
 
   
@@ -243,21 +281,17 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "#FFFFFF",
-    height: 62,
+    backgroundColor: "#F0EEF2",
+    height: 60,
     borderRadius: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    borderWidth: 1.5,
+    borderColor: "#D9A8F7",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     marginBottom: 15,
-    fontSize: 16,
+    fontSize: 17,
     fontFamily:"Poppins_600SemiBold",
     color:"#303030",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
-   
   },
 
   halfInput: {
@@ -265,16 +299,16 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    marginTop: 25,
-    marginBottom: 10,
-    backgroundColor: "#FFD651",
-    borderRadius: 35,
+    marginTop: 18,
+    marginBottom: 4,
+    backgroundColor: "#D689FF",
+    borderRadius: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 6,
   },
 
   buttonText: {

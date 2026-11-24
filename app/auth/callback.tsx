@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { supabase } from "../../lib/supabase";
 import { irParaProximaTela } from "../../services/authService";
 
@@ -32,8 +32,27 @@ export default function CallbackScreen() {
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <ActivityIndicator size="large" />
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#FFFFFF",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 24,
+        gap: 16,
+      }}
+    >
+      <ActivityIndicator size="large" color="#891CC0" />
+      <Text
+        style={{
+          fontFamily: "Poppins_600SemiBold",
+          fontSize: 18,
+          color: "#303030",
+          textAlign: "center",
+        }}
+      >
+        Entrando na sua conta...
+      </Text>
     </View>
   );
 }

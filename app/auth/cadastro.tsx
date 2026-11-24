@@ -1,5 +1,6 @@
 import { router } from "expo-router";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Calendar,
   Eye,
@@ -43,6 +44,7 @@ import { supabase } from "../../lib/supabase";
 
 // nomes dos objetos que vão guardar as informações
 export default function CadastroScreen() {
+  const insets = useSafeAreaInsets();
   const [carregando, setCarregando] = useState(false);
   const [erroGeral, setErroGeral] = useState("");
   const [nome, setNome] = useState("");
@@ -173,35 +175,39 @@ router.replace({
 
   return (
     <View style={styles.container}>
+    <TouchableOpacity
+      style={[styles.botaoVoltarTopo, { top: insets.top + 10 }]}
+      onPress={() => router.push("../auth/login/contas")}
+      accessibilityRole="button"
+      accessibilityLabel="Voltar"
+    >
+      <ArrowLeft size={26} color="#303030" strokeWidth={2.5} />
+    </TouchableOpacity>
+
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingTop: insets.top + 68, paddingBottom: 96 },
+      ]}
       onScrollEndDrag={remedirGuia}
       onMomentumScrollEnd={remedirGuia}
     >
-      
-      {/* Botão para levar a página de login */}
-       <TouchableOpacity
-          style={styles.botaoVoltar}
-          onPress={() => router.push("../auth/login/contas")}
-        >
-          <ChevronLeft size={25} color="#303030" />
-        </TouchableOpacity>
-
       {/* mascote + Balão */}
       <View style={styles.topContainer}>
-        <TouchableOpacity >
-                    <Image
-                        source={require("../../assets/Lume/Mimi/Png/mimi-ensinando.png")}
-                        style={styles.photoBox}
-                    />
-                </TouchableOpacity>
+        <View style={styles.photoWrapper}>
+          <Image
+            source={require("../../assets/Lume/Mimi/Png/mimi-ensinando.png")}
+            style={styles.photoBox}
+            resizeMode="contain"
+          />
+        </View>
 
-        <TouchableOpacity style={styles.messageBox}>
+        <View style={styles.messageBox}>
           <Text style={styles.messageText}>
-            Insira seus dados pessoais para criar uma conta!
+            Insira seus dados pessoais para criar uma nova conta
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
 {/* Campos para preencher do formulário */}
@@ -265,11 +271,12 @@ router.replace({
   {erros.email ? <Text style={styles.errorText}>{erros.email}</Text> : null}
 </View>
 
-  <View ref={refSenha} collapsable={false} style={styles.inputWrapper}>
+  <View style={styles.row}>
+  <View ref={refSenha} collapsable={false} style={[styles.inputWrapper, styles.halfInput]}>
     <Lock size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Criar senha"
-      placeholderTextColor="#303030"
+      placeholderTextColor="#5A535E"
       secureTextEntry={!mostrarSenha}
       value={senha}
       onChangeText={setSenha}
@@ -291,11 +298,11 @@ router.replace({
     {erros.senha ? <Text style={styles.errorText}>{erros.senha}</Text> : null}
   </View>
 
-  <View ref={refConfirmar} collapsable={false} style={styles.inputWrapper}>
+  <View ref={refConfirmar} collapsable={false} style={[styles.inputWrapper, styles.halfInput]}>
     <Lock size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Repetir senha"
-      placeholderTextColor="#303030"
+      placeholderTextColor="#5A535E"
       secureTextEntry={!mostrarConfirmarSenha}
       value={confirmarSenha}
       onChangeText={setConfirmarSenha}
@@ -320,6 +327,7 @@ router.replace({
       <Text style={styles.errorText}>{erros.confirmarSenha}</Text>
     ) : null}
   </View>
+  </View>
 
   {/* Erro geral do cadastro */}
   {erroGeral ? <Text style={styles.errorText}>{erroGeral}</Text> : null}
@@ -335,8 +343,9 @@ router.replace({
     </TouchableOpacity>
   </View>
       
-        <PageFlow total={4} currentIndex={1} />
     </ScrollView>
+
+    <PageFlow total={4} currentIndex={1} />
 
     <GuiaMimi
       visivel={guiaAtivo}
@@ -364,31 +373,48 @@ router.replace({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E9B8FF",
+    backgroundColor: "#FFFFFF",
+  },
+  botaoVoltarTopo: {
+    position: "absolute",
+    left: 20,
+    zIndex: 5,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E5B4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 5,
   },
 
   scrollContent: {
-    paddingHorizontal: 25,
-    paddingTop: 60,
-    paddingBottom: 100,   // espaço extra no final pra não cortar o último campo
-    
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 22,
   },
-
-  
 
   topContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 18,
+  },
+
+  photoWrapper: {
+    width: 112,
+    height: 156,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   photoBox: {
-    marginTop: 20,
-    width: 120,
-    height: 180,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 104,
+    height: 148,
   },
 
   photoIcon: {
@@ -431,21 +457,17 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "#FFFFFF",
-    height: 62,
+    backgroundColor: "#F0EEF2",
+    height: 60,
     borderRadius: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginBottom: 15,
-    fontSize: 16,
+    borderWidth: 1.5,
+    borderColor: "#D9A8F7",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
+    fontSize: 17,
     fontFamily:"Poppins_600SemiBold",
     color:"#303030",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
-   
   },
 
   halfInput: {
@@ -453,16 +475,16 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    marginTop: 25,
-    marginBottom: 10,
-    backgroundColor: "#FFD651",
-    borderRadius: 35,
+    marginTop: 18,
+    marginBottom: 4,
+    backgroundColor: "#D689FF",
+    borderRadius: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 6,
   },
 
   buttonText: {

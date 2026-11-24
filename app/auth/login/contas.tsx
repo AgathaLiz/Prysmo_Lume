@@ -1,7 +1,7 @@
 import { signInWithFacebook, signInWithGoogle } from "@/services/authService";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { ExternalLink } from "lucide-react-native";
+import { ArrowLeft, ExternalLink } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
@@ -53,11 +53,15 @@ export default function LoginSocialScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.topo, { top: insets.top + 8 }]}>
-        <BotaoVoltar
-          cor="#303030"
+      <View style={[styles.topo, { top: insets.top + 10 }]}>
+        <TouchableOpacity
+          style={styles.botaoVoltarTopo}
           onPress={() => router.replace("/onboarding/tela_primeiro_acesso")}
-        />
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
+          <ArrowLeft size={26} color="#303030" strokeWidth={2.5} />
+        </TouchableOpacity>
       </View>
          
       
@@ -110,14 +114,11 @@ export default function LoginSocialScreen() {
 
         <Text style={styles.footerText}>Ainda não tem uma conta?</Text>
         <TouchableOpacity
+          style={{ width: "100%" }}
           onPress={() => router.push("/auth/cadastro")}>
-             <LinearGradient
-              colors={["#FFD651", "#D987FF"]}
-              start={{x:0, y:0}}
-              end={{x:1, y:1}}
-              style={styles.cadastroButton}>
+             <View style={styles.cadastroButton}>
               <Text style={styles.cadastroText}>Se Cadastrar</Text>
-            </LinearGradient>
+            </View>
           
         </TouchableOpacity>
       </View>
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 25,
     paddingBottom: 80,
-    backgroundColor: "#E9B8FF",
+    backgroundColor: "#FFFFFF",
   },
   envoltorioAlvo: {
     width: "100%",
@@ -166,6 +167,19 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
     zIndex: 1,
+  },
+  botaoVoltarTopo: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E5B4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 5,
   },
     
 
@@ -197,7 +211,7 @@ const styles = StyleSheet.create({
 
   title: {
     marginTop: 0,
-    fontSize: 30,
+    fontSize: 32,
     fontFamily: "Poppins_800ExtraBold",
     textAlign: "center",
     color: "#303030",
@@ -209,15 +223,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 30,
-    marginTop: 15,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    shadowColor: "#353435",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: "#D9A8F7",
+    marginTop: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.34,
+    shadowRadius: 14,
+    elevation: 6,
   },
 
   icon: {
@@ -230,39 +246,43 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     color: "#303030",
     fontFamily:"Poppins_600SemiBold",
-    fontSize: 15,
+    fontSize: 17,
   },
 
    cadastroCard: {
-    width: "70%",
-    marginTop: 25,
+    width: "100%",
+    marginTop: 22,
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: "#D9A8F7",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.34,
+    shadowRadius: 14,
+    elevation: 6,
   },
 
   footerText: {
-    marginTop: 5,
-    fontSize: 15,
+    marginTop: 2,
+    fontSize: 16,
     fontFamily:"Poppins_600SemiBold",
     color: "#303030",
   },
 
  cadastroButton: {
+    width: "100%",
     marginTop: 10,
-    backgroundColor: "#D9D9D9",
-    borderRadius: 20,
-    paddingHorizontal: 22,
-    paddingVertical: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
+    backgroundColor: "#D689FF",
+    borderRadius: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    alignItems: "center",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,

@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { RotateCcw } from "lucide-react-native";
+import { ArrowLeft, ChevronRight } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -68,10 +69,16 @@ export default function TelaPreferencias() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fundo = "#E9B8FF";
-  const borda = "#DFC3F5";
+  const fundo = "#FFFFFF";
+  const borda = "#D9A8F7";
   const texto = tema.texto;
   const secundario = tema.textoSecundario;
+
+  const proximoTamanho = () => {
+    const idx = TAMANHOS.findIndex((t) => t.px === tamanhoFontePx);
+    const proximo = TAMANHOS[(idx + 1) % TAMANHOS.length];
+    void definirTamanhoFonte(proximo.px);
+  };
 
   async function salvarPreferencias() {
     if (salvando) return;
@@ -87,26 +94,59 @@ export default function TelaPreferencias() {
 
   return (
     <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
+      <TouchableOpacity
+        style={[styles.botaoVoltarTopo, { top: insets.top + 10 }]}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+      >
+        <ArrowLeft size={26} color="#303030" strokeWidth={2.5} />
+      </TouchableOpacity>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         onScrollEndDrag={remedirGuia}
         onMomentumScrollEnd={remedirGuia}
         contentContainerStyle={[
           styles.conteudo,
-          { paddingBottom: 24 + insets.bottom },
+          { paddingTop: 68, paddingBottom: 96 + insets.bottom },
         ]}
       >
         <Text style={[styles.tituloPrincipal, { color: "#303030", fontSize: fonte(32) }]}>
           Preferências
         </Text>
 
-        {/* Fonte */}
+        {/* Áudio-descrição (Sem Modo Escuro) */}
+        <View
+          ref={refAudio}
+          collapsable={false}
+          style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}
+        >
+          <View style={styles.linhaTituloSwitch}>
+            <View style={styles.textoAudio}>
+              <Text style={[styles.titulo, { color: texto, fontSize: fonte(19) }]}>
+                Áudio Descrição
+              </Text>
+            </View>
+            <Switch
+              value={audioDescricao}
+              onValueChange={(valor) => void definirAudioDescricao(valor)}
+              trackColor={{ false: "#D8D2DC", true: "#FFE169" }}
+              thumbColor="#303030"
+              accessibilityLabel="Ativar áudio descrição"
+            />
+          </View>
+        </View>
+
+        {/* Tamanho da Fonte */}
         <View
           ref={refFonte}
           collapsable={false}
           style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}
         >
-          <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>Fonte</Text>
+          <Text style={[styles.tituloCentro, { color: texto, fontSize: fonte(20) }]}>
+            Tamanho da Fonte
+          </Text>
 
           <View style={styles.linhaTamanhos}>
             {TAMANHOS.map((tamanho) => {
@@ -117,8 +157,8 @@ export default function TelaPreferencias() {
                   style={[
                     styles.botaoTamanho,
                     {
-                      backgroundColor: ativo ? tema.roxo : "#F3ECF8",
-                      borderColor: ativo ? tema.roxoEscuro : "transparent",
+                      backgroundColor: ativo ? "#D689FF" : "#FFFFFF",
+                      borderColor: ativo ? "#C77DFF" : "#EFE6F7",
                     },
                   ]}
                   onPress={() => void definirTamanhoFonte(tamanho.px)}
@@ -129,7 +169,7 @@ export default function TelaPreferencias() {
                   <Text
                     style={[
                       styles.letraTamanho,
-                      { color: ativo ? "#2C1038" : texto, fontSize: tamanho.letra },
+                      { color: "#303030", fontSize: tamanho.letra },
                     ]}
                   >
                     A
@@ -137,7 +177,7 @@ export default function TelaPreferencias() {
                   <Text
                     style={[
                       styles.rotuloTamanho,
-                      { color: ativo ? "#2C1038" : secundario, fontSize: fonte(11) },
+                      { color: ativo ? "#2C1038" : secundario, fontSize: fonte(12) },
                     ]}
                   >
                     {tamanho.rotulo}
@@ -147,57 +187,18 @@ export default function TelaPreferencias() {
             })}
           </View>
 
-          <View style={[styles.linhaPx, { borderTopColor: tema.borda }]}>
-            <Text style={[styles.rotuloPx, { color: texto, fontSize: fonte(16) }]}>
-              Tamanho atual
+          <Pressable
+            style={[styles.dropdownPx, { borderColor: "#EFE6F7" }]}
+            onPress={proximoTamanho}
+            accessibilityRole="button"
+            accessibilityLabel={`Tamanho atual ${tamanhoFontePx} pixels. Toque para alternar.`}
+          >
+            <Text style={[styles.rotuloPx, { color: texto, fontSize: fonte(15) }]}>
+              {tamanhoFontePx}px.
             </Text>
-            <View style={[styles.seloPx, { backgroundColor: tema.roxo }]}>
-              <Text style={[styles.textoPx, { fontSize: fonte(14) }]}>
-                {tamanhoFontePx} px
-              </Text>
-            </View>
-          </View>
+            <ChevronRight size={20} color="#303030" strokeWidth={2.4} />
+          </Pressable>
         </View>
-
-        {/* Áudio-descrição */}
-        <View
-          ref={refAudio}
-          collapsable={false}
-          style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}
-        >
-          <View style={styles.linhaTituloSwitch}>
-            <View style={styles.textoAudio}>
-              <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>
-                Áudio descrição
-              </Text>
-              <Text style={[styles.ajudaAudio, { color: secundario, fontSize: fonte(13) }]}>
-                O app lê as perguntas e os resultados em voz alta
-              </Text>
-            </View>
-            <Switch
-              value={audioDescricao}
-              onValueChange={(valor) => void definirAudioDescricao(valor)}
-              trackColor={{ false: "#D8D2DC", true: tema.roxoEscuro }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Ativar áudio descrição"
-            />
-          </View>
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.botaoReset,
-            { backgroundColor: tema.roxo, opacity: pressed ? 0.82 : 1 },
-          ]}
-          onPress={() => void restaurarPadrao()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar ao padrão"
-        >
-          <RotateCcw size={22} color="#303030" strokeWidth={2.3} />
-          <Text style={[styles.textoReset, { fontSize: fonte(18) }]}>
-            Redefinir
-          </Text>
-        </Pressable>
 
         <View ref={refSalvar} collapsable={false}>
           <Pressable
@@ -216,8 +217,9 @@ export default function TelaPreferencias() {
           </Pressable>
         </View>
 
-        <PageFlow total={4} currentIndex={2} inline />
       </ScrollView>
+
+      <PageFlow total={4} currentIndex={2} />
 
       <GuiaMimi
         visivel={guiaAtivo}
@@ -248,21 +250,42 @@ const styles = StyleSheet.create({
   tela: {
     flex: 1,
   },
+  botaoVoltarTopo: {
+    position: "absolute",
+    left: 20,
+    zIndex: 5,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E5B4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 5,
+  },
   conteudo: {
     flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: 18,
-    paddingTop: 28,
   },
   tituloPrincipal: {
     fontFamily: "Poppins_800ExtraBold",
     textAlign: "center",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   cartao: {
-    marginTop: 12,
-    borderRadius: 28,
-    borderWidth: 3,
-    padding: 20,
+    marginTop: 16,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    padding: 18,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.32,
+    shadowRadius: 14,
+    elevation: 6,
   },
   linhaTituloSwitch: {
     flexDirection: "row",
@@ -271,8 +294,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   titulo: {
-    fontFamily: "Poppins_800ExtraBold",
+    fontFamily: "Poppins_600SemiBold",
     flexShrink: 1,
+  },
+  tituloCentro: {
+    fontFamily: "Poppins_900Black",
+    textAlign: "center",
   },
   textoAudio: {
     flex: 1,
@@ -290,10 +317,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 82,
     borderRadius: 18,
-    borderWidth: 2,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
+    shadowColor: "#C77DFF",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 2,
   },
   letraTamanho: {
     fontFamily: "Poppins_800ExtraBold",
@@ -302,13 +334,21 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     marginTop: 2,
   },
-  linhaPx: {
+  dropdownPx: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    marginTop: 16,
-    paddingTop: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: "#5A3C6B",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
   },
   rotuloPx: {
     fontFamily: "Poppins_600SemiBold",
@@ -344,18 +384,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   botaoSalvar: {
-    backgroundColor: "#FFD651",
+    backgroundColor: "#D689FF",
     marginTop: 24,
     alignSelf: "center",
     width: "100%",
-    maxWidth: 320,
-    borderRadius: 18,
+    borderRadius: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   textoSalvar: {
     textAlign: "center",

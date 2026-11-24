@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Eye, EyeOff } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Image,
   ScrollView,
@@ -30,6 +30,7 @@ import { supabase } from "../../../lib/supabase";
 
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -119,22 +120,26 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={[styles.botaoVoltarTopo, { top: insets.top + 10 }]}
+        onPress={() => router.push("../login/contas")}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+      >
+        <ArrowLeft size={26} color="#303030" strokeWidth={2.5} />
+      </TouchableOpacity>
+
       <ScrollView
         style={styles.rolagem}
-        contentContainerStyle={styles.conteudo}
+        contentContainerStyle={[
+          styles.conteudo,
+          { paddingTop: insets.top + 70, paddingBottom: 96 },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScrollEndDrag={remedirGuia}
         onMomentumScrollEnd={remedirGuia}
       >
-      
-      {/* Botão para voltar */}
-        <TouchableOpacity
-          style={styles.botaoVoltar}
-          onPress={() => router.push("../login/contas")}
-        >
-          <ChevronLeft size={25} color="#303030" />
-        </TouchableOpacity>
       <View style={styles.logoContainer}>
         <View style={styles.textoContainer}>
           <Text style={styles.titulo}>Login</Text>
@@ -152,9 +157,10 @@ export default function LoginScreen() {
       {/*EMAIL*/}
 
       <View ref={refEmail} collapsable={false} style={styles.inputContainer}>
+        <Mail size={22} color="#303030" style={styles.iconeCampo} />
         <TextInput
-          placeholder="Email"
-          placeholderTextColor="#303030"
+          placeholder="E-mail"
+          placeholderTextColor="#5A535E"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -167,9 +173,10 @@ export default function LoginScreen() {
       {/*SENHA*/}
 
       <View ref={refSenha} collapsable={false} style={styles.senhaContainer}>
+        <Lock size={22} color="#303030" style={styles.iconeCampo} />
         <TextInput
           placeholder="Senha"
-          placeholderTextColor="#303030"
+          placeholderTextColor="#5A535E"
           value={senha}
           onChangeText={setSenha}
           secureTextEntry={!mostrarSenha}
@@ -192,14 +199,30 @@ export default function LoginScreen() {
 
 
       <View style={styles.links}>
-        <TouchableOpacity onPress={() => router.push("/auth/esqueci_senha" as any)}>
-          <Text style={styles.linkEscuro}>Esqueceu a senha?</Text>
+        <TouchableOpacity
+          style={styles.continuarConectadoRow}
+          onPress={() => setContinuarConectado(!continuarConectado)}
+        >
+          <View
+            style={[
+              styles.continuarConectadoBox,
+              continuarConectado && styles.continuarConectadoAtivo,
+            ]}
+          />
+          <Text style={styles.continuarConectadoTexto}>Continuar conectado?</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("../cadastro")}>
           <Text style={styles.linkEscuro}>Criar conta?</Text>
         </TouchableOpacity>
-</View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.esqueciLinha}
+        onPress={() => router.push("/auth/esqueci_senha" as any)}
+      >
+        <Text style={styles.linkEsqueci}>Esqueceu a senha?</Text>
+      </TouchableOpacity>
 
       {/*BOTÃO LOGIN*/}
 
@@ -243,7 +266,23 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E9B8FF",
+    backgroundColor: "#FFFFFF",
+  },
+  botaoVoltarTopo: {
+    position: "absolute",
+    left: 20,
+    zIndex: 5,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E5B4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 5,
   },
 
   rolagem: {
@@ -254,7 +293,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 25,
     justifyContent: "center",
-    paddingBottom: 100,
   },
 
   
@@ -294,19 +332,19 @@ const styles = StyleSheet.create({
   },
 
   inputContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 30,
+    backgroundColor: "#F0EEF2",
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#D8D2DC",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     marginBottom: 15,
     maxWidth: "100%",
     overflow: "hidden",
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+  },
+  iconeCampo: {
+    marginRight: 10,
   },
 
   input: {
@@ -314,23 +352,20 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: 16,
     color: "#303030",
-    fontSize: 20,
+    fontSize: 18,
     fontFamily:"Poppins_600SemiBold",
   },
 
   senhaContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 30,
+    backgroundColor: "#F0EEF2",
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#D8D2DC",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     maxWidth: "100%",
     overflow: "hidden",
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
   },
 
   senhaInput: {
@@ -338,7 +373,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: 16,
     color: "#303030",
-    fontSize: 20,
+    fontSize: 18,
     fontFamily:"Poppins_600SemiBold",
     
   },
@@ -352,8 +387,20 @@ const styles = StyleSheet.create({
   links: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 15,
-    marginBottom: 38,
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  esqueciLinha: {
+    alignSelf: "flex-start",
+    marginBottom: 24,
+    paddingVertical: 4,
+  },
+  linkEsqueci: {
+    color: "#6D1E96",
+    fontSize: 19,
+    fontFamily: "Poppins_800ExtraBold",
+    textDecorationLine: "underline",
   },
 
   continuarConectadoRow: {
@@ -362,21 +409,23 @@ const styles = StyleSheet.create({
   },
 
   continuarConectadoBox: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#303030",
-    marginRight: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: "#D689FF",
+    marginRight: 8,
   },
 
   continuarConectadoAtivo: {
     backgroundColor: "#303030",
+    borderColor: "#D689FF",
+    borderWidth: 4,
   },
 
     continuarConectadoTexto: {
     color: "#303030",
-    fontSize: 17,
+    fontSize: 16,
     fontFamily:"Poppins_600SemiBold",
   },
 
@@ -389,20 +438,20 @@ const styles = StyleSheet.create({
   linkEscuro: {
     color: "#303030",
     fontWeight: "600",
-    fontSize: 17,
-    fontFamily:"Poppins_600SemiBold",
+    fontSize: 16,
+    fontFamily:"Poppins_800ExtraBold",
   },
 
   botao: {
-    borderRadius: 18,
+    borderRadius: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 20,
-    backgroundColor: "#FFD651",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 6,
+    marginBottom: 8,
+    backgroundColor: "#D689FF",
   },
 
   botaoTexto: {

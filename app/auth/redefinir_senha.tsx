@@ -4,10 +4,13 @@ import {
   ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Eye, EyeOff } from "lucide-react-native";
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PageFlow } from "../../components/PageFlow";
 import { supabase } from "../../lib/supabase"; // mesmo import da verificar_email
 
 export default function RedefinirSenhaScreen() {
+  const insets = useSafeAreaInsets();
   const { email } = useLocalSearchParams<{ email: string }>();
   const [codigo, setCodigo] = useState("");
   const [senha, setSenha] = useState("");
@@ -105,7 +108,7 @@ export default function RedefinirSenhaScreen() {
   // Tela de sucesso
   if (concluido) {
     return (
-      <View style={[styles.scroll, { flex: 1, backgroundColor: "#E9B8FF" }]}>
+      <View style={[styles.scroll, { flex: 1, backgroundColor: "#FFFFFF" }]}>
         <View style={styles.conteudo}>
           <Text style={[styles.titulo, { textAlign: "center", marginBottom: 12 }]}>Senha alterada!</Text>
           <Text style={[styles.textoEmail, { textAlign: "center" }]}>
@@ -124,16 +127,26 @@ export default function RedefinirSenhaScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#E9B8FF" }}
+      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.conteudo}>
-          {/* Botão para voltar */}
-          <TouchableOpacity style={styles.botaoVoltar} onPress={() => router.back()}>
-            <ChevronLeft size={25} color="#303030" />
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.botaoVoltarTopo, { top: insets.top + 10 }]}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+      >
+        <ArrowLeft size={26} color="#303030" strokeWidth={2.5} />
+      </TouchableOpacity>
 
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 70, paddingBottom: 96 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.conteudo}>
           <View style={styles.logoContainer}>
             <View style={styles.textoContainer}>
               <Text style={styles.titulo}>{"Crie uma\nsenha nova"}</Text>
@@ -170,9 +183,10 @@ export default function RedefinirSenhaScreen() {
 
           {/*SENHA NOVA*/}
           <View style={styles.inputContainer}>
+            <Lock size={22} color="#303030" style={{ marginRight: 10 }} />
             <TextInput
               placeholder="Nova senha"
-              placeholderTextColor="#303030"
+              placeholderTextColor="#5A535E"
               value={senha}
               onChangeText={setSenha}
               secureTextEntry={!mostrarSenha}
@@ -194,9 +208,10 @@ export default function RedefinirSenhaScreen() {
 
           {/*CONFIRMAR SENHA*/}
           <View style={styles.inputContainer}>
+            <Lock size={22} color="#303030" style={{ marginRight: 10 }} />
             <TextInput
               placeholder="Repita a nova senha"
-              placeholderTextColor="#303030"
+              placeholderTextColor="#5A535E"
               value={confirmarSenha}
               onChangeText={setConfirmarSenha}
               secureTextEntry={!mostrarConfirmarSenha}
@@ -238,6 +253,8 @@ export default function RedefinirSenhaScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <PageFlow total={4} currentIndex={1} />
     </KeyboardAvoidingView>
   );
 }
@@ -256,18 +273,20 @@ const styles = StyleSheet.create({
     maxWidth: 480,
   },
 
-  botaoVoltar: {
-    width: 60,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
+  botaoVoltarTopo: {
+    position: "absolute",
+    left: 20,
+    zIndex: 5,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E5B4FF",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
+    shadowColor: "#B36BE0",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
     elevation: 5,
   },
 
@@ -289,36 +308,38 @@ const styles = StyleSheet.create({
   },
 
   titulo: {
-    fontSize: 28,
+    fontSize: 30,
     fontFamily: "Poppins_800ExtraBold",
     color: "#303030",
   },
 
   subtitulo: {
-    marginTop: 10,
+    marginTop: 8,
     color: "#303030",
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Poppins_600SemiBold",
   },
 
   textoEmail: {
     color: "#303030",
-    fontSize: 17,
+    fontSize: 18,
     fontFamily: "Poppins_600SemiBold",
     marginBottom: 20,
   },
 
   inputContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 30,
+    backgroundColor: "#F0EEF2",
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: "#D9A8F7",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     marginBottom: 15,
-    shadowColor: "black",
-    shadowOffset: { width: 0, height: 0 },
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 12,
     elevation: 5,
   },
 
@@ -327,7 +348,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: 16,
     color: "#303030",
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: "Poppins_600SemiBold",
   },
 
@@ -337,23 +358,23 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingVertical: 16,
     color: "#303030",
-    fontSize: 28,
-    letterSpacing: 6,
+    fontSize: 30,
+    letterSpacing: 8,
     textAlign: "center",
     fontFamily: "Poppins_800ExtraBold",
   },
 
   botao: {
-    borderRadius: 18,
+    borderRadius: 20,
     paddingVertical: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 6,
     marginTop: 10,
     marginBottom: 20,
-    backgroundColor: "#FFD651",
+    backgroundColor: "#D689FF",
   },
 
   botaoTexto: {

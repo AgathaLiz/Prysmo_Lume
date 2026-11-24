@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
+import { ArrowLeft } from "lucide-react-native";
+import { TouchableOpacity, View, StyleSheet } from "react-native";
 
 type Props = {
   total: number;
@@ -20,8 +21,13 @@ export function PageFlow({
   return (
     <View style={inline ? styles.containerInline : styles.container}>
       {showBack && (
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backText}>‹</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
+          <ArrowLeft size={20} color="#303030" strokeWidth={2.5} />
         </TouchableOpacity>
       )}
 
@@ -60,18 +66,17 @@ const styles = StyleSheet.create({
   backButton: {
     position: "absolute",
     left: 0,
-    width: 36,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#D9D9D9",
+    width: 44,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#E5B4FF",
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  backText: {
-    fontSize: 24,
-    lineHeight: 24,
-    color: "#9A9A9A",
+    shadowColor: "#B36BE0",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
 
   dotsContainer: {
