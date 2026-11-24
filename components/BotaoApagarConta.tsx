@@ -1,33 +1,32 @@
 import { useRouter } from "expo-router";
 import { Trash2 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 
+import {
+  ModalConfirmacaoAdmin,
+  ModalConfirmadoAdmin,
+} from "@/components/ModalAdmin";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import { supabase } from "@/lib/supabase";
 
 const VERMELHO = "#C62828";
 
-function avisar(titulo: string, mensagem: string) {
-  if (Platform.OS === "web") {
-    if (typeof window !== "undefined") window.alert(`${titulo}\n\n${mensagem}`);
-    return;
-  }
-  Alert.alert(titulo, mensagem);
-}
-
 export function BotaoApagarConta() {
   const router = useRouter();
   const { fonte } = useAcessibilidade();
   const [apagando, setApagando] = useState(false);
+  const [etapaConfirmacao, setEtapaConfirmacao] = useState<0 | 1 | 2>(0);
+  const [erroModal, setErroModal] = useState<string | null>(null);
 
   const apagar = useCallback(async () => {
+    setEtapaConfirmacao(0);
     setApagando(true);
     const { error } = await supabase.rpc("apagar_minha_conta");
 
     if (error) {
       setApagando(false);
-      avisar("Não foi possível apagar", "Tente novamente em instantes.");
+      setErroModal("Não foi possível apagar sua conta agora. Tente novamente em instantes.");
       return;
     }
 
@@ -37,51 +36,55 @@ export function BotaoApagarConta() {
   }, [router]);
 
   const confirmar = useCallback(() => {
-    const mensagem =
-      "Essa ação é permanente. Seu perfil, progresso, XP e conquistas serão apagados e não poderão ser recuperados.";
-
-    if (Platform.OS === "web") {
-      if (
-        typeof window !== "undefined" &&
-        window.confirm(`Apagar conta?\n\n${mensagem}`) &&
-        window.confirm("Tem certeza absoluta? Não dá para desfazer.")
-      ) {
-        void apagar();
-      }
-      return;
-    }
-
-    Alert.alert("Apagar conta", mensagem, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Continuar",
-        style: "destructive",
-        onPress: () =>
-          Alert.alert("Tem certeza absoluta?", "Não dá para desfazer.", [
-            { text: "Cancelar", style: "cancel" },
-            { text: "Apagar minha conta", style: "destructive", onPress: () => void apagar() },
-          ]),
-      },
-    ]);
-  }, [apagar]);
+    setEtapaConfirmacao(1);
+  }, []);
 
   return (
-    <Pressable
-      style={({ pressed }) => [estilos.botao, { opacity: pressed || apagando ? 0.7 : 1 }]}
-      onPress={confirmar}
-      disabled={apagando}
-      accessibilityRole="button"
-      accessibilityLabel="Apagar conta"
-    >
-      {apagando ? (
-        <ActivityIndicator color={VERMELHO} />
-      ) : (
-        <>
-          <Trash2 size={22} color={VERMELHO} strokeWidth={2.2} />
-          <Text style={[estilos.texto, { fontSize: fonte(16) }]}>Apagar Conta</Text>
-        </>
-      )}
-    </Pressable>
+    <>
+      <Pressable
+        style={({ pressed }) => [estilos.botao, { opacity: pressed || apagando ? 0.7 : 1 }]}
+        onPress={confirmar}
+        disabled={apagando}
+        accessibilityRole="button"
+        accessibilityLabel="Apagar conta"
+      >
+        {apagando ? (
+          <ActivityIndicator color={VERMELHO} />
+        ) : (
+          <>
+            <Trash2 size={22} color={VERMELHO} strokeWidth={2.2} />
+            <Text style={[estilos.texto, { fontSize: fonte(16) }]}>Apagar Conta</Text>
+          </>
+        )}
+      </Pressable>
+
+      <ModalConfirmacaoAdmin
+        visivel={etapaConfirmacao === 1}
+        titulo="Apagar conta?"
+        mensagem="Essa ação é permanente. Seu perfil, progresso, XP e conquistas serão apagados e não poderão ser recuperados."
+        textoConfirmar="Continuar"
+        aoCancelar={() => setEtapaConfirmacao(0)}
+        aoConfirmar={() => setEtapaConfirmacao(2)}
+      />
+
+      <ModalConfirmacaoAdmin
+        visivel={etapaConfirmacao === 2}
+        titulo="Tem certeza absoluta?"
+        mensagem="Não será possível desfazer depois que você apagar sua conta."
+        textoConfirmar="Apagar minha conta"
+        carregando={apagando}
+        aoCancelar={() => setEtapaConfirmacao(0)}
+        aoConfirmar={() => void apagar()}
+      />
+
+      <ModalConfirmadoAdmin
+        visivel={erroModal !== null}
+        titulo="Não foi possível apagar"
+        mensagem={erroModal ?? ""}
+        variante="aviso"
+        aoFechar={() => setErroModal(null)}
+      />
+    </>
   );
 }
 

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -114,6 +115,27 @@ export function ModalEditarConta({ campo, valorAtual, aoFechar, aoSalvar }: Prop
 
           {erro ? <Text style={[estilos.erro, { fontSize: fonte(13) }]}>{erro}</Text> : null}
 
+          {campo === "senha" ? (
+            <Pressable
+              style={estilos.esqueci}
+              onPress={() => {
+                aoFechar();
+                router.push("/auth/esqueci_senha" as never);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Esqueci minha senha"
+            >
+              <Text
+                style={[
+                  estilos.textoEsqueci,
+                  { color: tema.roxoEscuro, fontSize: fonte(14) },
+                ]}
+              >
+                Esqueci minha senha
+              </Text>
+            </Pressable>
+          ) : null}
+
           <View style={estilos.botoes}>
             <Pressable
               style={[estilos.botao, { borderColor: tema.borda, borderWidth: 1 }]}
@@ -167,6 +189,11 @@ const estilos = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
   },
   erro: { color: "#C62828", fontFamily: "Poppins_600SemiBold", marginBottom: 8 },
+  esqueci: { alignSelf: "flex-end", paddingVertical: 6, marginBottom: 6 },
+  textoEsqueci: {
+    fontFamily: "Poppins_600SemiBold",
+    textDecorationLine: "underline",
+  },
   botoes: { flexDirection: "row", gap: 12, marginTop: 8 },
   botao: {
     flex: 1,

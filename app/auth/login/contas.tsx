@@ -1,6 +1,7 @@
 import { signInWithFacebook, signInWithGoogle } from "@/services/authService";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { ExternalLink } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
@@ -77,7 +78,8 @@ export default function LoginSocialScreen() {
             source={require("../../../assets/images/icons/google_icon.png")}
             style={styles.icon}
           />
-          <Text style={styles.socialText}>Entrar com Google</Text>
+          <Text style={[styles.socialText, { flex: 1 }]}>Entrar com Google</Text>
+          <ExternalLink size={18} color="#6D5E75" strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
 
@@ -86,7 +88,8 @@ export default function LoginSocialScreen() {
           <Image
             source={require("../../../assets/images/icons/facebook_icon.png")}
             style={styles.icon}/>  
-          <Text style={styles.socialText}>Entrar com Facebook</Text>
+          <Text style={[styles.socialText, { flex: 1 }]}>Entrar com Facebook</Text>
+          <ExternalLink size={18} color="#6D5E75" strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
 

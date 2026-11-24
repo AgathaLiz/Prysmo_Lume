@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft,
   CheckCircle2,
+  Heart,
   HelpCircle,
   RotateCcw,
   Volume2,
@@ -63,6 +64,7 @@ type Props = {
   verificando: boolean;
   erro: string;
   podeVoltar: boolean;
+  vidas?: number;
   onSelecionar: (id: number) => void;
   onContinuar: () => void;
   onFechar: () => void;
@@ -101,6 +103,7 @@ export function QuizLicao({
   verificando,
   erro,
   podeVoltar,
+  vidas,
   onSelecionar,
   onContinuar,
   onFechar,
@@ -290,6 +293,27 @@ export function QuizLicao({
             ]}
           />
         </View>
+
+        {typeof vidas === "number" ? (
+          <View
+            style={[styles.linhaVidas, { paddingRight: margem }]}
+            accessible
+            accessibilityLabel={`${vidas} de 3 vidas restantes`}
+          >
+            {[0, 1, 2].map((i) => {
+              const ativa = i < vidas;
+              return (
+                <Heart
+                  key={i}
+                  size={28}
+                  color={ativa ? "#E23B2E" : "#C9C5C6"}
+                  fill={ativa ? "#E23B2E" : "#EAE6ED"}
+                  strokeWidth={2.2}
+                />
+              );
+            })}
+          </View>
+        ) : null}
 
         <ScrollView
           style={styles.rolagem}
@@ -643,5 +667,13 @@ const styles = StyleSheet.create({
   knob: {
     position: "absolute",
     backgroundColor: Cor.knob,
+  },
+  linhaVidas: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: -6,
+    marginBottom: 4,
   },
 });

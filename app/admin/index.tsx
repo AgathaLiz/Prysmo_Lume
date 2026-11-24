@@ -3,7 +3,6 @@ import {
   ChevronRight,
   CircleUserRound,
   ClipboardList,
-  Library,
   LogOut,
   Pencil,
   UserCog,
@@ -11,6 +10,8 @@ import {
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,7 @@ import { BarraAdministrador } from "@/components/BarraNavegacao";
 import { FundoAdminPerfil } from "@/components/FundoAdmin";
 import { ModalConfirmacaoAdmin } from "@/components/ModalAdmin";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import { obterFotoPerfil } from "@/lib/foto-perfil";
 import { carregarPainel, type DadosPainel } from "@/lib/painel";
 import { supabase } from "@/lib/supabase";
 
@@ -43,14 +45,19 @@ export default function TelaAdmin() {
   const insets = useSafeAreaInsets();
   const { tema, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
   const [alturaFaixa, setAlturaFaixa] = useState(0);
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
-      carregarPainel().then((resultado) => {
-        if (ativo) setDados(resultado);
+      Promise.all([carregarPainel(), obterFotoPerfil()]).then(([resultado, foto]) => {
+        if (!ativo) return;
+        setDados(resultado);
+        setFotoUrl(foto);
+        setCarregando(false);
       });
       return () => {
         ativo = false;
@@ -81,6 +88,14 @@ export default function TelaAdmin() {
     router.push("/admin/conta" as never);
   }, [router]);
 
+  if (carregando && !dados) {
+    return (
+      <View style={[styles.tela, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={tema.roxoEscuro} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.tela}>
       <ScrollView
@@ -98,8 +113,12 @@ export default function TelaAdmin() {
           {alturaFaixa > 0 ? <FundoAdminPerfil altura={alturaFaixa} /> : null}
 
           <View style={styles.areaAvatar}>
-            <View style={styles.avatar}>
-              <UserRound size={76} color="#8A8080" strokeWidth={1.4} />
+            <View style={[styles.avatar, { overflow: "hidden" }]}>
+              {fotoUrl ? (
+                <Image source={{ uri: fotoUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              ) : (
+                <UserRound size={76} color="#8A8080" strokeWidth={1.4} />
+              )}
             </View>
 
             <TouchableOpacity
@@ -164,22 +183,6 @@ export default function TelaAdmin() {
                 style={[styles.textoLinha, { color: tema.texto, fontSize: fonte(19) }]}
               >
                 Administrar permissões
-              </Text>
-              <ChevronRight size={28} color={tema.textoSecundario} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.linha}
-              onPress={() => router.push("/admin/gerenciar-unidades" as never)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Gerenciar unidades"
-            >
-              <Library size={30} color={tema.texto} strokeWidth={2} />
-              <Text
-                style={[styles.textoLinha, { color: tema.texto, fontSize: fonte(19) }]}
-              >
-                Gerenciar unidades
               </Text>
               <ChevronRight size={28} color={tema.textoSecundario} />
             </TouchableOpacity>

@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   ImageBackground,
   Image,
   Pressable,
@@ -62,6 +63,7 @@ export default function TelaInicial() {
   const insets = useSafeAreaInsets();
   const { tema, modoEscuro, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [carregando, setCarregando] = useState(true);
   const [modoGuia, setModoGuia] = useState<"nenhum" | "essencial" | "oferta" | "tour">("nenhum");
   const [passoTour, setPassoTour] = useState(0);
 
@@ -87,7 +89,9 @@ export default function TelaInicial() {
     useCallback(() => {
       let ativo = true;
       carregarPainel().then((resultado) => {
-        if (ativo) setDados(resultado);
+        if (!ativo) return;
+        setDados(resultado);
+        setCarregando(false);
       });
 
       Promise.all([deveMostrarGuiaTela("inicio_essencial"), obterEstadoTourApp()]).then(
@@ -116,6 +120,14 @@ export default function TelaInicial() {
   const fundo = modoEscuro ? tema.fundo : "#FFFFFF";
   const cartao = tema.cartao;
   const texto = tema.texto;
+
+  if (carregando && !dados) {
+    return (
+      <SafeAreaView style={[styles.tela, { backgroundColor: fundo, justifyContent: "center", alignItems: "center" }]} edges={["top"]}>
+        <ActivityIndicator size="large" color={tema.roxoEscuro} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>

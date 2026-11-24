@@ -117,6 +117,7 @@ type ChecagemBloqueio = {
   bloqueada: boolean;
   /** Posição da lição na trilha inteira (1 = primeira). */
   posicao: number | null;
+  totalLicoes: number;
 };
 
 const AULA_EXEMPLO: Aula = {
@@ -249,6 +250,10 @@ export default function LicaoScreen() {
   const [questoes, setQuestoes] = useState<Questao[]>([]);
   const [cenario, setCenario] = useState<CenarioSimulacao | null>(null);
   const [bloqueada, setBloqueada] = useState(false);
+  const [posicaoLicao, setPosicaoLicao] = useState(1);
+  const [totalLicoes, setTotalLicoes] = useState(4);
+  const [vidas, setVidas] = useState(3);
+  const [semVidasVisivel, setSemVidasVisivel] = useState(false);
 
 
   const [etapa, setEtapa] = useState<Etapa>("intro");
@@ -274,6 +279,9 @@ export default function LicaoScreen() {
 
   // Simulação
   const [notaSimulacao, setNotaSimulacao] = useState<number | null>(null);
+  const [acertosSimulacao, setAcertosSimulacao] = useState(0);
+  const [errosSimulacao, setErrosSimulacao] = useState(0);
+  const [totalSimulacao, setTotalSimulacao] = useState(0);
 
   // Salvamento
   const [salvando, setSalvando] = useState(false);
@@ -336,7 +344,7 @@ export default function LicaoScreen() {
       const consultaBloqueio: Promise<ChecagemBloqueio> = (async () => {
         try {
           const usuarioId = await obterUsuarioId();
-          if (!usuarioId) return { bloqueada: false, posicao: null };
+          if (!usuarioId) return { bloqueada: false, posicao: null, totalLicoes: 4 };
 
           const [respostaNiveis, respostaProgresso] = await Promise.all([
             supabase
@@ -352,7 +360,7 @@ export default function LicaoScreen() {
           ]);
 
           if (respostaNiveis.error || respostaProgresso.error) {
-            return { bloqueada: false, posicao: null };
+            return { bloqueada: false, posicao: null, totalLicoes: 4 };
           }
 
           const trilha = montarTrilha(
@@ -360,17 +368,17 @@ export default function LicaoScreen() {
             (respostaProgresso.data ?? []) as ProgressoBanco[]
           );
 
-          const encontrada = trilha
-            .flatMap((nivel) => nivel.licoes)
-            .find((item) => item.licoes_id === idLicao);
+          const todas = trilha.flatMap((nivel) => nivel.licoes);
+          const encontrada = todas.find((item) => item.licoes_id === idLicao);
 
           return {
             bloqueada: encontrada?.estado === "bloqueada",
             posicao: encontrada?.posicao ?? null,
+            totalLicoes: todas.length || 4,
           };
         } catch {
           // Se a checagem falhar, não trava a lição.
-          return { bloqueada: false, posicao: null };
+          return { bloqueada: false, posicao: null, totalLicoes: 4 };
         }
       })();
 
@@ -490,6 +498,8 @@ export default function LicaoScreen() {
       setAula(aulaFinal);
       setQuestoes(perguntas);
       setCenario(cenarioFinal);
+      setPosicaoLicao(infoBloqueio.posicao ?? 1);
+      setTotalLicoes(infoBloqueio.totalLicoes);
     } catch (erroCarregar) {
       console.log("Erro inesperado na lição:", erroCarregar);
       setErro("Parece que a internet falhou. Vamos tentar de novo?");
@@ -838,6 +848,11 @@ export default function LicaoScreen() {
     setConquistasNovas([]);
     setNotaQuiz(null);
     setNotaSimulacao(null);
+    setAcertosSimulacao(0);
+    setErrosSimulacao(0);
+    setTotalSimulacao(0);
+    setVidas(3);
+    setSemVidasVisivel(false);
     resetarQuiz();
 
     if (pularVideo) {
@@ -903,6 +918,12 @@ export default function LicaoScreen() {
 
     if (correta) {
       setAcertos((total) => total + 1);
+    } else {
+      setVidas((atual) => {
+        const proximas = Math.max(0, atual - 1);
+        if (proximas === 0) setSemVidasVisivel(true);
+        return proximas;
+      });
     }
 
     if (audioDescricao) {
@@ -978,7 +999,18 @@ export default function LicaoScreen() {
     resetarQuiz();
   }
 
-  function finalizarSimulacao(erros: number) {
+  function aoErrarSimulacao() {
+    setVidas((atual) => {
+      const proximas = Math.max(0, atual - 1);
+      if (proximas === 0) setSemVidasVisivel(true);
+      return proximas;
+    });
+  }
+
+  function finalizarSimulacao(erros: number, acertosSim: number, totalPassos: number) {
+    setAcertosSimulacao(acertosSim);
+    setErrosSimulacao(erros);
+    setTotalSimulacao(totalPassos);
     setNotaSimulacao(notaDaSimulacao(erros));
     setEtapa("resultado");
   }
@@ -1110,8 +1142,8 @@ export default function LicaoScreen() {
           titulo={conteudo?.titulo?.trim() || tituloLicao}
           descricao={conteudo?.descricao?.trim() || ""}
           fala={FALA_INTRO}
-          etapaAtual={1}
-          totalEtapas={etapasConteudo.length + 1}
+          etapaAtual={posicaoLicao}
+          totalEtapas={Math.max(4, totalLicoes)}
           onFechar={pedirParaSair}
           onContinuar={comecar}
         />
@@ -1141,6 +1173,7 @@ export default function LicaoScreen() {
           verificando={verificando}
           erro={erroVerificar}
           podeVoltar={etapasConteudo.indexOf("questionario") > 0}
+          vidas={vidas}
           onSelecionar={(id) => {
             if (verificado || verificando) return;
             setSelecionada(id);
@@ -1169,6 +1202,8 @@ export default function LicaoScreen() {
           <SimuladorCelular
             cenario={cenario}
             onFinalizar={finalizarSimulacao}
+            onErro={aoErrarSimulacao}
+            vidas={vidas}
             onVoltar={voltarDaSimulacao}
             preencher
           />
@@ -1178,9 +1213,10 @@ export default function LicaoScreen() {
       {etapa === "resultado" && (
         <ResultadoLicao
           aprovado={aprovado}
-          comQuestoes={questoes.length > 0}
-          acertos={acertos}
-          totalQuestoes={questoes.length}
+          comQuestoes={questoes.length > 0 || totalSimulacao > 0}
+          acertos={acertos + acertosSimulacao}
+          totalQuestoes={questoes.length + totalSimulacao}
+          errosSimulacao={errosSimulacao}
           nota={notaFinalCalculada}
           xp={xpGanho}
           salvando={salvando}
@@ -1237,6 +1273,40 @@ export default function LicaoScreen() {
             <BotaoGrande
               titulo="Entendi"
               onPress={() => setAjudaVisivel(false)}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Fim das vidas */}
+      <Modal
+        visible={semVidasVisivel}
+        transparent
+        animationType="fade"
+        onRequestClose={() => reiniciar(false)}
+      >
+        <View style={styles.fundoModal}>
+          <View
+            style={[styles.cartaoAjuda, { backgroundColor: tema.cartao }]}
+            accessibilityViewIsModal
+          >
+            <Text style={[styles.tituloAjuda, { color: tema.texto, fontSize: fonte(24) }]}>
+              Suas vidas acabaram!
+            </Text>
+            <Text style={[styles.textoAjuda, { color: tema.textoSecundario, fontSize: fonte(18) }]}>
+              Não se preocupe! Você pode recomeçar a lição com todas as 3 vidas ou voltar para a trilha.
+            </Text>
+            <BotaoGrande
+              titulo="Recomeçar lição"
+              onPress={() => reiniciar(false)}
+            />
+            <BotaoGrande
+              titulo="Voltar para a trilha"
+              variante="contorno"
+              onPress={() => {
+                setSemVidasVisivel(false);
+                sair();
+              }}
             />
           </View>
         </View>

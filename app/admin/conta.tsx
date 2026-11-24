@@ -8,6 +8,8 @@ import {
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +26,11 @@ import { ModalConfirmadoAdmin } from "@/components/ModalAdmin";
 import { ModalEditarConta, type CampoEdicao } from "@/components/ModalEditarConta";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import { atualizarNome, atualizarSenha } from "@/lib/conta";
+import {
+  obterFotoPerfil,
+  salvarFotoPerfil,
+  selecionarFotoDispositivo,
+} from "@/lib/foto-perfil";
 import { carregarPainel, type DadosPainel } from "@/lib/painel";
 
 /** Texto sobre a faixa do topo — as mesmas cores da tela de conta do aluno. */
@@ -59,6 +66,8 @@ export default function TelaAdminConta() {
   const insets = useSafeAreaInsets();
   const { tema, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<CampoEdicao | null>(null);
   const [alturaFaixa, setAlturaFaixa] = useState(0);
   const [popup, setPopup] = useState<{
@@ -70,8 +79,11 @@ export default function TelaAdminConta() {
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
-      carregarPainel().then((resultado) => {
-        if (ativo) setDados(resultado);
+      Promise.all([carregarPainel(), obterFotoPerfil()]).then(([resultado, foto]) => {
+        if (!ativo) return;
+        setDados(resultado);
+        setFotoUrl(foto);
+        setCarregando(false);
       });
       return () => {
         ativo = false;
@@ -106,18 +118,42 @@ export default function TelaAdminConta() {
     if (!resultado.ok) return resultado.erro;
 
     setDados(await carregarPainel());
-    avisar(
-      "Confirmado!",
-      resultado.mensagem ??
-        (campo === "nome"
-          ? "Nome atualizado com sucesso."
-          : "Senha atualizada com sucesso."),
-      "sucesso"
-    );
+    setTimeout(() => {
+      avisar(
+        "Confirmado!",
+        resultado.mensagem ??
+          (campo === "nome"
+            ? "Nome atualizado com sucesso."
+            : "Senha atualizada com sucesso."),
+        "sucesso"
+      );
+    }, 160);
     return null;
   };
 
   const valorAtualEdicao = editando === "nome" ? dados?.nome ?? "" : "";
+
+  const trocarFoto = useCallback(async () => {
+    const uri = await selecionarFotoDispositivo();
+    if (!uri) {
+      avisar(
+        "Trocar foto",
+        "Selecione uma imagem do seu dispositivo para atualizar sua foto de perfil."
+      );
+      return;
+    }
+    setFotoUrl(uri);
+    await salvarFotoPerfil(uri);
+    avisar("Confirmado!", "Sua foto de perfil foi atualizada.", "sucesso");
+  }, []);
+
+  if (carregando && !dados) {
+    return (
+      <SafeAreaView style={[styles.tela, { justifyContent: "center", alignItems: "center" }]} edges={["top"]}>
+        <ActivityIndicator size="large" color={tema.roxoEscuro} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.tela} edges={["top"]}>
@@ -140,18 +176,17 @@ export default function TelaAdminConta() {
           />
 
           <View style={styles.areaAvatar}>
-            <View style={styles.avatar}>
-              <UserRound size={68} color="#8A8080" strokeWidth={1.4} />
+            <View style={[styles.avatar, { overflow: "hidden" }]}>
+              {fotoUrl ? (
+                <Image source={{ uri: fotoUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              ) : (
+                <UserRound size={68} color="#8A8080" strokeWidth={1.4} />
+              )}
             </View>
 
             <Pressable
               style={styles.lapis}
-              onPress={() =>
-                avisar(
-                  "Trocar foto",
-                  "A troca da foto estará disponível em breve. Fale com o suporte se precisar alterar agora."
-                )
-              }
+              onPress={() => void trocarFoto()}
               accessibilityRole="button"
               accessibilityLabel="Trocar foto"
             >

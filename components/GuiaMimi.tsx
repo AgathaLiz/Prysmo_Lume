@@ -102,9 +102,10 @@ export function GuiaMimi({
       topoMaximo,
       Math.max(insets.top + 86, (alturaTela - folgaInferior - alturaCartao) / 2)
     );
-  } else if (espacoAbaixo >= alturaCartao + 24) {
-    topoCartao = Math.min(topoMaximo, ry + rh + 24);
-  } else if (espacoAcima >= alturaCartao + 92) {
+  } else if (espacoAbaixo >= alturaCartao + 96) {
+    // Reserva 96px entre o alvo e o cartão para a cabeça da Mimi (top: -86) não cobrir o campo.
+    topoCartao = Math.min(topoMaximo, ry + rh + 96);
+  } else if (espacoAcima >= alturaCartao + 104) {
     topoCartao = ry - alturaCartao - 18;
   } else {
     topoCartao = topoMaximo;

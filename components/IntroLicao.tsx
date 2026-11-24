@@ -164,38 +164,43 @@ export function IntroLicao({
             <View
               style={[styles.passos, { gap: espacoCirculos }]}
               accessibilityRole="progressbar"
-              accessibilityLabel={`Etapa ${etapaAtual} de ${totalEtapas}`}
+              accessibilityLabel={`Lição ${etapaAtual}`}
             >
-              {Array.from({ length: totalEtapas }, (_, indice) => {
-                const ativo = indice + 1 === etapaAtual;
-                return (
-                  <View
-                    key={indice}
-                    style={[
-                      styles.passo,
-                      {
-                        width: ladoCirculo,
-                        height: ladoCirculo,
-                        borderRadius: ladoCirculo / 2,
-                        backgroundColor: ativo ? Cor.roxoDestaque : Cor.branco,
-                        borderColor: ativo ? Cor.roxoDestaque : Cor.bordaCirculo,
-                      },
-                    ]}
-                  >
-                    <Text
+              {(() => {
+                const quantidade = Math.max(4, totalEtapas);
+                const inicio = etapaAtual > quantidade ? etapaAtual - quantidade + 1 : 1;
+                return Array.from({ length: quantidade }, (_, indice) => {
+                  const numero = inicio + indice;
+                  const ativo = numero === etapaAtual;
+                  return (
+                    <View
+                      key={numero}
                       style={[
-                        styles.numeroPasso,
+                        styles.passo,
                         {
-                          color: ativo ? Cor.branco : Cor.quasePreto,
-                          fontSize: fonte(15),
+                          width: ladoCirculo,
+                          height: ladoCirculo,
+                          borderRadius: ladoCirculo / 2,
+                          backgroundColor: ativo ? Cor.roxoDestaque : Cor.branco,
+                          borderColor: ativo ? Cor.roxoDestaque : Cor.bordaCirculo,
                         },
                       ]}
                     >
-                      {indice + 1}
-                    </Text>
-                  </View>
-                );
-              })}
+                      <Text
+                        style={[
+                          styles.numeroPasso,
+                          {
+                            color: ativo ? Cor.branco : Cor.quasePreto,
+                            fontSize: fonte(15),
+                          },
+                        ]}
+                      >
+                        {numero}
+                      </Text>
+                    </View>
+                  );
+                });
+              })()}
             </View>
           </View>
         </View>

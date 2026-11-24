@@ -34,6 +34,7 @@ type Props = {
   comQuestoes: boolean;
   acertos: number;
   totalQuestoes: number;
+  errosSimulacao?: number;
   nota: number;
   xp: number;
   salvando: boolean;
@@ -63,6 +64,7 @@ export function ResultadoLicao({
   comQuestoes,
   acertos,
   totalQuestoes,
+  errosSimulacao = 0,
   nota,
   xp,
   salvando,
@@ -185,6 +187,12 @@ export function ResultadoLicao({
             </View>
           ))}
         </View>
+
+        {errosSimulacao > 0 ? (
+          <Text style={[styles.secundario, { fontSize: fonte(15) }]}>
+            Erros na simulação: {errosSimulacao}
+          </Text>
+        ) : null}
 
         {conquistas.length > 0 && (
           <View

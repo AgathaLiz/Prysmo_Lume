@@ -475,18 +475,28 @@ export function FormularioUnidade({
           accessibilityLabel={rotuloBotao}
           accessibilityState={{ disabled: !podeEnviar }}
         >
-          <LinearGradient
-            colors={GRADIENTE}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={styles.botao}
-          >
-            {salvando ? (
-              <ActivityIndicator color="#303030" />
-            ) : (
-              <Text style={[styles.textoBotao, { fontSize: fonte(27) }]}>{rotuloBotao}</Text>
-            )}
-          </LinearGradient>
+          {modo === "criar" ? (
+            <View style={[styles.botao, { backgroundColor: tema.roxo }]}>
+              {salvando ? (
+                <ActivityIndicator color="#303030" />
+              ) : (
+                <Text style={[styles.textoBotao, { fontSize: fonte(27) }]}>{rotuloBotao}</Text>
+              )}
+            </View>
+          ) : (
+            <LinearGradient
+              colors={GRADIENTE}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.botao}
+            >
+              {salvando ? (
+                <ActivityIndicator color="#303030" />
+              ) : (
+                <Text style={[styles.textoBotao, { fontSize: fonte(27) }]}>{rotuloBotao}</Text>
+              )}
+            </LinearGradient>
+          )}
         </Pressable>
       </ScrollView>
 

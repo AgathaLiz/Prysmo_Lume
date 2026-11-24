@@ -110,11 +110,13 @@ export default function TelaPermissoes() {
     if (pessoa.usuarioId === EXEMPLO_ID) {
       setPessoaParaRemover(null);
       setExemploRemovido(true);
-      setPopup({
-        titulo: "Confirmado!",
-        mensagem: `${pessoa.nome} foi removido da lista de exemplo.`,
-        variante: "sucesso",
-      });
+      setTimeout(() => {
+        setPopup({
+          titulo: "Confirmado!",
+          mensagem: `${pessoa.nome} foi removido da lista de exemplo.`,
+          variante: "sucesso",
+        });
+      }, 160);
       return;
     }
 
@@ -124,18 +126,22 @@ export default function TelaPermissoes() {
     setPessoaParaRemover(null);
 
     if (erro) {
-      avisar("Não deu para remover", erro);
+      setTimeout(() => {
+        avisar("Não deu para remover", erro);
+      }, 160);
       return;
     }
 
     setAdmins((lista) =>
       (lista ?? []).filter((item) => item.usuarioId !== pessoa.usuarioId)
     );
-    setPopup({
-      titulo: "Confirmado!",
-      mensagem: `A permissão de administrador de ${pessoa.nome} foi removida.`,
-      variante: "sucesso",
-    });
+    setTimeout(() => {
+      setPopup({
+        titulo: "Confirmado!",
+        mensagem: `A permissão de administrador de ${pessoa.nome} foi removida.`,
+        variante: "sucesso",
+      });
+    }, 160);
   }, [avisar, pessoaParaRemover, removendo]);
 
   const confirmarRemocao = useCallback((pessoa: PessoaAdmin) => {
@@ -169,11 +175,13 @@ export default function TelaPermissoes() {
         [...lista, pessoa].sort((a, b) => a.nome.localeCompare(b.nome))
       );
       setEscolhendo(false);
-      setPopup({
-        titulo: "Confirmado!",
-        mensagem: `${pessoa.nome} agora é administrador.`,
-        variante: "sucesso",
-      });
+      setTimeout(() => {
+        setPopup({
+          titulo: "Confirmado!",
+          mensagem: `${pessoa.nome} agora é administrador.`,
+          variante: "sucesso",
+        });
+      }, 160);
     },
     [avisar]
   );

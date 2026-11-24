@@ -87,11 +87,23 @@ function provedorBonito(provedor: string | undefined): string {
   return "E-mail e senha";
 }
 
-export async function carregarPainel(): Promise<DadosPainel> {
+let cachePainel: { dados: DadosPainel; timestamp: number } | null = null;
+const CACHE_TTL_MS = 15000;
+
+export async function carregarPainel(forcar = false): Promise<DadosPainel> {
   try {
+    if (
+      !forcar &&
+      cachePainel &&
+      Date.now() - cachePainel.timestamp < CACHE_TTL_MS
+    ) {
+      return cachePainel.dados;
+    }
+
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
 
     if (!user) return VAZIO;
 
@@ -198,7 +210,7 @@ export async function carregarPainel(): Promise<DadosPainel> {
     const ofensiva =
       typeof respostaOfensiva?.data === "number" ? respostaOfensiva.data : 0;
 
-    return {
+    const resultado: DadosPainel = {
       usuarioId: usuario?.usuario_id ?? null,
       nome: usuario?.nome_completo?.trim() ?? user.email?.split("@")[0] ?? "",
       email: user.email ?? "",
@@ -217,6 +229,8 @@ export async function carregarPainel(): Promise<DadosPainel> {
         user.app_metadata?.provider ?? user.identities?.[0]?.provider
       ),
     };
+    cachePainel = { dados: resultado, timestamp: Date.now() };
+    return resultado;
   } catch (erro) {
     console.log("Erro ao carregar painel:", erro);
     return VAZIO;

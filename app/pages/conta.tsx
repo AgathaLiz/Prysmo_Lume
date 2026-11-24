@@ -11,8 +11,8 @@ import {
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
-  Platform,
+  ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +24,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { BotaoApagarConta } from "@/components/BotaoApagarConta";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { FundoAmarelo } from "@/components/FundoAmarelo";
+import { ModalConfirmadoAdmin } from "@/components/ModalAdmin";
 import { ModalEditarConta, type CampoEdicao } from "@/components/ModalEditarConta";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import {
@@ -32,6 +33,11 @@ import {
   atualizarSenha,
   atualizarTelefone,
 } from "@/lib/conta";
+import {
+  obterFotoPerfil,
+  salvarFotoPerfil,
+  selecionarFotoDispositivo,
+} from "@/lib/foto-perfil";
 import {
   carregarPainel,
   formatarDataCurta,
@@ -43,13 +49,23 @@ export default function TelaConta() {
   const insets = useSafeAreaInsets();
   const { tema, modoEscuro, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<CampoEdicao | null>(null);
+  const [popup, setPopup] = useState<{
+    titulo: string;
+    mensagem: string;
+    variante: "sucesso" | "aviso";
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
-      carregarPainel().then((resultado) => {
-        if (ativo) setDados(resultado);
+      Promise.all([carregarPainel(), obterFotoPerfil()]).then(([resultado, foto]) => {
+        if (!ativo) return;
+        setDados(resultado);
+        setFotoUrl(foto);
+        setCarregando(false);
       });
       return () => {
         ativo = false;
@@ -64,14 +80,27 @@ export default function TelaConta() {
   const nome = dados?.nome || "Sua conta";
   const status = dados?.provedor === "Google" ? "Conexão c. Google" : dados?.provedor || "E-mail e senha";
 
-  // Alert.alert não funciona no navegador (web), então usamos window.alert lá.
-  const avisar = (titulo: string, mensagem: string) => {
-    if (Platform.OS === "web") {
-      if (typeof window !== "undefined") window.alert(`${titulo}\n\n${mensagem}`);
+  const avisar = (
+    titulo: string,
+    mensagem: string,
+    variante: "sucesso" | "aviso" = "aviso"
+  ) => {
+    setPopup({ titulo, mensagem, variante });
+  };
+
+  const trocarFoto = useCallback(async () => {
+    const uri = await selecionarFotoDispositivo();
+    if (!uri) {
+      avisar(
+        "Trocar foto",
+        "Selecione uma imagem do seu dispositivo para atualizar sua foto de perfil."
+      );
       return;
     }
-    Alert.alert(titulo, mensagem);
-  };
+    setFotoUrl(uri);
+    await salvarFotoPerfil(uri);
+    avisar("Confirmado!", "Sua foto de perfil foi atualizada.", "sucesso");
+  }, []);
 
   const avisarEdicao = (campo: string) => {
     avisar(
@@ -103,8 +132,14 @@ export default function TelaConta() {
 
     if (!resultado.ok) return resultado.erro;
 
-    setDados(await carregarPainel());
-    if (resultado.mensagem) avisar("Pronto", resultado.mensagem);
+    setDados(await carregarPainel(true));
+    setTimeout(() => {
+      avisar(
+        "Confirmado!",
+        resultado.mensagem ?? "Dados atualizados com sucesso.",
+        "sucesso"
+      );
+    }, 160);
     return null;
   };
 
@@ -116,6 +151,14 @@ export default function TelaConta() {
       : editando === "email"
       ? dados?.email ?? ""
       : "";
+
+  if (carregando && !dados) {
+    return (
+      <SafeAreaView style={[styles.tela, { backgroundColor: fundo, justifyContent: "center", alignItems: "center" }]} edges={["top"]}>
+        <ActivityIndicator size="large" color={tema.roxoEscuro} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
@@ -130,12 +173,16 @@ export default function TelaConta() {
         <BotaoVoltar cor={modoEscuro ? texto : "#3B2600"} />
 
         <View style={styles.areaAvatar}>
-          <View style={[styles.avatar, { backgroundColor: modoEscuro ? "#4A3A52" : "#D9D9D9" }]}>
-            <UserRound size={64} color={modoEscuro ? "#F4EDF8" : "#8A8080"} strokeWidth={1.4} />
+          <View style={[styles.avatar, { backgroundColor: modoEscuro ? "#4A3A52" : "#D9D9D9", overflow: "hidden" }]}>
+            {fotoUrl ? (
+              <Image source={{ uri: fotoUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+            ) : (
+              <UserRound size={64} color={modoEscuro ? "#F4EDF8" : "#8A8080"} strokeWidth={1.4} />
+            )}
           </View>
           <Pressable
             style={[styles.lapis, { backgroundColor: tema.roxo }]}
-            onPress={() => avisarEdicao("foto")}
+            onPress={() => void trocarFoto()}
             accessibilityRole="button"
             accessibilityLabel="Trocar foto"
           >
@@ -223,6 +270,14 @@ export default function TelaConta() {
         valorAtual={valorAtualEdicao}
         aoFechar={() => setEditando(null)}
         aoSalvar={salvarEdicao}
+      />
+
+      <ModalConfirmadoAdmin
+        visivel={popup !== null}
+        titulo={popup?.titulo}
+        mensagem={popup?.mensagem ?? ""}
+        variante={popup?.variante}
+        aoFechar={() => setPopup(null)}
       />
     </SafeAreaView>
   );

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BotaoVoltar } from "@/components/BotaoVoltar";
+import { ModalConfirmadoAdmin } from "@/components/ModalAdmin";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 
 const MIMI = require("../../assets/Lume/Mimi/Png/mimi-de-frente.png");
@@ -44,6 +45,7 @@ export default function TelaAjuda() {
   const insets = useSafeAreaInsets();
   const { tema, modoEscuro, fonte } = useAcessibilidade();
   const [aberta, setAberta] = useState<string | null>(null);
+  const [popup, setPopup] = useState<{ titulo: string; mensagem: string } | null>(null);
 
   const fundo = modoEscuro ? tema.fundo : "#F8F4FC";
   const cartao = tema.cartao;
@@ -60,10 +62,10 @@ export default function TelaAjuda() {
       if (suporta) {
         await Linking.openURL(endereco);
       } else {
-        Alert.alert("Fale conosco", "Envie um e-mail para contato@lume.app");
+        setPopup({ titulo: "Fale conosco", mensagem: "Envie um e-mail para contato@lume.app" });
       }
     } catch {
-      Alert.alert("Fale conosco", "Envie um e-mail para contato@lume.app");
+      setPopup({ titulo: "Fale conosco", mensagem: "Envie um e-mail para contato@lume.app" });
     }
   };
 
@@ -145,10 +147,11 @@ export default function TelaAjuda() {
           icone={<HelpCircle size={24} color="#2C1038" />}
           titulo="FAQ"
           onPress={() =>
-            Alert.alert(
-              "Perguntas frequentes",
-              "Como funciona?\nO que é ofensiva?\nO que posso aprender?\nO que é Xp?\n\nToque nos botões acima para ver cada resposta."
-            )
+            setPopup({
+              titulo: "Perguntas frequentes",
+              mensagem:
+                "Como funciona?\nO que é ofensiva?\nO que posso aprender?\nO que é Xp?\n\nToque nos botões acima para ver cada resposta.",
+            })
           }
         />
         <BotaoAjuda
@@ -160,13 +163,22 @@ export default function TelaAjuda() {
           icone={<Info size={24} color="#2C1038" />}
           titulo="Sobre Nós"
           onPress={() =>
-            Alert.alert(
-              "Sobre o Lume",
-              "O Lume é um aplicativo feito para ajudar pessoas a aprenderem a usar o celular com mais autonomia, segurança e carinho."
-            )
+            setPopup({
+              titulo: "Sobre o Lume",
+              mensagem:
+                "O Lume é um aplicativo feito para ajudar pessoas a aprenderem a usar o celular com mais autonomia, segurança e carinho.",
+            })
           }
         />
       </ScrollView>
+
+      <ModalConfirmadoAdmin
+        visivel={popup !== null}
+        titulo={popup?.titulo}
+        mensagem={popup?.mensagem ?? ""}
+        variante="aviso"
+        aoFechar={() => setPopup(null)}
+      />
     </SafeAreaView>
   );
 }

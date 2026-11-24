@@ -12,8 +12,8 @@ import {
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
-  Platform,
+  ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,7 +23,9 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ModalConfirmacaoAdmin } from "@/components/ModalAdmin";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import { obterFotoPerfil } from "@/lib/foto-perfil";
 import { carregarPainel, type DadosPainel } from "@/lib/painel";
 import { supabase } from "@/lib/supabase";
 
@@ -32,12 +34,18 @@ export default function TelaUsuario() {
   const insets = useSafeAreaInsets();
   const { tema, modoEscuro, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
-      carregarPainel().then((resultado) => {
-        if (ativo) setDados(resultado);
+      Promise.all([carregarPainel(), obterFotoPerfil()]).then(([resultado, foto]) => {
+        if (!ativo) return;
+        setDados(resultado);
+        setFotoUrl(foto);
+        setCarregando(false);
       });
       return () => {
         ativo = false;
@@ -54,25 +62,22 @@ export default function TelaUsuario() {
   const corCirculo = modoEscuro ? "#4A3A52" : "#FFE58C";
 
   const sair = useCallback(async () => {
+    setConfirmandoSaida(false);
     await supabase.auth.signOut();
     router.replace("/auth/login/contas" as never);
   }, [router]);
 
   const confirmarSaida = useCallback(() => {
-    const mensagem = "Deseja mesmo sair da sua conta?";
+    setConfirmandoSaida(true);
+  }, []);
 
-    if (Platform.OS === "web") {
-      if (typeof window !== "undefined" && window.confirm(mensagem)) {
-        void sair();
-      }
-      return;
-    }
-
-    Alert.alert("Sair da conta", mensagem, [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Sair", style: "destructive", onPress: () => void sair() },
-    ]);
-  }, [sair]);
+  if (carregando && !dados) {
+    return (
+      <SafeAreaView style={[styles.tela, { backgroundColor: fundo, justifyContent: "center", alignItems: "center" }]} edges={["top"]}>
+        <ActivityIndicator size="large" color={tema.roxoEscuro} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
@@ -96,8 +101,12 @@ export default function TelaUsuario() {
           ]}
         >
           <View style={styles.linhaPerfil}>
-            <View style={[styles.avatar, { backgroundColor: modoEscuro ? "#4A3A52" : "#D9D9D9" }]}>
-              <UserRound size={56} color={modoEscuro ? "#F4EDF8" : "#8A8080"} strokeWidth={1.5} />
+            <View style={[styles.avatar, { backgroundColor: modoEscuro ? "#4A3A52" : "#D9D9D9", overflow: "hidden" }]}>
+              {fotoUrl ? (
+                <Image source={{ uri: fotoUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              ) : (
+                <UserRound size={56} color={modoEscuro ? "#F4EDF8" : "#8A8080"} strokeWidth={1.5} />
+              )}
             </View>
             <View style={styles.dadosPerfil}>
               <Text
@@ -226,6 +235,15 @@ export default function TelaUsuario() {
           <Text style={[styles.textoSair, { fontSize: fonte(24) }]}>Sair da Conta</Text>
         </Pressable>
       </ScrollView>
+
+      <ModalConfirmacaoAdmin
+        visivel={confirmandoSaida}
+        titulo="Tem certeza?"
+        mensagem="Deseja mesmo sair da sua conta?"
+        textoConfirmar="Sair"
+        aoCancelar={() => setConfirmandoSaida(false)}
+        aoConfirmar={() => void sair()}
+      />
     </SafeAreaView>
   );
 }

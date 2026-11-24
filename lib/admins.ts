@@ -103,14 +103,36 @@ export async function definirAdmin(
   admin: boolean
 ): Promise<string | null> {
   try {
-    const { error } = await supabase
-      .from("usuario")
-      .update({ papel: admin ? "admin" : null })
-      .eq("usuario_id", usuarioId);
+    const candidatosPapel: (string | null)[] = admin
+      ? ["admin"]
+      : [null, "user", "usuario", "comum", "member", "aluno"];
 
-    if (error) {
-      console.log("Erro ao salvar a permissão:", error.message);
-      return "Não deu para salvar agora. Tente de novo em instantes.";
+    let ultimoErro: string | null = null;
+    let linhas: { usuario_id: number }[] | null = null;
+
+    for (const papel of candidatosPapel) {
+      const resposta = await supabase
+        .from("usuario")
+        .update({ papel })
+        .eq("usuario_id", usuarioId)
+        .select("usuario_id");
+
+      if (!resposta.error) {
+        ultimoErro = null;
+        linhas = resposta.data as { usuario_id: number }[] | null;
+        break;
+      }
+
+      ultimoErro = resposta.error.message;
+    }
+
+    if (ultimoErro) {
+      console.log("Erro ao salvar a permissão:", ultimoErro);
+      return ultimoErro;
+    }
+
+    if (!linhas || linhas.length === 0) {
+      return "Sem permissão no banco (RLS) para alterar este usuário.";
     }
 
     return null;

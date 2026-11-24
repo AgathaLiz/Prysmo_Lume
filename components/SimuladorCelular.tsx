@@ -1,5 +1,19 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { CheckCircle2, ChevronRight, XCircle } from "lucide-react-native";
+import {
+  Camera,
+  Car,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Heart,
+  Mail,
+  MessageCircle,
+  Phone,
+  Plus,
+  Send,
+  Trash2,
+  XCircle,
+} from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
@@ -31,13 +45,73 @@ const PROPORCAO_MIMI = 157 / 219;
 
 type Props = {
   cenario: CenarioSimulacao;
-  /** Recebe quantos erros a pessoa cometeu (usado na nota). */
-  onFinalizar: (erros: number) => void;
+  /** Recebe erros, acertos de primeira e total de passos da simulação. */
+  onFinalizar: (erros: number, acertos: number, totalPassos: number) => void;
+  /** Chamado a cada toque errado para descontar vida. */
+  onErro?: () => void;
+  /** Vidas restantes do usuário. */
+  vidas?: number;
   /** Volta para a etapa anterior da lição (botão redondo do mockup). */
   onVoltar?: () => void;
   /** Ocupa toda a altura disponível (o celular preenche a tela). */
   preencher?: boolean;
 };
+
+/** Respostas personalizadas da Mimi na lição de golpe/e-mail suspeito. */
+const RESPOSTAS_GOLPE: Record<string, string> = {
+  acao_abrir_link:
+    "Cuidado! Nunca clique em links de mensagens suspeitas pedindo seus dados — isso é um golpe!",
+  acao_apagar:
+    "Apagar ajuda, mas antes de apagar é importante avisar um familiar de confiança!",
+  email_suspeito:
+    "Você já abriu o e-mail suspeito. Veja as opções abaixo para se proteger!",
+};
+
+/**
+ * Mostra na fala da Mimi o ícone apenas para alvos que dependem de o usuário
+ * reconhecer um símbolo específico (telefone, +, salvar, enviar, câmera, etc.).
+ */
+function IconeAlvoMimi({ alvo }: { alvo: string }) {
+  let fundo: string | null = null;
+  let icone: React.ReactNode = null;
+
+  if (alvo === "app_telefone" || alvo === "botao_ligar") {
+    fundo = "#3D9B35";
+    icone = <Phone size={18} color="#FFFFFF" strokeWidth={2.4} />;
+  } else if (alvo === "botao_criar_contato") {
+    fundo = "#891CC0";
+    icone = <Plus size={19} color="#FFFFFF" strokeWidth={2.8} />;
+  } else if (alvo === "botao_salvar") {
+    fundo = "#2563EB";
+    icone = <Check size={18} color="#FFFFFF" strokeWidth={2.8} />;
+  } else if (alvo === "app_mensagens") {
+    fundo = "#2563EB";
+    icone = <MessageCircle size={18} color="#FFFFFF" strokeWidth={2.4} />;
+  } else if (alvo === "botao_enviar_mensagem") {
+    fundo = "#2563EB";
+    icone = <Send size={17} color="#FFFFFF" strokeWidth={2.4} />;
+  } else if (alvo === "app_uber") {
+    fundo = "#1A1A1A";
+    icone = <Car size={18} color="#FFFFFF" strokeWidth={2.4} />;
+  } else if (alvo === "app_camera" || alvo === "botao_foto") {
+    fundo = "#52525B";
+    icone = <Camera size={18} color="#FFFFFF" strokeWidth={2.4} />;
+  } else if (alvo === "app_email") {
+    fundo = "#E23A2E";
+    icone = <Mail size={18} color="#FFFFFF" strokeWidth={2.4} />;
+  } else if (alvo === "acao_apagar") {
+    fundo = "#E23A2E";
+    icone = <Trash2 size={18} color="#FFFFFF" strokeWidth={2.4} />;
+  }
+
+  if (!fundo || !icone) return null;
+
+  return (
+    <View style={[styles.seloIconeAlvo, { backgroundColor: fundo }]}>
+      {icone}
+    </View>
+  );
+}
 
 type Feedback = { tipo: "acerto" | "erro"; texto: string } | null;
 
@@ -60,6 +134,8 @@ const COR_TEXTO = "#1A1A1A";
 export function SimuladorCelular({
   cenario,
   onFinalizar,
+  onErro,
+  vidas,
   onVoltar,
   preencher = false,
 }: Props) {
@@ -68,6 +144,8 @@ export function SimuladorCelular({
 
   const [indice, setIndice] = useState(0);
   const [erros, setErros] = useState(0);
+  const [acertos, setAcertos] = useState(0);
+  const [errouNestePasso, setErrouNestePasso] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [travado, setTravado] = useState(false);
   const [espacoTelefone, setEspacoTelefone] = useState({
@@ -107,30 +185,43 @@ export function SimuladorCelular({
   function aoTocar(alvo: string) {
     if (travado || !passo) return;
 
-    // Errou: conta o erro, mostra a dica e continua no mesmo passo.
+    // Errou: conta o erro, desconta vida, mostra resposta personalizada da Mimi e continua no passo.
     if (alvo !== passo.alvo) {
       const proximosErros = erros + 1;
       const texto =
-        passo.dica ?? "Não foi esse. Toque no que está brilhando na tela.";
+        RESPOSTAS_GOLPE[alvo] ??
+        passo.dica ??
+        "Não foi esse. Toque no que está brilhando na tela.";
       setErros(proximosErros);
+      setErrouNestePasso(true);
       setFeedback({ tipo: "erro", texto });
       AccessibilityInfo.announceForAccessibility(`Não foi esse. ${texto}`);
       if (audioDescricao) falar(`Não foi esse. ${texto}`);
+      onErro?.();
       return;
     }
 
     // Acertou.
-    setFeedback({ tipo: "acerto", texto: "Muito bem!" });
-    AccessibilityInfo.announceForAccessibility("Muito bem!");
-    if (audioDescricao) falar("Muito bem!");
+    const proximosAcertos = errouNestePasso ? acertos : acertos + 1;
+    setAcertos(proximosAcertos);
+    const msgAcerto =
+      alvo === "acao_avisar"
+        ? "Muito bem! Avisar um familiar é a atitude mais segura!"
+        : alvo === "email_suspeito"
+          ? "Isso! Desconfie sempre de mensagens pedindo dados."
+          : "Muito bem!";
+    setFeedback({ tipo: "acerto", texto: msgAcerto });
+    AccessibilityInfo.announceForAccessibility(msgAcerto);
+    if (audioDescricao) falar(msgAcerto);
     setTravado(true);
 
     timer.current = setTimeout(() => {
       if (indice >= total - 1) {
-        onFinalizar(erros);
+        onFinalizar(erros, proximosAcertos, total);
         return;
       }
       setIndice((atual) => atual + 1);
+      setErrouNestePasso(false);
       setFeedback(null);
       setTravado(false);
     }, 1300);
@@ -218,7 +309,7 @@ export function SimuladorCelular({
                       },
                     ]}
                   >
-                    {feedback.tipo === "acerto" ? "Muito bem!" : "Não foi esse."}
+                    {feedback.tipo === "acerto" ? feedback.texto : "Atenção!"}
                   </Text>
                 </View>
 
@@ -229,20 +320,48 @@ export function SimuladorCelular({
                       { color: tema.texto, fontSize: fonte(14) },
                     ]}
                   >
-                    {feedback.texto} Toque de novo. Não tem pressa.
+                    {feedback.texto}
                   </Text>
                 )}
               </>
             ) : (
-              <Text
-                style={[
-                  styles.textoInstrucao,
-                  { color: COR_TEXTO, fontSize: fonte(16) },
-                ]}
-              >
-                <InstrucaoMarcada texto={passo.instrucao} />
-              </Text>
+              <View style={styles.linhaInstrucaoComIcone}>
+                <IconeAlvoMimi alvo={passo.alvo} />
+                <Text
+                  style={[
+                    styles.textoInstrucao,
+                    { color: COR_TEXTO, fontSize: fonte(16), flex: 1 },
+                  ]}
+                >
+                  <InstrucaoMarcada texto={passo.instrucao} />
+                </Text>
+              </View>
             )}
+            {typeof vidas === "number" ? (
+              <View
+                style={styles.linhaVidas}
+                accessible
+                accessibilityLabel={`${vidas} de 3 vidas restantes. Acertos: ${acertos}. Erros: ${erros}.`}
+              >
+                <Text style={[styles.textoVidas, { fontSize: fonte(13) }]}>
+                  Acertos: {acertos} · Erros: {erros}
+                </Text>
+                <View style={styles.coracoes}>
+                  {[0, 1, 2].map((i) => {
+                    const ativa = i < vidas;
+                    return (
+                      <Heart
+                        key={i}
+                        size={24}
+                        color={ativa ? "#E23B2E" : "#C9C5C6"}
+                        fill={ativa ? "#E23B2E" : "#EAE6ED"}
+                        strokeWidth={2.2}
+                      />
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
           </View>
         </TouchableOpacity>
 
@@ -468,5 +587,34 @@ const styles = StyleSheet.create({
   },
   preenchimentoGradiente: {
     flex: 1,
+  },
+  linhaVidas: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 2,
+  },
+  coracoes: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  linhaInstrucaoComIcone: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  seloIconeAlvo: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  textoVidas: {
+    fontFamily: "Poppins_600SemiBold",
+    color: "#5A4B60",
   },
 });
