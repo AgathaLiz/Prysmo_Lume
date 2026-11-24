@@ -9,7 +9,7 @@ export const PESOS_NOTA = {
   simulacao: 0.5,
 } as const;
 
-export const NOTA_MINIMA_PADRAO = 70;
+export const NOTA_MINIMA_PADRAO = 50;
 
 /** Cada erro na simulação desconta isso da nota (100, 75, 50, 25, 0...). */
 export const DESCONTO_POR_ERRO = 25;
@@ -101,8 +101,8 @@ export const NOTA_TRES_ESTRELAS = 90;
  *
  * A pessoa nunca fica sem nenhuma estrela: mesmo errando, o esforço conta.
  * - 3 estrelas: acertou quase tudo (90% ou mais);
- * - 2 estrelas: passou de fase (70% ou mais);
- * - 1 estrela: ainda não passou, mas já tentou.
+ * - 2 estrelas: passou de fase (50% ou mais — pelo menos metade);
+ * - 1 estrela: acertou menos da metade.
  */
 export function estrelasDaNota(nota: number): number {
   const valor = limitarNota(nota);
@@ -118,7 +118,7 @@ export function descreverEstrelas(estrelas: number): string {
   return "Uma estrela! Você já começou. Tente de novo para ganhar mais.";
 }
 
-/** Passar de fase exige pelo menos 2 estrelas (nota 70). */
+/** Passar de fase exige pelo menos 2 estrelas (nota 50 — metade ou mais). */
 export function passouDeFase(estrelas: number): boolean {
   return estrelas >= 2;
 }

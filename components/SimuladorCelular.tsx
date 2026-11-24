@@ -37,6 +37,7 @@ import {
   type CenarioSimulacao,
   type TelaFicticia,
 } from "@/lib/simulacao";
+import { tocarSom } from "@/lib/sons";
 
 const MIMI = require("../assets/Lume/Mimi/Png/mimi-sorrindo.png") as ImageSourcePropType;
 
@@ -187,6 +188,7 @@ export function SimuladorCelular({
 
     // Errou: conta o erro, desconta vida, mostra resposta personalizada da Mimi e continua no passo.
     if (alvo !== passo.alvo) {
+      tocarSom("erro");
       const proximosErros = erros + 1;
       const texto =
         RESPOSTAS_GOLPE[alvo] ??
@@ -202,6 +204,7 @@ export function SimuladorCelular({
     }
 
     // Acertou.
+    tocarSom("acerto");
     const proximosAcertos = errouNestePasso ? acertos : acertos + 1;
     setAcertos(proximosAcertos);
     const msgAcerto =

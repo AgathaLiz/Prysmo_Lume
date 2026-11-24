@@ -53,6 +53,7 @@ import {
 import { obterUsuarioId, salvarResultadoLicao } from "@/lib/progresso";
 import { normalizarCenario, type CenarioSimulacao } from "@/lib/simulacao";
 import { cenarioParaLicao } from "@/lib/simulacoes-licao";
+import { tocarSom } from "@/lib/sons";
 import { supabase } from "@/lib/supabase";
 import {
   AULA_EXEMPLO_ID,
@@ -788,13 +789,14 @@ export default function LicaoScreen() {
     notaFinalCalculada,
   ]);
 
-  // Ao chegar no resultado, salva uma única vez.
+  // Ao chegar no resultado, salva uma única vez e toca o som se passou.
   useEffect(() => {
     if (etapa !== "resultado") return;
+    if (aprovado) tocarSom("passou");
     if (salvouRef.current) return;
     salvouRef.current = true;
     void salvar();
-  }, [etapa, salvar]);
+  }, [etapa, aprovado, salvar]);
 
   // Ao chegar na etapa da ofensiva, lê a sequência real no servidor.
   useEffect(() => {
@@ -917,8 +919,10 @@ export default function LicaoScreen() {
     }
 
     if (correta) {
+      tocarSom("acerto");
       setAcertos((total) => total + 1);
     } else {
+      tocarSom("erro");
       setVidas((atual) => {
         const proximas = Math.max(0, atual - 1);
         if (proximas === 0) setSemVidasVisivel(true);
