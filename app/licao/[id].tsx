@@ -789,10 +789,10 @@ export default function LicaoScreen() {
     notaFinalCalculada,
   ]);
 
-  // Ao chegar no resultado, salva uma única vez e toca o som se passou.
+  // Ao chegar no resultado, salva uma única vez e toca o som correspondente.
   useEffect(() => {
     if (etapa !== "resultado") return;
-    if (aprovado) tocarSom("passou");
+    tocarSom(aprovado ? "passou" : "naoPassou");
     if (salvouRef.current) return;
     salvouRef.current = true;
     void salvar();
@@ -925,7 +925,10 @@ export default function LicaoScreen() {
       tocarSom("erro");
       setVidas((atual) => {
         const proximas = Math.max(0, atual - 1);
-        if (proximas === 0) setSemVidasVisivel(true);
+        if (proximas === 0) {
+          tocarSom("naoPassou");
+          setSemVidasVisivel(true);
+        }
         return proximas;
       });
     }
@@ -1006,7 +1009,10 @@ export default function LicaoScreen() {
   function aoErrarSimulacao() {
     setVidas((atual) => {
       const proximas = Math.max(0, atual - 1);
-      if (proximas === 0) setSemVidasVisivel(true);
+      if (proximas === 0) {
+        tocarSom("naoPassou");
+        setSemVidasVisivel(true);
+      }
       return proximas;
     });
   }

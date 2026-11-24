@@ -1,12 +1,13 @@
 import { createVideoPlayer, type VideoPlayer } from "expo-video";
 import { Image, Platform } from "react-native";
 
-export type TipoSom = "acerto" | "erro" | "passou";
+export type TipoSom = "acerto" | "erro" | "passou" | "naoPassou";
 
 const FONTES: Record<TipoSom, number> = {
   acerto: require("../assets/audio/acertou-alternativa.mpeg"),
   erro: require("../assets/audio/errou-alternativa.mpeg"),
   passou: require("../assets/audio/passou-de-licao.mpeg"),
+  naoPassou: require("../assets/audio/nao-passou-de-licao.mpeg"),
 };
 
 const players: Partial<Record<TipoSom, VideoPlayer>> = {};
