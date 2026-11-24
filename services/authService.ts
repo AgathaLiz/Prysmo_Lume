@@ -1,3 +1,4 @@
+import { ehEmailAdminTeste, ehPapelAdmin } from "@/lib/admins";
 import { supabase } from "@/lib/supabase";
 import { makeRedirectUri } from "expo-auth-session";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
@@ -32,12 +33,19 @@ export async function irParaProximaTela() {
 
   const { data } = await supabase
     .from("usuario")
-    .select("usuario_id")
+    .select("usuario_id, papel")
     .eq("auth_user_id", user.id)
-    .maybeSingle();
+    .maybeSingle<{ usuario_id: number; papel: string | null }>();
 
-  // Quem já tem conta cai direto no bem-vindo; a tela de preferências fica
-  // só para quem acabou de criar a conta (fluxo de cadastro/completar perfil).
+  // O administrador entra na área dele. Quem já tem conta cai direto no
+  // bem-vindo; a tela de preferências fica só para quem acabou de criar a
+  // conta (fluxo de cadastro/completar perfil). O e-mail de teste entra como
+  // administrador mesmo sem o papel no banco.
+  if (ehPapelAdmin(data?.papel) || ehEmailAdminTeste(user.email)) {
+    router.replace("/admin" as any);
+    return;
+  }
+
   router.replace(data ? "/onboarding/bem_vindo" : ("/auth/completar_perfil" as any));
 }
 

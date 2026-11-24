@@ -80,7 +80,8 @@ export default function LoginScreen() {
   }
 
   if (perfil.papel === "admin") {
-    router.replace("/");               // ajuste para a sua rota de admin
+    // O administrador tem a área dele (perfil, permissões e criação de lição).
+    router.replace("/admin" as any);
   } else {
     // Já tem conta: vai direto para o bem-vindo 
     router.replace("/onboarding/bem_vindo" as any);

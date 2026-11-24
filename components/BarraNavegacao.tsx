@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
+import { Plus } from "lucide-react-native";
 import React from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
@@ -10,6 +11,9 @@ const ICONES = {
   progresso: require("../assets/images/icons/Icons=estatisticas.png") as ImageSourcePropType,
   perfil: require("../assets/images/icons/Icons=pefil_tab_bar.png") as ImageSourcePropType,
 };
+
+/** Cores do círculo do item aceso na barra (o mesmo degradê em toda a barra). */
+const GRADIENTE_ACESO = ["#FFD36E", "#F3A6B8", "#C77DFF"] as const;
 
 type Aba = "inicio" | "progresso" | "perfil";
 
@@ -24,7 +28,7 @@ function AbaAtiva({
     <View style={styles.centroIcone}>
       {ativo ? (
         <LinearGradient
-          colors={["#FFD36E", "#F3A6B8", "#C77DFF"]}
+          colors={GRADIENTE_ACESO}
           start={{ x: 0.15, y: 0 }}
           end={{ x: 0.85, y: 1 }}
           style={styles.circuloAtivo}
@@ -119,6 +123,99 @@ export function BarraNavegacao({ aba }: BarraNavegacaoProps = {}) {
   );
 }
 
+type BarraAdministradorProps = {
+  /** O que acontece ao tocar no "+" (criar/gerenciar lições). */
+  onAdicionar: () => void;
+  /**
+   * Qual item está aceso (com o círculo de degradê), como na barra do aluno: o
+   * Início (padrão) ou o "+". Nas telas de lições/unidades quem está aceso é o
+   * "+", igual ao mockup.
+   */
+  ativo?: "inicio" | "adicionar";
+};
+
+const ROTAS_ADICIONAR = [
+  "/admin/unidades",
+  "/admin/licoes",
+  "/admin/licao-info",
+  "/admin/criar-unidade",
+  "/admin/gerenciar-unidades",
+  "/admin/editar-unidade",
+  "/admin/licao",
+];
+
+/**
+ * Barra inferior do administrador, como no mockup: o Início e o "+". Funciona
+ * igual à barra do aluno — o item aceso ganha o círculo de degradê e o outro
+ * fica apagado.
+ */
+export function BarraAdministrador({
+  onAdicionar,
+  ativo,
+}: BarraAdministradorProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+
+  const automatico: "inicio" | "adicionar" = ROTAS_ADICIONAR.some((rota) =>
+    pathname.startsWith(rota)
+  )
+    ? "adicionar"
+    : "inicio";
+  const adicionarAceso = (ativo ?? automatico) === "adicionar";
+
+  const irParaInicio = () => {
+    if (pathname === "/admin" || pathname === "/admin/") return;
+    router.navigate("/admin" as never);
+  };
+
+  return (
+    <View
+      style={[styles.barra, { bottom: Math.max(insets.bottom, 12) }]}
+      accessibilityRole="tablist"
+    >
+      <TouchableOpacity
+        style={styles.botao}
+        onPress={irParaInicio}
+        activeOpacity={0.8}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: !adicionarAceso }}
+        accessibilityLabel="Início"
+      >
+        <AbaAtiva icone={ICONES.inicio} ativo={!adicionarAceso} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.botao}
+        onPress={onAdicionar}
+        activeOpacity={0.8}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: adicionarAceso }}
+        accessibilityLabel="Adicionar"
+      >
+        <View style={styles.centroIcone}>
+          {adicionarAceso ? (
+            <LinearGradient
+              colors={GRADIENTE_ACESO}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.85, y: 1 }}
+              style={styles.circuloAtivo}
+            >
+              <View style={styles.anelAdicionarAtivo}>
+                <Plus size={28} color="#303030" strokeWidth={3.5} />
+              </View>
+            </LinearGradient>
+          ) : (
+            <View style={styles.adicionar}>
+              <Plus size={30} color="#303030" strokeWidth={3.5} />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   barra: {
     position: "absolute",
@@ -170,5 +267,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     opacity: 0.72,
+  },
+  adicionar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3.2,
+    borderColor: "#303030",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  anelAdicionarAtivo: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 3.2,
+    borderColor: "#303030",
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

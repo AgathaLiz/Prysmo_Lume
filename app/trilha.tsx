@@ -3,6 +3,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   HelpCircle,
   Lock,
   Sparkles,
@@ -480,6 +482,43 @@ export default function TrilhaScreen() {
             )}
           </View>
 
+          {secoes.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.seletorUnidades}
+            >
+              {secoes.map((secao, indice) => {
+                const ativa = indice === indiceSelecionado;
+                return (
+                  <TouchableOpacity
+                    key={secao.niveis_id}
+                    onPress={() => escolherNivel(indice)}
+                    activeOpacity={0.8}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: ativa }}
+                    accessibilityLabel={`Unidade ${indice + 1}: ${secao.nome}`}
+                    style={[
+                      styles.pilulaUnidade,
+                      ativa && styles.pilulaUnidadeAtiva,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.textoPilulaUnidade,
+                        ativa && styles.textoPilulaUnidadeAtiva,
+                        { fontSize: fonte(14) },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {indice + 1}. {secao.nome}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
           {mensagemVazia !== "" && (
             <View style={styles.cartaoVazio}>
               <Star size={34} color={TrilhaCores.estrela} />
@@ -492,9 +531,44 @@ export default function TrilhaScreen() {
           {secaoSelecionada && secaoSelecionada.total > 0 && (
             <>
               <View style={styles.cabecalhoNivel}>
-                <Text style={[styles.rotuloGalaxia, { fontSize: fonte(13) }]}>
-                  GALÁXIA {indiceSelecionado + 1}
-                </Text>
+                <View style={styles.linhaTituloNivel}>
+                  {secoes.length > 1 ? (
+                    <TouchableOpacity
+                      onPress={() => escolherNivel(Math.max(0, indiceSelecionado - 1))}
+                      disabled={indiceSelecionado === 0}
+                      accessibilityRole="button"
+                      accessibilityLabel="Unidade anterior"
+                      style={[
+                        styles.setaNivel,
+                        indiceSelecionado === 0 && styles.setaNivelDesabilitada,
+                      ]}
+                    >
+                      <ChevronLeft size={22} color={TrilhaCores.texto} />
+                    </TouchableOpacity>
+                  ) : null}
+
+                  <Text style={[styles.rotuloGalaxia, { fontSize: fonte(13) }]}>
+                    GALÁXIA {indiceSelecionado + 1} DE {secoes.length}
+                  </Text>
+
+                  {secoes.length > 1 ? (
+                    <TouchableOpacity
+                      onPress={() =>
+                        escolherNivel(Math.min(secoes.length - 1, indiceSelecionado + 1))
+                      }
+                      disabled={indiceSelecionado >= secoes.length - 1}
+                      accessibilityRole="button"
+                      accessibilityLabel="Próxima unidade"
+                      style={[
+                        styles.setaNivel,
+                        indiceSelecionado >= secoes.length - 1 &&
+                          styles.setaNivelDesabilitada,
+                      ]}
+                    >
+                      <ChevronRight size={22} color={TrilhaCores.texto} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
                 <Text style={[styles.nomeNivel, { fontSize: fonte(26) }]}>
                   {secaoSelecionada.nome}
                 </Text>
@@ -822,6 +896,50 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 2,
     gap: 3,
+  },
+  seletorUnidades: {
+    gap: 8,
+    marginTop: 14,
+    paddingRight: 8,
+  },
+  pilulaUnidade: {
+    minHeight: 42,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: TrilhaCores.abaInativa,
+    borderWidth: 1,
+    borderColor: TrilhaCores.borda,
+    justifyContent: "center",
+  },
+  pilulaUnidadeAtiva: {
+    backgroundColor: TrilhaCores.abaAtiva,
+    borderColor: TrilhaCores.abaAtiva,
+  },
+  textoPilulaUnidade: {
+    fontFamily: "Poppins_600SemiBold",
+    color: TrilhaCores.texto,
+  },
+  textoPilulaUnidadeAtiva: {
+    color: "#32064F",
+  },
+  linhaTituloNivel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  setaNivel: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: TrilhaCores.cartao,
+    borderWidth: 1,
+    borderColor: TrilhaCores.borda,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  setaNivelDesabilitada: {
+    opacity: 0.35,
   },
   areaTrilha: {
     position: "relative",
