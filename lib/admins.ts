@@ -97,6 +97,36 @@ export async function carregarNaoAdmins(): Promise<PessoaAdmin[] | null> {
   }
 }
 
+/** Descobre o valor de `papel` usado para usuários comuns no banco (enum `app_role`). */
+async function descobrirPapelComum(): Promise<(string | null)[]> {
+  try {
+    const { data } = await supabase
+      .from("usuario")
+      .select("papel")
+      .limit(30);
+
+    const encontrados = ((data ?? []) as { papel: string | null }[])
+      .map((l) => l.papel)
+      .filter((p) => !ehPapelAdmin(p));
+
+    const unicos = Array.from(new Set(encontrados));
+    return [
+      ...unicos,
+      null,
+      "user",
+      "usuario",
+      "padrao",
+      "comum",
+      "member",
+      "student",
+      "normal",
+      "aluno",
+    ];
+  } catch {
+    return [null, "user", "usuario", "padrao", "comum", "member", "aluno"];
+  }
+}
+
 /** Dá ou tira a permissão de administrador. Devolve o erro, ou null se deu certo. */
 export async function definirAdmin(
   usuarioId: number,
@@ -105,7 +135,7 @@ export async function definirAdmin(
   try {
     const candidatosPapel: (string | null)[] = admin
       ? ["admin"]
-      : [null, "user", "usuario", "comum", "member", "aluno"];
+      : await descobrirPapelComum();
 
     let ultimoErro: string | null = null;
     let linhas: { usuario_id: number }[] | null = null;
