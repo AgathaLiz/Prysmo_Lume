@@ -1,6 +1,6 @@
 import { router } from "expo-router";
-import { Moon, RotateCcw, Sun } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import { RotateCcw } from "lucide-react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -9,10 +9,21 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GuiaMimi, useAlvoGuia } from "@/components/GuiaMimi";
 import { PageFlow } from "@/components/PageFlow";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import {
+  concluirFluxoEssencial,
+  deveMostrarGuiaTela,
+} from "@/lib/primeiro-acesso";
+
+const PASSOS_PREFERENCIAS = [
+  "Escolha aqui o tamanho das letras que ficar mais confortável para você ler.",
+  "Ative aqui se quiser que eu leia as perguntas e explicações em voz alta.",
+  "Quando terminar, toque aqui em Salvar para entrar no aplicativo.",
+];
 
 const TAMANHOS = [
   { px: 24, rotulo: "Pequena", letra: 20 },
@@ -21,30 +32,44 @@ const TAMANHOS = [
 ];
 
 export default function TelaPreferencias() {
+  const insets = useSafeAreaInsets();
   const {
     tema,
-    modoEscuro,
     fonte,
     tamanhoFontePx,
     audioDescricao,
     definirAudioDescricao,
-    definirModoEscuro,
     definirTamanhoFonte,
     restaurarPadrao,
     recarregar,
   } = useAcessibilidade();
 
-  // Tema, fonte e áudio mudam e são gravados na hora, pelo hook.
+  // Fonte e áudio mudam e são gravados na hora, pelo hook.
   const [salvando, setSalvando] = useState(false);
+  const [guiaAtivo, setGuiaAtivo] = useState(false);
+  const [passoGuia, setPassoGuia] = useState(0);
+
+  const refFonte = useRef<View>(null);
+  const refAudio = useRef<View>(null);
+  const refSalvar = useRef<View>(null);
+  const refsGuia = useMemo(() => [refFonte, refAudio, refSalvar], []);
+  const { alvo: alvoGuia, remedir: remedirGuia } = useAlvoGuia(guiaAtivo, passoGuia, refsGuia);
 
   // Quem já tem preferências salvas vê as dela (confirmar ou trocar).
   useEffect(() => {
     void recarregar();
+    let ativo = true;
+    deveMostrarGuiaTela("preferencias").then((mostrar) => {
+      if (ativo && mostrar) setGuiaAtivo(true);
+    });
+    return () => {
+      ativo = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fundo = modoEscuro ? tema.fundo : "#E9B8FF";
-  const borda = modoEscuro ? tema.borda : "#DFC3F5";
+  const fundo = "#E9B8FF";
+  const borda = "#DFC3F5";
   const texto = tema.texto;
   const secundario = tema.textoSecundario;
 
@@ -64,80 +89,23 @@ export default function TelaPreferencias() {
     <SafeAreaView style={[styles.tela, { backgroundColor: fundo }]} edges={["top"]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.conteudo}
+        onScrollEndDrag={remedirGuia}
+        onMomentumScrollEnd={remedirGuia}
+        contentContainerStyle={[
+          styles.conteudo,
+          { paddingBottom: 24 + insets.bottom },
+        ]}
       >
         <Text style={[styles.tituloPrincipal, { color: "#303030", fontSize: fonte(32) }]}>
           Preferências
         </Text>
 
-        {/* Tema */}
-        <View style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}>
-          <View style={styles.linhaTituloSwitch}>
-            <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>
-              Tema Escuro
-            </Text>
-            <Switch
-              value={modoEscuro}
-              onValueChange={(valor) => void definirModoEscuro(valor)}
-              trackColor={{ false: "#D8D2DC", true: tema.roxoEscuro }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Ativar tema escuro"
-            />
-          </View>
-
-          <View style={styles.linhaPreviews}>
-            <Pressable
-              style={[
-                styles.preview,
-                {
-                  backgroundColor: "#FFFFFF",
-                  borderColor: !modoEscuro ? tema.roxoEscuro : "#E6E0E9",
-                  borderWidth: !modoEscuro ? 3 : 1,
-                },
-              ]}
-              onPress={() => void definirModoEscuro(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Usar tema claro"
-            >
-              <View style={styles.linhaPreviewTopo}>
-                <Sun size={18} color="#5A4B60" />
-                <Text style={[styles.nomePreview, { color: "#303030" }]}>Claro</Text>
-              </View>
-              <Text style={[styles.tituloPreview, { color: "#303030" }]}>Título</Text>
-              <Text style={styles.subtituloPreview}>Subtítulo</Text>
-              <View style={[styles.botaoPreview, { backgroundColor: tema.roxo }]}>
-                <Text style={styles.textoBotaoPreview}>Botões</Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.preview,
-                {
-                  backgroundColor: "#3A2A42",
-                  borderColor: modoEscuro ? tema.roxo : "#3A2A42",
-                  borderWidth: modoEscuro ? 3 : 1,
-                },
-              ]}
-              onPress={() => void definirModoEscuro(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Usar tema escuro"
-            >
-              <View style={styles.linhaPreviewTopo}>
-                <Moon size={18} color="#F2E8F7" />
-                <Text style={[styles.nomePreview, { color: "#F2E8F7" }]}>Escuro</Text>
-              </View>
-              <Text style={[styles.tituloPreview, { color: "#FFFFFF" }]}>Título</Text>
-              <Text style={[styles.subtituloPreview, { color: "#D9CBE0" }]}>Subtítulo</Text>
-              <View style={[styles.botaoPreview, { backgroundColor: tema.roxo }]}>
-                <Text style={styles.textoBotaoPreview}>Botões</Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-
         {/* Fonte */}
-        <View style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}>
+        <View
+          ref={refFonte}
+          collapsable={false}
+          style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}
+        >
           <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>Fonte</Text>
 
           <View style={styles.linhaTamanhos}>
@@ -149,7 +117,7 @@ export default function TelaPreferencias() {
                   style={[
                     styles.botaoTamanho,
                     {
-                      backgroundColor: ativo ? tema.roxo : modoEscuro ? "#3D2A46" : "#F3ECF8",
+                      backgroundColor: ativo ? tema.roxo : "#F3ECF8",
                       borderColor: ativo ? tema.roxoEscuro : "transparent",
                     },
                   ]}
@@ -192,7 +160,11 @@ export default function TelaPreferencias() {
         </View>
 
         {/* Áudio-descrição */}
-        <View style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}>
+        <View
+          ref={refAudio}
+          collapsable={false}
+          style={[styles.cartao, { backgroundColor: tema.cartao, borderColor: borda }]}
+        >
           <View style={styles.linhaTituloSwitch}>
             <View style={styles.textoAudio}>
               <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>
@@ -227,23 +199,47 @@ export default function TelaPreferencias() {
           </Text>
         </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.botaoSalvar,
-            { opacity: salvando ? 0.6 : pressed ? 0.85 : 1 },
-          ]}
-          onPress={salvarPreferencias}
-          disabled={salvando}
-          accessibilityRole="button"
-          accessibilityLabel="Salvar preferências"
-        >
-          <Text style={[styles.textoSalvar, { fontSize: fonte(26) }]}>
-            {salvando ? "Salvando..." : "Salvar"}
-          </Text>
-        </Pressable>
+        <View ref={refSalvar} collapsable={false}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.botaoSalvar,
+              { opacity: salvando ? 0.6 : pressed ? 0.85 : 1 },
+            ]}
+            onPress={salvarPreferencias}
+            disabled={salvando}
+            accessibilityRole="button"
+            accessibilityLabel="Salvar preferências"
+          >
+            <Text style={[styles.textoSalvar, { fontSize: fonte(26) }]}>
+              {salvando ? "Salvando..." : "Salvar"}
+            </Text>
+          </Pressable>
+        </View>
 
-        <PageFlow total={4} currentIndex={2} />
+        <PageFlow total={4} currentIndex={2} inline />
       </ScrollView>
+
+      <GuiaMimi
+        visivel={guiaAtivo}
+        alvo={alvoGuia}
+        texto={PASSOS_PREFERENCIAS[passoGuia]}
+        passoAtual={passoGuia + 1}
+        totalPassos={PASSOS_PREFERENCIAS.length}
+        textoBotaoPrincipal={
+          passoGuia === PASSOS_PREFERENCIAS.length - 1 ? "Entendi" : "Próximo"
+        }
+        aoPressionarPrincipal={() => {
+          if (passoGuia < PASSOS_PREFERENCIAS.length - 1) {
+            setPassoGuia((p) => p + 1);
+          } else {
+            setGuiaAtivo(false);
+          }
+        }}
+        aoPressionarSecundario={() => {
+          setGuiaAtivo(false);
+          void concluirFluxoEssencial();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -253,9 +249,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   conteudo: {
+    flexGrow: 1,
     paddingHorizontal: 18,
-    paddingTop: 40,
-    paddingBottom: 40,
+    paddingTop: 28,
   },
   tituloPrincipal: {
     fontFamily: "Poppins_800ExtraBold",
@@ -284,50 +280,6 @@ const styles = StyleSheet.create({
   ajudaAudio: {
     fontFamily: "Poppins_300Light",
     marginTop: 2,
-  },
-  linhaPreviews: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  preview: {
-    flex: 1,
-    minHeight: 150,
-    borderRadius: 18,
-    padding: 12,
-  },
-  linhaPreviewTopo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  nomePreview: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 13,
-  },
-  tituloPreview: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 17,
-    marginTop: 12,
-  },
-  subtituloPreview: {
-    fontFamily: "Poppins_300Light",
-    fontSize: 12,
-    color: "#7A6E80",
-    marginTop: 2,
-  },
-  botaoPreview: {
-    marginTop: 12,
-    borderRadius: 12,
-    minHeight: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  textoBotaoPreview: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 11,
-    color: "#303030",
   },
   linhaTamanhos: {
     flexDirection: "row",
@@ -404,7 +356,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
-    marginBottom: 20,
   },
   textoSalvar: {
     textAlign: "center",

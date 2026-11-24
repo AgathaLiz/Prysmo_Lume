@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ImageBackground,
   Image,
@@ -13,7 +13,25 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import { FundoAmarelo } from "@/components/FundoAmarelo";
+import { GuiaMimi, useAlvoGuia } from "@/components/GuiaMimi";
 import { carregarPainel, type DadosPainel } from "@/lib/painel";
+import {
+  concluirFluxoEssencial,
+  definirEstadoTourApp,
+  deveMostrarGuiaTela,
+  obterEstadoTourApp,
+} from "@/lib/primeiro-acesso";
+
+const PASSO_INICIAL_ESSENCIAL =
+  "Esta é a sua tela inicial! Para começar sua primeira aula, toque aqui em Próxima lição.";
+
+const PASSOS_TOUR_APP = [
+  "Aqui fica a sua luz! Ela mostra quantos dias seguidos você já praticou no Lume.",
+  "Estas estrelas mostram em quais dos últimos 5 dias você fez pelo menos uma lição.",
+  "Toque aqui em Próxima lição sempre que quiser continuar direto de onde parou.",
+  "Aqui em Trilhas você vê todo o seu caminho de aprendizado e pode rever lições já feitas.",
+  "Na barra aqui embaixo você navega por todo o aplicativo: Início, seu Desempenho e seu Perfil com configurações.",
+];
 
 const LUZ = require("../../assets/Lume/Outros elementos/Png/luz-acesa.png");
 const ESTRELA = require("../../assets/Lume/Outros elementos/Png/estrela-cinco-pontas.png");
@@ -44,6 +62,26 @@ export default function TelaInicial() {
   const insets = useSafeAreaInsets();
   const { tema, modoEscuro, fonte } = useAcessibilidade();
   const [dados, setDados] = useState<DadosPainel | null>(null);
+  const [modoGuia, setModoGuia] = useState<"nenhum" | "essencial" | "oferta" | "tour">("nenhum");
+  const [passoTour, setPassoTour] = useState(0);
+
+  const refLuz = useRef<View>(null);
+  const refDias = useRef<View>(null);
+  const refProximaLicao = useRef<View>(null);
+  const refTrilhas = useRef<View>(null);
+
+  const refsAtivos = useMemo(() => {
+    if (modoGuia === "essencial") return [refProximaLicao];
+    if (modoGuia === "tour") return [refLuz, refDias, refProximaLicao, refTrilhas, null];
+    return [];
+  }, [modoGuia]);
+
+  const indiceAlvo = modoGuia === "tour" ? passoTour : 0;
+  const { alvo: alvoGuia, remedir: remedirGuia } = useAlvoGuia(
+    modoGuia === "essencial" || modoGuia === "tour",
+    indiceAlvo,
+    refsAtivos
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -51,6 +89,20 @@ export default function TelaInicial() {
       carregarPainel().then((resultado) => {
         if (ativo) setDados(resultado);
       });
+
+      Promise.all([deveMostrarGuiaTela("inicio_essencial"), obterEstadoTourApp()]).then(
+        ([mostrarEssencial, estadoTour]) => {
+          if (!ativo) return;
+          if (mostrarEssencial) {
+            setModoGuia("essencial");
+          } else if (estadoTour === "oferecer") {
+            setModoGuia("oferta");
+          } else {
+            setModoGuia("nenhum");
+          }
+        }
+      );
+
       return () => {
         ativo = false;
       };
@@ -70,12 +122,16 @@ export default function TelaInicial() {
       <FundoAmarelo />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        onScrollEndDrag={remedirGuia}
+        onMomentumScrollEnd={remedirGuia}
         contentContainerStyle={[
           styles.conteudo,
           { paddingBottom: 124 + insets.bottom },
         ]}
       >
         <View
+          ref={refLuz}
+          collapsable={false}
           style={[
             styles.cartaoSequencia,
             { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#7A4A00" },
@@ -116,6 +172,8 @@ export default function TelaInicial() {
         </View>
 
         <View
+          ref={refDias}
+          collapsable={false}
           style={[
             styles.cartaoDias,
             { backgroundColor: cartao, shadowColor: modoEscuro ? "#000" : "#7A4A00" },
@@ -159,30 +217,87 @@ export default function TelaInicial() {
           </View>
         </View>
 
-        <CartaoGrande
-          fundo={FUNDO_PROXIMA_LICAO}
-          sombra={modoEscuro ? "#000" : "#8C3DB8"}
-          corTitulo="#2C1038"
-          corSubtitulo="#3A1748"
-          titulo="Próxima lição"
-          subtitulo="Pronto(a) pra brilhar?"
-          rotuloAcessibilidade="Próxima lição. Pronto para brilhar?"
-          aoPressionar={() => router.push("/trilha" as never)}
-          fonte={fonte}
-        />
+        <View ref={refProximaLicao} collapsable={false}>
+          <CartaoGrande
+            fundo={FUNDO_PROXIMA_LICAO}
+            sombra={modoEscuro ? "#000" : "#8C3DB8"}
+            corTitulo="#2C1038"
+            corSubtitulo="#3A1748"
+            titulo="Próxima lição"
+            subtitulo="Pronto(a) pra brilhar?"
+            rotuloAcessibilidade="Próxima lição. Pronto para brilhar?"
+            aoPressionar={() => {
+              if (modoGuia === "essencial") setModoGuia("nenhum");
+              router.push("/trilha" as never);
+            }}
+            fonte={fonte}
+          />
+        </View>
 
-        <CartaoGrande
-          fundo={FUNDO_TRILHA}
-          sombra={modoEscuro ? "#000" : "#A07B12"}
-          corTitulo={texto}
-          corSubtitulo={texto}
-          titulo="Trilhas"
-          subtitulo="Ilumine seu próprio caminho"
-          rotuloAcessibilidade="Trilhas. Escolha uma trilha para começar"
-          aoPressionar={() => router.push("/trilha" as never)}
-          fonte={fonte}
-        />
+        <View ref={refTrilhas} collapsable={false}>
+          <CartaoGrande
+            fundo={FUNDO_TRILHA}
+            sombra={modoEscuro ? "#000" : "#A07B12"}
+            corTitulo={texto}
+            corSubtitulo={texto}
+            titulo="Trilhas"
+            subtitulo="Ilumine seu próprio caminho"
+            rotuloAcessibilidade="Trilhas. Escolha uma trilha para começar"
+            aoPressionar={() => router.push("/trilha" as never)}
+            fonte={fonte}
+          />
+        </View>
       </ScrollView>
+
+      <GuiaMimi
+        visivel={modoGuia !== "nenhum"}
+        comBarraInferior
+        alvo={modoGuia === "oferta" ? null : alvoGuia}
+        texto={
+          modoGuia === "essencial"
+            ? PASSO_INICIAL_ESSENCIAL
+            : modoGuia === "oferta"
+              ? "Que bom te ver por aqui! Quer que eu te mostre rapidinho para que serve cada função do aplicativo?"
+              : PASSOS_TOUR_APP[passoTour]
+        }
+        passoAtual={modoGuia === "tour" ? passoTour + 1 : undefined}
+        totalPassos={modoGuia === "tour" ? PASSOS_TOUR_APP.length : undefined}
+        textoBotaoPrincipal={
+          modoGuia === "oferta"
+            ? "Sim, quero ver"
+            : modoGuia === "tour"
+              ? passoTour === PASSOS_TOUR_APP.length - 1
+                ? "Entendi"
+                : "Próximo"
+              : "Entendi"
+        }
+        textoBotaoSecundario={
+          modoGuia === "oferta" ? "Agora não" : "Pular tutorial"
+        }
+        aoPressionarPrincipal={() => {
+          if (modoGuia === "essencial") {
+            setModoGuia("nenhum");
+          } else if (modoGuia === "oferta") {
+            setPassoTour(0);
+            setModoGuia("tour");
+          } else if (modoGuia === "tour") {
+            if (passoTour < PASSOS_TOUR_APP.length - 1) {
+              setPassoTour((p) => p + 1);
+            } else {
+              setModoGuia("nenhum");
+              void definirEstadoTourApp("concluido");
+            }
+          }
+        }}
+        aoPressionarSecundario={() => {
+          if (modoGuia === "essencial") {
+            void concluirFluxoEssencial();
+          } else {
+            void definirEstadoTourApp("concluido");
+          }
+          setModoGuia("nenhum");
+        }}
+      />
     </SafeAreaView>
   );
 }

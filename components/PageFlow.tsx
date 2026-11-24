@@ -5,6 +5,8 @@ type Props = {
   currentIndex: number;
   showBack?: boolean;
   onBack?: () => void;
+  /** Quando true, entra no fluxo normal da tela em vez de ficar absoluto no rodapé. */
+  inline?: boolean;
 };
 
 // Função para fazer a barrinha de progresso
@@ -13,9 +15,10 @@ export function PageFlow({
   currentIndex,
   showBack = false,
   onBack,
+  inline = false,
 }: Props) {
   return (
-    <View style={styles.container}>
+    <View style={inline ? styles.containerInline : styles.container}>
       {showBack && (
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backText}>‹</Text>
@@ -46,6 +49,12 @@ const styles = StyleSheet.create({
     height: 35,
     alignItems: "center",
     justifyContent: "center",
+  },
+  containerInline: {
+    height: 35,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 28,
   },
 
   backButton: {

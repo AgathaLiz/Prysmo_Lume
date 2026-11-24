@@ -12,6 +12,7 @@
  * (1x, modo do sistema, áudio desligado) e o app continua funcionando.
  */
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
   useCallback,
@@ -25,9 +26,36 @@ import {
 import { AccessibilityInfo } from "react-native";
 import * as Speech from "expo-speech";
 
-import { TemaClaro, TemaEscuro, type Tema } from "@/constants/cores";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { TemaClaro, type Tema } from "@/constants/cores";
 import { supabase } from "@/lib/supabase";
+
+const CHAVE_EXTRAS = "lume_acessibilidade_extras_v1";
+
+export type ModoDaltonismo =
+  | "nenhum"
+  | "alto_contraste"
+  | "deuteranopia"
+  | "tritanopia";
+
+export type VelocidadeAudio = 0.75 | 0.9 | 1.15;
+
+type ExtrasLocais = {
+  pararAnimacoes: boolean;
+  daltonismo: ModoDaltonismo;
+  velocidadeAudio: VelocidadeAudio;
+  legendas: boolean;
+  libras: boolean;
+  negrito: boolean;
+};
+
+const EXTRAS_PADRAO: ExtrasLocais = {
+  pararAnimacoes: false,
+  daltonismo: "nenhum",
+  velocidadeAudio: 0.9,
+  legendas: false,
+  libras: false,
+  negrito: false,
+};
 
 // O banco guarda px (24 / 30 / 40). Convertemos para escala,
 // sem nunca diminuir o texto base (importante para baixa visão):
@@ -50,6 +78,12 @@ type Contexto = {
   modoEscuro: boolean;
   audioDescricao: boolean;
   reduzirMovimento: boolean;
+  pararAnimacoes: boolean;
+  daltonismo: ModoDaltonismo;
+  velocidadeAudio: VelocidadeAudio;
+  legendas: boolean;
+  libras: boolean;
+  negrito: boolean;
   tema: Tema;
   /** Multiplica o tamanho de fonte base, arredondando. */
   fonte: (tamanhoBase: number) => number;
@@ -59,10 +93,47 @@ type Contexto = {
   definirModoEscuro: (valor: boolean) => Promise<void>;
   definirTamanhoFonte: (pixels: number) => Promise<void>;
   definirAudioDescricao: (valor: boolean) => Promise<void>;
+  definirPararAnimacoes: (valor: boolean) => Promise<void>;
+  definirDaltonismo: (modo: ModoDaltonismo) => Promise<void>;
+  definirVelocidadeAudio: (velocidade: VelocidadeAudio) => Promise<void>;
+  definirLegendas: (valor: boolean) => Promise<void>;
+  definirLibras: (valor: boolean) => Promise<void>;
+  definirNegrito: (valor: boolean) => Promise<void>;
   restaurarPadrao: () => Promise<void>;
 };
 
 const ContextoAcessibilidade = createContext<Contexto | null>(null);
+
+function temaAdaptado(daltonismo: ModoDaltonismo): Tema {
+  if (daltonismo === "alto_contraste") {
+    return {
+      ...TemaClaro,
+      texto: "#12081C",
+      textoSecundario: "#2E2236",
+      borda: "#303030",
+      roxoEscuro: "#4A0A70",
+      sucesso: "#1B5E20",
+      erro: "#B71C1C",
+    };
+  }
+  if (daltonismo === "deuteranopia") {
+    return {
+      ...TemaClaro,
+      sucesso: "#1D6FD8",
+      erro: "#D97706",
+      destaque: "#0284C7",
+    };
+  }
+  if (daltonismo === "tritanopia") {
+    return {
+      ...TemaClaro,
+      sucesso: "#0F766E",
+      erro: "#BE123C",
+      roxoEscuro: "#7E22CE",
+    };
+  }
+  return TemaClaro;
+}
 
 function escalaDe(pixels: number | null): number {
   if (!pixels || pixels <= 0) return ESCALA_PEQUENA;
@@ -72,24 +143,34 @@ function escalaDe(pixels: number | null): number {
 }
 
 export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
-  const esquemaDoSistema = useColorScheme();
-
-  // null = sem preferência salva -> segue o sistema.
-  const [modoEscuroSalvo, setModoEscuroSalvo] = useState<boolean | null>(null);
   const [escalaFonte, setEscalaFonte] = useState(ESCALA_PEQUENA);
   const [tamanhoFontePx, setTamanhoFontePx] = useState(24);
   const [audioDescricao, setAudioDescricao] = useState(false);
-  const [reduzirMovimento, setReduzirMovimento] = useState(false);
+  const [reduzirMovimentoSistema, setReduzirMovimentoSistema] = useState(false);
+  const [extras, setExtras] = useState<ExtrasLocais>(EXTRAS_PADRAO);
   const [carregando, setCarregando] = useState(true);
   const primeiraCarga = useRef(true);
 
+  const salvarExtras = useCallback(async (parcial: Partial<ExtrasLocais>) => {
+    setExtras((atual) => {
+      const proximo = { ...atual, ...parcial };
+      AsyncStorage.setItem(CHAVE_EXTRAS, JSON.stringify(proximo)).catch(() => {});
+      return proximo;
+    });
+  }, []);
+
   const recarregar = useCallback(async () => {
     try {
+      const salvoLocal = await AsyncStorage.getItem(CHAVE_EXTRAS);
+      if (salvoLocal) {
+        const parsed = JSON.parse(salvoLocal) as Partial<ExtrasLocais>;
+        setExtras({ ...EXTRAS_PADRAO, ...parsed });
+      }
+
       const { data: sessao } = await supabase.auth.getSession();
       const idAuth = sessao.session?.user.id;
 
       if (!idAuth) {
-        setModoEscuroSalvo(null);
         setEscalaFonte(ESCALA_PEQUENA);
         setTamanhoFontePx(24);
         setAudioDescricao(false);
@@ -103,7 +184,6 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
         .maybeSingle<{ usuario_id: number }>();
 
       if (!usuario) {
-        setModoEscuroSalvo(null);
         setEscalaFonte(ESCALA_PEQUENA);
         setTamanhoFontePx(24);
         setAudioDescricao(false);
@@ -120,7 +200,6 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
 
       setEscalaFonte(escalaDe(data.tamanho_fonte));
       setTamanhoFontePx(data.tamanho_fonte ?? 24);
-      setModoEscuroSalvo(data.modo_escuro ?? null);
       setAudioDescricao(data.audio_descricao ?? false);
     } catch (erro) {
       // Sem internet? Fica no padrão e o app segue.
@@ -149,20 +228,25 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
 
   // Respeita "reduzir movimento" do sistema.
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduzirMovimento);
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduzirMovimentoSistema);
     const inscricao = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
-      setReduzirMovimento
+      setReduzirMovimentoSistema
     );
     return () => inscricao.remove();
   }, []);
 
-  const falar = useCallback((texto?: string | null) => {
-    if (!texto) return;
-    Speech.stop();
-    // Um pouco mais devagar, pensando em quem tem dificuldade de acompanhar.
-    Speech.speak(texto, { language: "pt-BR", rate: 0.9 });
-  }, []);
+  const falar = useCallback(
+    (texto?: string | null, velocidadeOverride?: VelocidadeAudio) => {
+      if (!texto) return;
+      Speech.stop();
+      Speech.speak(texto, {
+        language: "pt-BR",
+        rate: velocidadeOverride ?? extras.velocidadeAudio,
+      });
+    },
+    [extras.velocidadeAudio]
+  );
 
   const pararFala = useCallback(() => {
     Speech.stop();
@@ -196,10 +280,7 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
             {
               usuario_id: usuario.usuario_id,
               tamanho_fonte: parcial.tamanho_fonte ?? tamanhoFontePx,
-              modo_escuro:
-                parcial.modo_escuro ??
-                modoEscuroSalvo ??
-                (esquemaDoSistema === "dark"),
+              modo_escuro: false,
               audio_descricao: parcial.audio_descricao ?? audioDescricao,
             },
             { onConflict: "usuario_id" }
@@ -212,21 +293,10 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
         console.log("Erro ao salvar acessibilidade:", erro);
       }
     },
-    [
-      audioDescricao,
-      esquemaDoSistema,
-      modoEscuroSalvo,
-      tamanhoFontePx,
-    ]
+    [audioDescricao, tamanhoFontePx]
   );
 
-  const definirModoEscuro = useCallback(
-    async (valor: boolean) => {
-      setModoEscuroSalvo(valor);
-      await salvarConfiguracoes({ modo_escuro: valor });
-    },
-    [salvarConfiguracoes]
-  );
+  const definirModoEscuro = useCallback(async () => {}, []);
 
   const definirTamanhoFonte = useCallback(
     async (pixels: number) => {
@@ -245,11 +315,56 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
     [salvarConfiguracoes]
   );
 
+  const definirPararAnimacoes = useCallback(
+    async (valor: boolean) => {
+      await salvarExtras({ pararAnimacoes: valor });
+    },
+    [salvarExtras]
+  );
+
+  const definirDaltonismo = useCallback(
+    async (daltonismo: ModoDaltonismo) => {
+      await salvarExtras({ daltonismo });
+    },
+    [salvarExtras]
+  );
+
+  const definirVelocidadeAudio = useCallback(
+    async (velocidadeAudio: VelocidadeAudio) => {
+      await salvarExtras({ velocidadeAudio });
+    },
+    [salvarExtras]
+  );
+
+  const definirLegendas = useCallback(
+    async (legendas: boolean) => {
+      await salvarExtras({ legendas });
+    },
+    [salvarExtras]
+  );
+
+  const definirLibras = useCallback(
+    async (libras: boolean) => {
+      await salvarExtras({ libras });
+    },
+    [salvarExtras]
+  );
+
+  const definirNegrito = useCallback(
+    async (negrito: boolean) => {
+      await salvarExtras({ negrito });
+    },
+    [salvarExtras]
+  );
+
   const restaurarPadrao = useCallback(async () => {
-    setModoEscuroSalvo(false);
     setTamanhoFontePx(24);
     setEscalaFonte(ESCALA_PEQUENA);
     setAudioDescricao(false);
+    setExtras(EXTRAS_PADRAO);
+    AsyncStorage.setItem(CHAVE_EXTRAS, JSON.stringify(EXTRAS_PADRAO)).catch(
+      () => {}
+    );
     await salvarConfiguracoes({
       modo_escuro: false,
       tamanho_fonte: 24,
@@ -258,6 +373,8 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
   }, [salvarConfiguracoes]);
 
   const modoEscuro = false;
+  const reduzirMovimento = reduzirMovimentoSistema || extras.pararAnimacoes;
+  const tema = useMemo(() => temaAdaptado(extras.daltonismo), [extras.daltonismo]);
 
   const valor = useMemo<Contexto>(
     () => ({
@@ -267,7 +384,13 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       modoEscuro,
       audioDescricao,
       reduzirMovimento,
-      tema: modoEscuro ? TemaEscuro : TemaClaro,
+      pararAnimacoes: extras.pararAnimacoes,
+      daltonismo: extras.daltonismo,
+      velocidadeAudio: extras.velocidadeAudio,
+      legendas: extras.legendas,
+      libras: extras.libras,
+      negrito: extras.negrito,
+      tema,
       fonte: (tamanhoBase: number) => Math.round(tamanhoBase * escalaFonte),
       falar,
       pararFala,
@@ -275,6 +398,12 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       definirModoEscuro,
       definirTamanhoFonte,
       definirAudioDescricao,
+      definirPararAnimacoes,
+      definirDaltonismo,
+      definirVelocidadeAudio,
+      definirLegendas,
+      definirLibras,
+      definirNegrito,
       restaurarPadrao,
     }),
     [
@@ -284,12 +413,20 @@ export function AcessibilidadeProvider({ children }: { children: ReactNode }) {
       modoEscuro,
       audioDescricao,
       reduzirMovimento,
+      extras,
+      tema,
       falar,
       pararFala,
       recarregar,
       definirModoEscuro,
       definirTamanhoFonte,
       definirAudioDescricao,
+      definirPararAnimacoes,
+      definirDaltonismo,
+      definirVelocidadeAudio,
+      definirLegendas,
+      definirLibras,
+      definirNegrito,
       restaurarPadrao,
     ]
   );
@@ -316,6 +453,12 @@ export function useAcessibilidade(): Contexto {
     modoEscuro: false,
     audioDescricao: false,
     reduzirMovimento: false,
+    pararAnimacoes: false,
+    daltonismo: "nenhum",
+    velocidadeAudio: 0.9,
+    legendas: false,
+    libras: false,
+    negrito: false,
     tema: TemaClaro,
     fonte: (tamanhoBase: number) => tamanhoBase,
     falar: () => {},
@@ -324,6 +467,12 @@ export function useAcessibilidade(): Contexto {
     definirModoEscuro: async () => {},
     definirTamanhoFonte: async () => {},
     definirAudioDescricao: async () => {},
+    definirPararAnimacoes: async () => {},
+    definirDaltonismo: async () => {},
+    definirVelocidadeAudio: async () => {},
+    definirLegendas: async () => {},
+    definirLibras: async () => {},
+    definirNegrito: async () => {},
     restaurarPadrao: async () => {},
   };
 }

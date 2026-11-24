@@ -1,5 +1,6 @@
 import {
   Captions,
+  Check,
   Gauge,
   Hand,
   Palette,
@@ -7,9 +8,9 @@ import {
   RotateCcw,
   Volume2,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
-  Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,7 +20,26 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BotaoVoltar } from "@/components/BotaoVoltar";
-import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import {
+  useAcessibilidade,
+  type ModoDaltonismo,
+  type VelocidadeAudio,
+} from "@/hooks/use-acessibilidade";
+
+const ROTULOS_DALTONISMO: Record<ModoDaltonismo, string> = {
+  nenhum: "Desativado",
+  alto_contraste: "Alto contraste",
+  deuteranopia: "Verde / Vermelho",
+  tritanopia: "Azul / Amarelo",
+};
+
+const VELOCIDADES: VelocidadeAudio[] = [0.75, 0.9, 1.15];
+
+const ROTULOS_VELOCIDADE: Record<VelocidadeAudio, string> = {
+  0.75: "0,75x (Lento)",
+  0.9: "0,9x (Normal)",
+  1.15: "1,15x (Rápido)",
+};
 
 type Opcao = {
   chave: string;
@@ -34,24 +54,32 @@ export default function TelaAcessibilidade() {
   const insets = useSafeAreaInsets();
   const {
     tema,
-    modoEscuro,
     fonte,
     audioDescricao,
     reduzirMovimento,
+    pararAnimacoes,
+    daltonismo,
+    velocidadeAudio,
+    legendas,
+    libras,
     definirAudioDescricao,
+    definirPararAnimacoes,
+    definirDaltonismo,
+    definirVelocidadeAudio,
+    definirLegendas,
+    definirLibras,
+    restaurarPadrao,
     falar,
     pararFala,
   } = useAcessibilidade();
 
-  const fundo = modoEscuro ? tema.fundo : "#F8F4FC";
+  const [modalDaltonismo, setModalDaltonismo] = useState(false);
+
+  const fundo = "#F8F4FC";
   const cartao = tema.cartao;
   const texto = tema.texto;
   const secundario = tema.textoSecundario;
-  const borda = modoEscuro ? tema.borda : "#DFC3F5";
-
-  const avisar = (titulo: string, mensagem: string) => {
-    Alert.alert(titulo, mensagem);
-  };
+  const borda = daltonismo === "alto_contraste" ? tema.borda : "#DFC3F5";
 
   const alternarAudio = async () => {
     const novo = !audioDescricao;
@@ -62,6 +90,37 @@ export default function TelaAcessibilidade() {
     } else {
       pararFala();
     }
+  };
+
+  const alternarAnimacoes = async () => {
+    const novo = !pararAnimacoes;
+    await definirPararAnimacoes(novo);
+    if (audioDescricao) {
+      falar(novo ? "Animações reduzidas ativadas." : "Animações normais ativadas.");
+    }
+  };
+
+  const alternarLibras = async () => {
+    const novo = !libras;
+    await definirLibras(novo);
+    if (audioDescricao) {
+      falar(novo ? "Apoio em Libras ativado." : "Apoio em Libras desativado.");
+    }
+  };
+
+  const alternarLegendas = async () => {
+    const novo = !legendas;
+    await definirLegendas(novo);
+    if (audioDescricao) {
+      falar(novo ? "Legendas nos vídeos ativadas." : "Legendas nos vídeos desativadas.");
+    }
+  };
+
+  const alternarVelocidade = async () => {
+    const idx = VELOCIDADES.indexOf(velocidadeAudio);
+    const proxima = VELOCIDADES[(idx + 1) % VELOCIDADES.length];
+    await definirVelocidadeAudio(proxima);
+    falar(`Velocidade do áudio ajustada para ${ROTULOS_VELOCIDADE[proxima]}.`);
   };
 
   const opcoes: Opcao[] = [
@@ -76,52 +135,42 @@ export default function TelaAcessibilidade() {
     {
       chave: "animacoes",
       titulo: "Parar Animações",
-      descricao: reduzirMovimento ? "Ativado pelo sistema" : "Desativado",
+      descricao: reduzirMovimento ? "Ativado" : "Desativado",
       icone: <PauseCircle size={30} color={texto} />,
       ativo: reduzirMovimento,
-      aoTocar: () =>
-        avisar(
-          "Parar animações",
-          "O Lume respeita a opção de reduzir movimento do seu celular. Ative essa opção nas configurações do aparelho."
-        ),
+      aoTocar: () => void alternarAnimacoes(),
     },
     {
       chave: "daltonismo",
       titulo: "Daltonismo",
-      descricao: "Cores com contraste",
+      descricao: ROTULOS_DALTONISMO[daltonismo],
       icone: <Palette size={30} color={texto} />,
-      aoTocar: () =>
-        avisar(
-          "Daltonismo",
-          "As cores do Lume já foram escolhidas pensando em contraste. Em breve teremos filtros extras."
-        ),
+      ativo: daltonismo !== "nenhum",
+      aoTocar: () => setModalDaltonismo(true),
     },
     {
       chave: "libras",
       titulo: "Libras",
-      descricao: "Em breve",
+      descricao: libras ? "Ativado" : "Desativado",
       icone: <Hand size={30} color={texto} />,
-      aoTocar: () =>
-        avisar("Libras", "Estamos preparando vídeos com tradução em Libras."),
+      ativo: libras,
+      aoTocar: () => void alternarLibras(),
     },
     {
       chave: "legendas",
       titulo: "Legendas",
-      descricao: "Em breve",
+      descricao: legendas ? "Ativado" : "Desativado",
       icone: <Captions size={30} color={texto} />,
-      aoTocar: () =>
-        avisar("Legendas", "Em breve os vídeos terão legendas opcionais."),
+      ativo: legendas,
+      aoTocar: () => void alternarLegendas(),
     },
     {
       chave: "velocidade",
       titulo: "Velocidade do Áudio",
-      descricao: "0,9x",
+      descricao: ROTULOS_VELOCIDADE[velocidadeAudio],
       icone: <Gauge size={30} color={texto} />,
-      aoTocar: () =>
-        avisar(
-          "Velocidade do áudio",
-          "A voz do Lume já fala um pouco mais devagar para facilitar o acompanhamento."
-        ),
+      ativo: velocidadeAudio !== 0.9,
+      aoTocar: () => void alternarVelocidade(),
     },
   ];
 
@@ -154,11 +203,7 @@ export default function TelaAcessibilidade() {
                     borderRightWidth: colunaEsquerda ? 1 : 0,
                     borderBottomWidth: ultimaLinha ? 0 : 1,
                     borderColor: borda,
-                    backgroundColor: pressed
-                      ? modoEscuro
-                        ? "#3D2A46"
-                        : "#F8EEFF"
-                      : "transparent",
+                    backgroundColor: pressed ? "#F8EEFF" : "transparent",
                   },
                 ]}
                 onPress={opcao.aoTocar}
@@ -170,11 +215,7 @@ export default function TelaAcessibilidade() {
                     styles.circuloIcone,
                     {
                       backgroundColor:
-                        opcao.ativo === true
-                          ? tema.roxo
-                          : modoEscuro
-                          ? "#4A3A52"
-                          : "#F3ECF8",
+                        opcao.ativo === true ? tema.roxo : "#F3ECF8",
                     },
                   ]}
                 >
@@ -210,7 +251,7 @@ export default function TelaAcessibilidade() {
             { backgroundColor: tema.roxo, opacity: pressed ? 0.82 : 1 },
           ]}
           onPress={() => {
-            void definirAudioDescricao(false);
+            void restaurarPadrao();
             pararFala();
           }}
           accessibilityRole="button"
@@ -223,9 +264,66 @@ export default function TelaAcessibilidade() {
         </Pressable>
 
         <Text style={[styles.rodape, { color: secundario, fontSize: fonte(12) }]}>
-          Toque em uma opção para ativar ou saber mais.
+          Toque em uma opção para ativar ou ajustar.
         </Text>
       </ScrollView>
+
+      <Modal
+        visible={modalDaltonismo}
+        transparent
+        animationType={reduzirMovimento ? "none" : "fade"}
+        onRequestClose={() => setModalDaltonismo(false)}
+      >
+        <View style={styles.fundoModal}>
+          <View style={[styles.caixaModal, { backgroundColor: cartao }]}>
+            <Text style={[styles.tituloModal, { color: texto, fontSize: fonte(20) }]}>
+              Modo para Daltonismo
+            </Text>
+
+            {(Object.keys(ROTULOS_DALTONISMO) as ModoDaltonismo[]).map((modo) => {
+              const marcado = daltonismo === modo;
+              return (
+                <Pressable
+                  key={modo}
+                  style={[
+                    styles.opcaoModal,
+                    {
+                      borderColor: marcado ? tema.roxoEscuro : borda,
+                      backgroundColor: marcado ? "#F3E5FC" : "transparent",
+                    },
+                  ]}
+                  onPress={() => {
+                    void definirDaltonismo(modo);
+                    setModalDaltonismo(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: marcado }}
+                >
+                  <Text
+                    style={[
+                      styles.textoOpcaoModal,
+                      { color: texto, fontSize: fonte(16) },
+                    ]}
+                  >
+                    {ROTULOS_DALTONISMO[modo]}
+                  </Text>
+                  {marcado ? <Check size={20} color={tema.roxoEscuro} /> : null}
+                </Pressable>
+              );
+            })}
+
+            <Pressable
+              style={[styles.fecharModal, { borderColor: borda }]}
+              onPress={() => setModalDaltonismo(false)}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.textoFecharModal, { color: texto, fontSize: fonte(16) }]}>
+                Fechar
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -295,5 +393,44 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_300Light",
     textAlign: "center",
     marginTop: 12,
+  },
+  fundoModal: {
+    flex: 1,
+    backgroundColor: "rgba(26, 5, 36, 0.45)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  caixaModal: {
+    borderRadius: 24,
+    padding: 20,
+    gap: 10,
+  },
+  tituloModal: {
+    fontFamily: "Poppins_900Black",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  opcaoModal: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+  },
+  textoOpcaoModal: {
+    fontFamily: "Poppins_600SemiBold",
+  },
+  fecharModal: {
+    marginTop: 6,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textoFecharModal: {
+    fontFamily: "Poppins_800ExtraBold",
   },
 });

@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -21,7 +21,22 @@ import {
   ScrollView,
 } from "react-native";
 
+import { GuiaMimi, useAlvoGuia } from "../../components/GuiaMimi";
+import {
+  concluirFluxoEssencial,
+  deveMostrarGuiaTela,
+} from "../../lib/primeiro-acesso";
 import { PageFlow } from "../../components/PageFlow";
+
+const PASSOS_CADASTRO = [
+  "Toque aqui e digite o seu nome completo.",
+  "Agora toque aqui e coloque a sua data de nascimento.",
+  "Digite aqui o número do seu celular com DDD.",
+  "Agora toque aqui e digite o seu e-mail.",
+  "Crie uma senha com pelo menos 6 letras ou números.",
+  "Digite a mesma senha mais uma vez para confirmar.",
+  "Tudo preenchido! Agora toque aqui em Cadastrar para continuar.",
+];
 
 //import do subase
 import { supabase } from "../../lib/supabase";
@@ -46,6 +61,31 @@ export default function CadastroScreen() {
   senha: "",
   confirmarSenha: "",
 });
+  const [guiaAtivo, setGuiaAtivo] = useState(false);
+  const [passoGuia, setPassoGuia] = useState(0);
+
+  const refNome = useRef<View>(null);
+  const refNascimento = useRef<View>(null);
+  const refTelefone = useRef<View>(null);
+  const refEmail = useRef<View>(null);
+  const refSenha = useRef<View>(null);
+  const refConfirmar = useRef<View>(null);
+  const refBotao = useRef<View>(null);
+  const refsGuia = useMemo(
+    () => [refNome, refNascimento, refTelefone, refEmail, refSenha, refConfirmar, refBotao],
+    []
+  );
+  const { alvo: alvoGuia, remedir: remedirGuia } = useAlvoGuia(guiaAtivo, passoGuia, refsGuia);
+
+  useEffect(() => {
+    let ativo = true;
+    deveMostrarGuiaTela("cadastro").then((mostrar) => {
+      if (ativo && mostrar) setGuiaAtivo(true);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
 // Mascáras = (12) 3456 - 78901
   function mascaraData(valor: string) {
@@ -132,7 +172,13 @@ router.replace({
 }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      onScrollEndDrag={remedirGuia}
+      onMomentumScrollEnd={remedirGuia}
+    >
       
       {/* Botão para levar a página de login */}
        <TouchableOpacity
@@ -160,7 +206,7 @@ router.replace({
 
 {/* Campos para preencher do formulário */}
       <View style={styles.row}>
-      <View style={[styles.inputWrapper, styles.halfInput]}>
+      <View ref={refNome} collapsable={false} style={[styles.inputWrapper, styles.halfInput]}>
     <User size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Nome"
@@ -172,7 +218,7 @@ router.replace({
     {erros.nome ? <Text style={styles.errorText}>{erros.nome}</Text> : null} {/* O if verificou que o campo não foi preenchido essa mensagem de erro aparece */}
   </View>
 
-  <View style={[styles.inputWrapper, styles.halfInput]}>
+  <View ref={refNascimento} collapsable={false} style={[styles.inputWrapper, styles.halfInput]}>
     <Calendar size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Nascimento"
@@ -189,7 +235,7 @@ router.replace({
   </View>
 </View>
 
-<View style={styles.inputWrapper}>
+<View ref={refTelefone} collapsable={false} style={styles.inputWrapper}>
   <Phone size={20} color="#303030" style={styles.icon} />
   <TextInput
     placeholder="Telefone"
@@ -205,7 +251,7 @@ router.replace({
   ) : null}
 </View>
 
-<View style={styles.inputWrapper}>
+<View ref={refEmail} collapsable={false} style={styles.inputWrapper}>
   <Mail size={20} color="#303030" style={styles.icon} />
   <TextInput
     placeholder="E-mail"
@@ -219,7 +265,7 @@ router.replace({
   {erros.email ? <Text style={styles.errorText}>{erros.email}</Text> : null}
 </View>
 
-  <View style={styles.inputWrapper}>
+  <View ref={refSenha} collapsable={false} style={styles.inputWrapper}>
     <Lock size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Criar senha"
@@ -245,7 +291,7 @@ router.replace({
     {erros.senha ? <Text style={styles.errorText}>{erros.senha}</Text> : null}
   </View>
 
-  <View style={styles.inputWrapper}>
+  <View ref={refConfirmar} collapsable={false} style={styles.inputWrapper}>
     <Lock size={20} color="#303030" style={styles.icon} />
     <TextInput
       placeholder="Repetir senha"
@@ -279,16 +325,39 @@ router.replace({
   {erroGeral ? <Text style={styles.errorText}>{erroGeral}</Text> : null}
 
   {/* Botão que conclui o cadastro */}
-  <TouchableOpacity
-    style={[styles.button, carregando && { opacity: 0.6 }]}
-    onPress={cadastrarUsuario}
-    disabled={carregando}
-  >
-    <Text style={styles.buttonText}>{carregando ? "Criando..." : "Cadastrar"}</Text>
-  </TouchableOpacity>
+  <View ref={refBotao} collapsable={false}>
+    <TouchableOpacity
+      style={[styles.button, carregando && { opacity: 0.6 }]}
+      onPress={cadastrarUsuario}
+      disabled={carregando}
+    >
+      <Text style={styles.buttonText}>{carregando ? "Criando..." : "Cadastrar"}</Text>
+    </TouchableOpacity>
+  </View>
       
         <PageFlow total={4} currentIndex={1} />
     </ScrollView>
+
+    <GuiaMimi
+      visivel={guiaAtivo}
+      alvo={alvoGuia}
+      texto={PASSOS_CADASTRO[passoGuia]}
+      passoAtual={passoGuia + 1}
+      totalPassos={PASSOS_CADASTRO.length}
+      textoBotaoPrincipal={passoGuia === PASSOS_CADASTRO.length - 1 ? "Entendi" : "Próximo"}
+      aoPressionarPrincipal={() => {
+        if (passoGuia < PASSOS_CADASTRO.length - 1) {
+          setPassoGuia((p) => p + 1);
+        } else {
+          setGuiaAtivo(false);
+        }
+      }}
+      aoPressionarSecundario={() => {
+        setGuiaAtivo(false);
+        void concluirFluxoEssencial();
+      }}
+    />
+    </View>
   );
 }
 

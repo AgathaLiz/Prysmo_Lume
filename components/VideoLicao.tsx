@@ -38,7 +38,7 @@ type Props = {
  * mostra os controles e a barra de progresso do mockup.
  */
 export function VideoLicao({ titulo, url, onFechar, onContinuar }: Props) {
-  const { tema, fonte, falar } = useAcessibilidade();
+  const { tema, fonte, falar, legendas, libras } = useAcessibilidade();
   const { width: larguraTela } = useWindowDimensions();
   const [erro, setErro] = useState(false);
 
@@ -170,6 +170,26 @@ export function VideoLicao({ titulo, url, onFechar, onContinuar }: Props) {
             <X size={Math.round(ladoX * 0.55)} color="#FFFFFF" strokeWidth={3} />
           </TouchableOpacity>
         </View>
+
+        {legendas || libras ? (
+          <View
+            style={[
+              styles.faixaAcessibilidade,
+              { backgroundColor: tema.cartao, borderColor: tema.borda },
+            ]}
+          >
+            {libras ? (
+              <Text style={[styles.seloLibras, { color: tema.roxoEscuro, fontSize: fonte(13) }]}>
+                Libras ativo: acompanhe as instruções visuais destacadas.
+              </Text>
+            ) : null}
+            {legendas ? (
+              <Text style={[styles.textoLegenda, { color: tema.texto, fontSize: fonte(15) }]}>
+                [Legenda] {titulo} — observe cada toque mostrado na tela antes de praticar.
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={[styles.rodape, { gap: espacoBotoes }]}>
           <TouchableOpacity
@@ -321,5 +341,18 @@ const styles = StyleSheet.create({
   },
   continuarArea: {
     flex: 1,
+  },
+  faixaAcessibilidade: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 4,
+  },
+  seloLibras: {
+    fontFamily: "Poppins_800ExtraBold",
+  },
+  textoLegenda: {
+    fontFamily: "Poppins_600SemiBold",
   },
 });

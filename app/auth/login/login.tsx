@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -11,7 +11,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GuiaMimi, useAlvoGuia } from "../../../components/GuiaMimi";
+import {
+  concluirFluxoEssencial,
+  deveMostrarGuiaTela,
+} from "../../../lib/primeiro-acesso";
 import { PageFlow } from "../../../components/PageFlow";
+
+const PASSOS_LOGIN = [
+  "Toque aqui e digite o e-mail da sua conta Lume.",
+  "Agora toque aqui e digite a sua senha.",
+  "Tudo certo! Toque aqui em Entrar para acessar o aplicativo.",
+];
 
 //import supabase
 import { supabase } from "../../../lib/supabase";
@@ -24,6 +35,24 @@ export default function LoginScreen() {
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erroLogin, setErroLogin] = useState("");const [continuarConectado, setContinuarConectado] = useState(false);
+  const [guiaAtivo, setGuiaAtivo] = useState(false);
+  const [passoGuia, setPassoGuia] = useState(0);
+
+  const refEmail = useRef<View>(null);
+  const refSenha = useRef<View>(null);
+  const refEntrar = useRef<View>(null);
+  const refsGuia = useMemo(() => [refEmail, refSenha, refEntrar], []);
+  const { alvo: alvoGuia, remedir: remedirGuia } = useAlvoGuia(guiaAtivo, passoGuia, refsGuia);
+
+  useEffect(() => {
+    let ativo = true;
+    deveMostrarGuiaTela("login").then((mostrar) => {
+      if (ativo && mostrar) setGuiaAtivo(true);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   async function Login() {
   if (carregando) return;
@@ -95,6 +124,8 @@ export default function LoginScreen() {
         contentContainerStyle={styles.conteudo}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScrollEndDrag={remedirGuia}
+        onMomentumScrollEnd={remedirGuia}
       >
       
       {/* Botão para voltar */}
@@ -120,7 +151,7 @@ export default function LoginScreen() {
 
       {/*EMAIL*/}
 
-      <View style={styles.inputContainer}>
+      <View ref={refEmail} collapsable={false} style={styles.inputContainer}>
         <TextInput
           placeholder="Email"
           placeholderTextColor="#303030"
@@ -135,7 +166,7 @@ export default function LoginScreen() {
       
       {/*SENHA*/}
 
-      <View style={styles.senhaContainer}>
+      <View ref={refSenha} collapsable={false} style={styles.senhaContainer}>
         <TextInput
           placeholder="Senha"
           placeholderTextColor="#303030"
@@ -172,17 +203,39 @@ export default function LoginScreen() {
 
       {/*BOTÃO LOGIN*/}
 
-      <TouchableOpacity
-        onPress={Login}
-        disabled={carregando}
-        style={[styles.botao, carregando && { opacity: 0.6 }]}
-        >
-        <Text style={styles.botaoTexto}>{carregando ? "Entrando..." : "Entrar"}</Text>
-      </TouchableOpacity>
+      <View ref={refEntrar} collapsable={false}>
+        <TouchableOpacity
+          onPress={Login}
+          disabled={carregando}
+          style={[styles.botao, carregando && { opacity: 0.6 }]}
+          >
+          <Text style={styles.botaoTexto}>{carregando ? "Entrando..." : "Entrar"}</Text>
+        </TouchableOpacity>
+      </View>
 
       </ScrollView>
 
       <PageFlow total={4} currentIndex={1} />
+
+      <GuiaMimi
+        visivel={guiaAtivo}
+        alvo={alvoGuia}
+        texto={PASSOS_LOGIN[passoGuia]}
+        passoAtual={passoGuia + 1}
+        totalPassos={PASSOS_LOGIN.length}
+        textoBotaoPrincipal={passoGuia === PASSOS_LOGIN.length - 1 ? "Entendi" : "Próximo"}
+        aoPressionarPrincipal={() => {
+          if (passoGuia < PASSOS_LOGIN.length - 1) {
+            setPassoGuia((p) => p + 1);
+          } else {
+            setGuiaAtivo(false);
+          }
+        }}
+        aoPressionarSecundario={() => {
+          setGuiaAtivo(false);
+          void concluirFluxoEssencial();
+        }}
+      />
     </View>
   );
 }

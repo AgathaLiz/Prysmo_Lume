@@ -1,7 +1,7 @@
 import { signInWithFacebook, signInWithGoogle } from "@/services/authService";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -11,10 +11,44 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
+import { GuiaMimi, useAlvoGuia } from "@/components/GuiaMimi";
+import {
+  concluirFluxoEssencial,
+  deveMostrarGuiaTela,
+} from "@/lib/primeiro-acesso";
 import { PageFlow } from "../../../components/PageFlow";
+
+const PASSOS_CONTAS = [
+  "Você pode entrar usando a sua conta do Google. Ao tocar aqui, o aplicativo vai abrir a página do Google para confirmar e depois volta sozinho para cá.",
+  "Ou pode entrar com o seu Facebook. Ele também vai te levar para a página do Facebook para confirmar e depois volta para o Lume.",
+  "Se você já criou uma conta com e-mail e senha aqui no Lume, toque em Fazer Login.",
+  "Ainda não tem uma conta? Toque aqui em Se Cadastrar para criar a sua agora.",
+];
 
 export default function LoginSocialScreen() {
   const insets = useSafeAreaInsets();
+  const [guiaAtivo, setGuiaAtivo] = useState(false);
+  const [passo, setPasso] = useState(0);
+
+  const refGoogle = useRef<View>(null);
+  const refFacebook = useRef<View>(null);
+  const refLogin = useRef<View>(null);
+  const refCadastrar = useRef<View>(null);
+  const refs = useMemo(
+    () => [refGoogle, refFacebook, refLogin, refCadastrar],
+    []
+  );
+  const { alvo, remedir } = useAlvoGuia(guiaAtivo, passo, refs);
+
+  useEffect(() => {
+    let ativo = true;
+    deveMostrarGuiaTela("contas").then((mostrar) => {
+      if (ativo && mostrar) setGuiaAtivo(true);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -37,33 +71,39 @@ export default function LoginSocialScreen() {
 
       <Text style={styles.title}>Como deseja entrar?</Text>
 
-      <TouchableOpacity style={styles.socialButton}  onPress={signInWithGoogle}>
-        <Image
-          source={require("../../../assets/images/icons/google_icon.png")}
-          style={styles.icon}
-        />
-        <Text style={styles.socialText}>Entrar com Google</Text>
-      </TouchableOpacity>
+      <View ref={refGoogle} collapsable={false} style={styles.envoltorioAlvo}>
+        <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle}>
+          <Image
+            source={require("../../../assets/images/icons/google_icon.png")}
+            style={styles.icon}
+          />
+          <Text style={styles.socialText}>Entrar com Google</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity style={styles.socialButton} onPress={signInWithFacebook}>
-        <Image
-          source={require("../../../assets/images/icons/facebook_icon.png")}
-          style={styles.icon}/>  
-        <Text style={styles.socialText}>Entrar com Facebook</Text>
-      </TouchableOpacity>
+      <View ref={refFacebook} collapsable={false} style={styles.envoltorioAlvo}>
+        <TouchableOpacity style={styles.socialButton} onPress={signInWithFacebook}>
+          <Image
+            source={require("../../../assets/images/icons/facebook_icon.png")}
+            style={styles.icon}/>  
+          <Text style={styles.socialText}>Entrar com Facebook</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity
-        style={styles.socialButton}
-        onPress={() => router.push("/auth/login/login")}
-      >
-        <Image
-          source={require("../../../assets/images/icons/user_icon.png")}
-          style={styles.icon}
-        />
-        <Text style={styles.socialText}>Fazer Login</Text>
-      </TouchableOpacity>
+      <View ref={refLogin} collapsable={false} style={styles.envoltorioAlvo}>
+        <TouchableOpacity
+          style={styles.socialButton}
+          onPress={() => router.push("/auth/login/login")}
+        >
+          <Image
+            source={require("../../../assets/images/icons/user_icon.png")}
+            style={styles.icon}
+          />
+          <Text style={styles.socialText}>Fazer Login</Text>
+        </TouchableOpacity>
+      </View>
 
-      <View style={styles.cadastroCard}>
+      <View ref={refCadastrar} collapsable={false} style={styles.cadastroCard}>
 
         <Text style={styles.footerText}>Ainda não tem uma conta?</Text>
         <TouchableOpacity
@@ -80,6 +120,27 @@ export default function LoginSocialScreen() {
       </View>
 
       <PageFlow total={4} currentIndex={0} />
+
+      <GuiaMimi
+        visivel={guiaAtivo}
+        alvo={alvo}
+        texto={PASSOS_CONTAS[passo]}
+        passoAtual={passo + 1}
+        totalPassos={PASSOS_CONTAS.length}
+        textoBotaoPrincipal={passo === PASSOS_CONTAS.length - 1 ? "Entendi" : "Próximo"}
+        aoPressionarPrincipal={() => {
+          if (passo < PASSOS_CONTAS.length - 1) {
+            setPasso((p) => p + 1);
+            setTimeout(remedir, 80);
+          } else {
+            setGuiaAtivo(false);
+          }
+        }}
+        aoPressionarSecundario={() => {
+          setGuiaAtivo(false);
+          void concluirFluxoEssencial();
+        }}
+      />
     </View>
   );
 }
@@ -92,6 +153,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingBottom: 80,
     backgroundColor: "#E9B8FF",
+  },
+  envoltorioAlvo: {
+    width: "100%",
+    alignItems: "center",
   },
 
   topo: {

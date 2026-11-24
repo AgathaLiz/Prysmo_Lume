@@ -1,5 +1,5 @@
-import { Moon, RotateCcw, Sun } from "lucide-react-native";
-import React, { useState } from "react";
+import { RotateCcw } from "lucide-react-native";
+import React from "react";
 import {
   Pressable,
   ScrollView,
@@ -23,20 +23,19 @@ export default function TelaAparencia() {
   const insets = useSafeAreaInsets();
   const {
     tema,
-    modoEscuro,
     fonte,
     tamanhoFontePx,
-    definirModoEscuro,
+    negrito,
     definirTamanhoFonte,
+    definirNegrito,
     restaurarPadrao,
   } = useAcessibilidade();
-  const [negrito, setNegrito] = useState(false);
 
-  const fundo = modoEscuro ? tema.fundo : "#F8F4FC";
+  const fundo = "#F8F4FC";
   const cartao = tema.cartao;
   const texto = tema.texto;
   const secundario = tema.textoSecundario;
-  const borda = modoEscuro ? tema.borda : "#DFC3F5";
+  const borda = "#DFC3F5";
   const familiaPreview = negrito ? "Poppins_800ExtraBold" : "Poppins_600SemiBold";
 
   return (
@@ -49,79 +48,6 @@ export default function TelaAparencia() {
         ]}
       >
         <BotaoVoltar />
-
-        <View style={[styles.cartao, { backgroundColor: cartao, borderColor: borda }]}>
-          <View style={styles.linhaTituloSwitch}>
-            <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>
-              Tema Escuro
-            </Text>
-            <Switch
-              value={modoEscuro}
-              onValueChange={(valor) => void definirModoEscuro(valor)}
-              trackColor={{ false: "#D8D2DC", true: tema.roxoEscuro }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Ativar tema escuro"
-            />
-          </View>
-
-          <View style={styles.linhaPreviews}>
-            <Pressable
-              style={[
-                styles.preview,
-                {
-                  backgroundColor: "#FFFFFF",
-                  borderColor: !modoEscuro ? tema.roxoEscuro : "#E6E0E9",
-                  borderWidth: !modoEscuro ? 3 : 1,
-                },
-              ]}
-              onPress={() => void definirModoEscuro(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Usar tema claro"
-            >
-              <View style={styles.linhaPreviewTopo}>
-                <Sun size={18} color="#5A4B60" />
-                <Text style={[styles.nomePreview, { color: "#303030", fontFamily: familiaPreview }]}>
-                  Claro
-                </Text>
-              </View>
-              <Text style={[styles.tituloPreview, { color: "#303030", fontFamily: familiaPreview }]}>
-                Título
-              </Text>
-              <Text style={styles.subtituloPreview}>Subtítulo</Text>
-              <View style={[styles.botaoPreview, { backgroundColor: tema.roxo }]}>
-                <Text style={styles.textoBotaoPreview}>Botões</Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.preview,
-                {
-                  backgroundColor: "#3A2A42",
-                  borderColor: modoEscuro ? tema.roxo : "#3A2A42",
-                  borderWidth: modoEscuro ? 3 : 1,
-                },
-              ]}
-              onPress={() => void definirModoEscuro(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Usar tema escuro"
-            >
-              <View style={styles.linhaPreviewTopo}>
-                <Moon size={18} color="#F2E8F7" />
-                <Text style={[styles.nomePreview, { color: "#F2E8F7", fontFamily: familiaPreview }]}>
-                  Escuro
-                </Text>
-              </View>
-              <Text style={[styles.tituloPreview, { color: "#FFFFFF", fontFamily: familiaPreview }]}>
-                Título
-              </Text>
-              <Text style={[styles.subtituloPreview, { color: "#D9CBE0" }]}>Subtítulo</Text>
-              <View style={[styles.botaoPreview, { backgroundColor: tema.roxo }]}>
-                <Text style={styles.textoBotaoPreview}>Botões</Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
 
         <View style={[styles.cartao, { backgroundColor: cartao, borderColor: borda }]}>
           <Text style={[styles.titulo, { color: texto, fontSize: fonte(22) }]}>Fonte</Text>
@@ -142,7 +68,7 @@ export default function TelaAparencia() {
             </View>
             <Switch
               value={negrito}
-              onValueChange={setNegrito}
+              onValueChange={(valor) => void definirNegrito(valor)}
               trackColor={{ false: "#D8D2DC", true: tema.roxoEscuro }}
               thumbColor="#FFFFFF"
               accessibilityLabel="Ativar texto em negrito"
@@ -158,7 +84,7 @@ export default function TelaAparencia() {
                   style={[
                     styles.botaoTamanho,
                     {
-                      backgroundColor: ativo ? tema.roxo : modoEscuro ? "#3D2A46" : "#F3ECF8",
+                      backgroundColor: ativo ? tema.roxo : "#F3ECF8",
                       borderColor: ativo ? tema.roxoEscuro : "transparent",
                     },
                   ]}
@@ -209,7 +135,6 @@ export default function TelaAparencia() {
             { backgroundColor: tema.roxo, opacity: pressed ? 0.82 : 1 },
           ]}
           onPress={() => {
-            setNegrito(false);
             void restaurarPadrao();
           }}
           accessibilityRole="button"
@@ -239,58 +164,9 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     padding: 20,
   },
-  linhaTituloSwitch: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
   titulo: {
     fontFamily: "Poppins_900Black",
     flexShrink: 1,
-  },
-  linhaPreviews: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  preview: {
-    flex: 1,
-    minHeight: 150,
-    borderRadius: 18,
-    padding: 12,
-    justifyContent: "flex-start",
-  },
-  linhaPreviewTopo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  nomePreview: {
-    fontSize: 13,
-  },
-  tituloPreview: {
-    fontSize: 17,
-    marginTop: 12,
-  },
-  subtituloPreview: {
-    fontFamily: "Poppins_300Light",
-    fontSize: 12,
-    color: "#7A6E80",
-    marginTop: 2,
-  },
-  botaoPreview: {
-    marginTop: 12,
-    borderRadius: 12,
-    minHeight: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  textoBotaoPreview: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 11,
-    color: "#303030",
   },
   linhaNegrito: {
     flexDirection: "row",

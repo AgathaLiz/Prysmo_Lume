@@ -30,10 +30,15 @@ import Svg, { Circle } from "react-native-svg";
 
 import { BarraNavegacao } from "@/components/BarraNavegacao";
 import { BotaoGrande } from "@/components/BotaoGrande";
+import { GuiaMimi, useAlvoGuia } from "@/components/GuiaMimi";
 import { ALTURA_NO, NoTrilha, Y_CENTRO } from "@/components/NoTrilha";
 import { TutorialTrilha } from "@/components/TutorialTrilha";
 import { TrilhaCores } from "@/constants/cores";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
+import {
+  concluirFluxoEssencial,
+  deveMostrarGuiaTela,
+} from "@/lib/primeiro-acesso";
 import { obterUsuarioId } from "@/lib/progresso";
 import { supabase } from "@/lib/supabase";
 import {
@@ -85,12 +90,20 @@ export default function TrilhaScreen() {
   const [aviso, setAviso] = useState("");
   const [exemplo, setExemplo] = useState(false);
   const [tutorialVisivel, setTutorialVisivel] = useState(false);
+  const [guiaPrimeiroAcesso, setGuiaPrimeiroAcesso] = useState(false);
   const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(null);
   const [larguraTrilha, setLarguraTrilha] = useState(
     Math.max(0, largura - 32)
   );
 
   const rolagemRef = useRef<ScrollView>(null);
+  const refPrimeiraLicao = useRef<View>(null);
+  const refsGuia = useMemo(() => [refPrimeiraLicao], []);
+  const { alvo: alvoGuia, remedir: remedirGuia } = useAlvoGuia(
+    guiaPrimeiroAcesso && !carregando,
+    0,
+    refsGuia
+  );
   const posicoes = useRef<Record<number, number>>({});
   const offsetLista = useRef(0);
   const precisaRolar = useRef(false);
@@ -225,6 +238,9 @@ export default function TrilhaScreen() {
     useCallback(() => {
       void carregar();
       void recarregar();
+      deveMostrarGuiaTela("trilha").then((mostrar) => {
+        if (montado.current && mostrar) setGuiaPrimeiroAcesso(true);
+      });
     }, [carregar, recarregar])
   );
 
@@ -309,6 +325,11 @@ export default function TrilhaScreen() {
       setAviso(mensagem);
       AccessibilityInfo.announceForAccessibility(mensagem);
       return;
+    }
+
+    if (guiaPrimeiroAcesso) {
+      setGuiaPrimeiroAcesso(false);
+      void concluirFluxoEssencial();
     }
 
     router.push({
@@ -635,9 +656,14 @@ export default function TrilhaScreen() {
                 {secaoSelecionada.licoes.map((licao, indice) => (
                   <View
                     key={licao.licoes_id}
+                    ref={indice === 0 ? refPrimeiraLicao : undefined}
+                    collapsable={false}
                     onLayout={(evento) => {
                       posicoes.current[licao.licoes_id] =
                         evento.nativeEvent.layout.y;
+                      if (indice === 0 && guiaPrimeiroAcesso) {
+                        setTimeout(remedirGuia, 100);
+                      }
                     }}
                   >
                     <NoTrilha
@@ -714,6 +740,20 @@ export default function TrilhaScreen() {
       <BarraNavegacao aba="inicio" />
 
       <TutorialTrilha visivel={tutorialVisivel} onFechar={fecharTutorial} />
+
+      <GuiaMimi
+        visivel={guiaPrimeiroAcesso && !carregando && (secaoSelecionada?.total ?? 0) > 0}
+        comBarraInferior
+        alvo={alvoGuia}
+        texto="Aqui está a sua trilha de aprendizado! Toque nesta primeira estrela amarela para abrir a sua primeira lição."
+        textoBotaoPrincipal="Entendi"
+        textoBotaoSecundario="Pular tutorial"
+        aoPressionarPrincipal={() => setGuiaPrimeiroAcesso(false)}
+        aoPressionarSecundario={() => {
+          setGuiaPrimeiroAcesso(false);
+          void concluirFluxoEssencial();
+        }}
+      />
     </SafeAreaView>
   );
 }
