@@ -2,6 +2,7 @@ import { Volume2 } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Image,
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
@@ -66,31 +67,49 @@ export function GuiaMimi({
   const insets = useSafeAreaInsets();
   const { fonte, falar, audioDescricao } = useAcessibilidade();
   const [alturaCartao, setAlturaCartao] = useState(210);
+  const [tecladoVisivel, setTecladoVisivel] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setTecladoVisivel(true)
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setTecladoVisivel(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Quando a áudio-descrição está ligada, a Mimi lê automaticamente cada passo.
   useEffect(() => {
-    if (visivel && audioDescricao && texto.trim().length > 0) {
+    if (visivel && !tecladoVisivel && audioDescricao && texto.trim().length > 0) {
       falar(texto);
     }
-  }, [visivel, audioDescricao, texto, falar]);
+  }, [visivel, tecladoVisivel, audioDescricao, texto, falar]);
 
-  if (!visivel) return null;
+  if (!visivel || tecladoVisivel) return null;
 
   const temAlvo =
-    alvo && alvo.width > 0 && alvo.height > 0 && alvo.y < alturaTela;
+    alvo &&
+    alvo.width > 0 &&
+    alvo.height > 0 &&
+    alvo.y + alvo.height > 0 &&
+    alvo.y < alturaTela;
 
   const folga = 6;
   const rx = temAlvo ? Math.max(0, alvo.x - folga) : 0;
   const ry = temAlvo ? Math.max(0, alvo.y - folga) : 0;
   const rw = temAlvo ? Math.min(larguraTela - rx, alvo.width + folga * 2) : 0;
-  const rh = temAlvo ? Math.min(alturaTela - ry, alvo.height + folga * 2) : 0;
+  const rh = temAlvo ? alvo.height + folga * 2 : 0;
 
   // Posiciona o cartão da Mimi abaixo do item em destaque, ou acima dele se
   // não couber embaixo (respeitando a área da Mimi que sai 86px acima do cartão
   // e a barra de navegação flutuante quando existir).
   const folgaInferior = insets.bottom + (comBarraInferior ? 120 : 18);
   const espacoAbaixo = temAlvo ? alturaTela - (ry + rh) - folgaInferior : 0;
-  const espacoAcima = temAlvo ? ry - insets.top : 0;
+  const espacoAcima = temAlvo ? ry - (insets.top + 86) : 0;
   const topoMaximo = Math.max(
     insets.top + 86,
     alturaTela - alturaCartao - folgaInferior
@@ -105,10 +124,12 @@ export function GuiaMimi({
   } else if (espacoAbaixo >= alturaCartao + 96) {
     // Reserva 96px entre o alvo e o cartão para a cabeça da Mimi (top: -86) não cobrir o campo.
     topoCartao = Math.min(topoMaximo, ry + rh + 96);
-  } else if (espacoAcima >= alturaCartao + 104) {
+  } else if (espacoAcima >= alturaCartao + 18) {
     topoCartao = ry - alturaCartao - 18;
+  } else if (espacoAbaixo >= espacoAcima) {
+    topoCartao = Math.min(topoMaximo, ry + rh + 92);
   } else {
-    topoCartao = topoMaximo;
+    topoCartao = Math.max(insets.top + 86, ry - alturaCartao - 14);
   }
 
   return (
@@ -275,6 +296,7 @@ export function useAlvoGuia(
   indice: number,
   refs: (React.RefObject<View | null> | null)[]
 ) {
+  const { width: larguraTela, height: alturaTela } = useWindowDimensions();
   const [alvo, setAlvo] = useState<RetanguloAlvo | null>(null);
 
   const remedir = useCallback(() => {
@@ -296,8 +318,18 @@ export function useAlvoGuia(
       return;
     }
     const timer = setTimeout(remedir, 140);
-    return () => clearTimeout(timer);
-  }, [ativo, indice, remedir]);
+    const showSub = Keyboard.addListener("keyboardDidShow", () => {
+      setTimeout(remedir, 120);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setTimeout(remedir, 120);
+    });
+    return () => {
+      clearTimeout(timer);
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [ativo, indice, remedir, larguraTela, alturaTela]);
 
   return { alvo, remedir };
 }

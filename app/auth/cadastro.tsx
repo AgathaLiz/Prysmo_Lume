@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -65,6 +66,7 @@ export default function CadastroScreen() {
 });
   const [guiaAtivo, setGuiaAtivo] = useState(false);
   const [passoGuia, setPassoGuia] = useState(0);
+  const [campoEmFoco, setCampoEmFoco] = useState(false);
 
   const refNome = useRef<View>(null);
   const refNascimento = useRef<View>(null);
@@ -190,6 +192,9 @@ router.replace({
         styles.scrollContent,
         { paddingTop: insets.top + 68, paddingBottom: 96 },
       ]}
+      keyboardShouldPersistTaps="handled"
+      onScroll={remedirGuia}
+      scrollEventThrottle={32}
       onScrollEndDrag={remedirGuia}
       onMomentumScrollEnd={remedirGuia}
     >
@@ -219,6 +224,8 @@ router.replace({
       placeholderTextColor="#303030"
       value={nome}
       onChangeText={setNome}
+      onFocus={() => setCampoEmFoco(true)}
+      onBlur={() => setCampoEmFoco(false)}
       style={[styles.input, styles.inputWithIcon]}
     />
     {erros.nome ? <Text style={styles.errorText}>{erros.nome}</Text> : null} {/* O if verificou que o campo não foi preenchido essa mensagem de erro aparece */}
@@ -233,6 +240,8 @@ router.replace({
       keyboardType="numeric"
       maxLength={10}
       onChangeText={(texto) => setNascimento(mascaraData(texto))}
+      onFocus={() => setCampoEmFoco(true)}
+      onBlur={() => setCampoEmFoco(false)}
       style={[styles.input, styles.inputWithIcon]}
     />
     {erros.nascimento ? (
@@ -250,6 +259,8 @@ router.replace({
     keyboardType="phone-pad"
     maxLength={15}
     onChangeText={(texto) => setTelefone(mascaraTelefone(texto))}
+    onFocus={() => setCampoEmFoco(true)}
+    onBlur={() => setCampoEmFoco(false)}
     style={[styles.input, styles.inputWithIcon]}
   />
   {erros.telefone ? (
@@ -266,6 +277,8 @@ router.replace({
     onChangeText={setEmail}
     keyboardType="email-address"
     autoCapitalize="none"
+    onFocus={() => setCampoEmFoco(true)}
+    onBlur={() => setCampoEmFoco(false)}
     style={[styles.input, styles.inputWithIcon]}
   />
   {erros.email ? <Text style={styles.errorText}>{erros.email}</Text> : null}
@@ -281,6 +294,8 @@ router.replace({
       value={senha}
       onChangeText={setSenha}
       autoCapitalize="none"
+      onFocus={() => setCampoEmFoco(true)}
+      onBlur={() => setCampoEmFoco(false)}
       style={[styles.input, styles.inputWithIcon, styles.inputWithEye]}
     />
     <TouchableOpacity
@@ -307,6 +322,8 @@ router.replace({
       value={confirmarSenha}
       onChangeText={setConfirmarSenha}
       autoCapitalize="none"
+      onFocus={() => setCampoEmFoco(true)}
+      onBlur={() => setCampoEmFoco(false)}
       style={[styles.input, styles.inputWithIcon, styles.inputWithEye]}
     />
     <TouchableOpacity
@@ -348,7 +365,7 @@ router.replace({
     <PageFlow total={4} currentIndex={1} />
 
     <GuiaMimi
-      visivel={guiaAtivo}
+      visivel={guiaAtivo && !campoEmFoco}
       alvo={alvoGuia}
       texto={PASSOS_CADASTRO[passoGuia]}
       passoAtual={passoGuia + 1}
@@ -468,6 +485,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily:"Poppins_600SemiBold",
     color:"#303030",
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : null),
   },
 
   halfInput: {

@@ -4,6 +4,7 @@ import { ArrowLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -38,6 +39,7 @@ export default function LoginScreen() {
   const [erroLogin, setErroLogin] = useState("");const [continuarConectado, setContinuarConectado] = useState(false);
   const [guiaAtivo, setGuiaAtivo] = useState(false);
   const [passoGuia, setPassoGuia] = useState(0);
+  const [campoEmFoco, setCampoEmFoco] = useState(false);
 
   const refEmail = useRef<View>(null);
   const refSenha = useRef<View>(null);
@@ -137,6 +139,8 @@ export default function LoginScreen() {
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScroll={remedirGuia}
+        scrollEventThrottle={32}
         onScrollEndDrag={remedirGuia}
         onMomentumScrollEnd={remedirGuia}
       >
@@ -166,6 +170,8 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
+          onFocus={() => setCampoEmFoco(true)}
+          onBlur={() => setCampoEmFoco(false)}
           style={styles.input}
         />
       </View>
@@ -180,6 +186,8 @@ export default function LoginScreen() {
           value={senha}
           onChangeText={setSenha}
           secureTextEntry={!mostrarSenha}
+          onFocus={() => setCampoEmFoco(true)}
+          onBlur={() => setCampoEmFoco(false)}
           style={styles.senhaInput}
         />
 
@@ -241,7 +249,7 @@ export default function LoginScreen() {
       <PageFlow total={4} currentIndex={1} />
 
       <GuiaMimi
-        visivel={guiaAtivo}
+        visivel={guiaAtivo && !campoEmFoco}
         alvo={alvoGuia}
         texto={PASSOS_LOGIN[passoGuia]}
         passoAtual={passoGuia + 1}
@@ -329,6 +337,7 @@ const styles = StyleSheet.create({
     color: "#303030",
     fontSize: 18,
     fontFamily:"Poppins_600SemiBold",
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : null),
   },
 
   inputContainer: {
@@ -354,6 +363,7 @@ const styles = StyleSheet.create({
     color: "#303030",
     fontSize: 18,
     fontFamily:"Poppins_600SemiBold",
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : null),
   },
 
   senhaContainer: {
@@ -375,6 +385,7 @@ const styles = StyleSheet.create({
     color: "#303030",
     fontSize: 18,
     fontFamily:"Poppins_600SemiBold",
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : null),
     
   },
 
