@@ -22,13 +22,13 @@ import { TrilhaCores } from "@/constants/cores";
 import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 import type { LicaoTrilha } from "@/lib/trilha";
 
-/** Altura de cada parada da trilha (estrela + nome). */
-export const ALTURA_NO = 252;
+/** Altura de cada parada da trilha (estrela + rótulo). */
+export const ALTURA_NO = 180;
 /** Centro vertical da estrela dentro da parada. */
-export const Y_CENTRO = 86;
-const TAMANHO_ATUAL = 116;
-const TAMANHO_NORMAL = 100;
-const LARGURA_TOQUE = 150;
+export const Y_CENTRO = 66;
+const TAMANHO_ATUAL = 104;
+const TAMANHO_NORMAL = 92;
+const LARGURA_TOQUE = 190;
 
 const ESTRELA_TRILHA = require("../assets/images/Lição (estrela).png");
 
@@ -42,15 +42,13 @@ type Props = {
 /**
  * Um nó da trilha em forma de estrela.
  *
- * O caminho entre as estrelas é uma imagem única desenhada pela tela da
- * trilha. Aqui ficam a estrela, o ícone de estado e o nome da lição.
+ * O caminho contínuo entre as estrelas é desenhado em SVG pela tela da trilha.
+ * Aqui ficam a estrela brilhante, o estado discreto e o nome da lição.
  */
 export function NoTrilha({ licao, offset, onPress }: Props) {
   const { fonte, reduzirMovimento } = useAcessibilidade();
   const { width: larguraJanela } = useWindowDimensions();
 
-  // A lista tem margem lateral; medimos o item de verdade para a estrela
-  // ficar centralizada e o caminho não sair do lugar.
   const [larguraItem, setLarguraItem] = useState(
     Math.max(0, larguraJanela - 32)
   );
@@ -72,7 +70,6 @@ export function NoTrilha({ licao, offset, onPress }: Props) {
       return;
     }
 
-    // Pulso leve e lento: chama atenção sem assustar.
     pulso.value = withRepeat(
       withSequence(
         withTiming(1.06, { duration: 1600, easing: Easing.inOut(Easing.ease) }),
@@ -103,10 +100,8 @@ export function NoTrilha({ licao, offset, onPress }: Props) {
       ? "Sua próxima lição"
       : "Lição bloqueada";
 
-  const corIcone = bloqueada ? "#E3D3EA" : "#5C3A00";
-
+  const corIcone = bloqueada ? "#F3E8FF" : "#6B4200";
   const Icone = concluida ? Check : atual ? Play : Lock;
-
   const estrelasConquistadas = concluida ? licao.estrelas : 0;
 
   return (
@@ -131,7 +126,7 @@ export function NoTrilha({ licao, offset, onPress }: Props) {
           {
             left: x - LARGURA_TOQUE / 2,
             top: Y_CENTRO - tamanho / 2,
-            opacity: bloqueada ? 0.84 : 1,
+            opacity: bloqueada ? 0.72 : 1,
           },
         ]}
       >
@@ -148,28 +143,31 @@ export function NoTrilha({ licao, offset, onPress }: Props) {
             style={{
               width: tamanho,
               height: tamanho,
-              opacity: bloqueada ? 0.38 : 1,
+              opacity: bloqueada ? 0.45 : 1,
             }}
           />
 
           <View style={styles.iconeCentro} pointerEvents="none">
-            <Icone size={atual ? 38 : 30} color={corIcone} />
+            <Icone
+              size={atual ? 28 : 22}
+              color={corIcone}
+              strokeWidth={2.6}
+              style={{ opacity: bloqueada ? 0.9 : 0.75 }}
+            />
           </View>
         </Animated.View>
-
-        {atual && <View style={styles.pontoAtual} />}
 
         <Text
           style={[
             styles.rotulo,
             {
-              color: TrilhaCores.texto,
+              color: atual ? TrilhaCores.estrela : TrilhaCores.texto,
               fontSize: fonte(16),
-              opacity: bloqueada ? 0.85 : 1,
+              opacity: bloqueada ? 0.78 : 0.98,
               fontFamily: atual ? "Poppins_800ExtraBold" : "Poppins_600SemiBold",
-              textShadowColor: "rgba(30, 4, 46, 0.95)",
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: 10,
+              textShadowColor: "rgba(11, 8, 32, 0.95)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 8,
             },
           ]}
           numberOfLines={2}
@@ -177,16 +175,16 @@ export function NoTrilha({ licao, offset, onPress }: Props) {
           {licao.titulo}
         </Text>
 
-        {concluida ? (
+        {concluida && (
           <View style={styles.linhaEstrelas}>
             {Array.from({ length: 3 }).map((_, indice) => (
               <Star
                 key={indice}
-                size={13}
+                size={11}
                 color={
                   indice < estrelasConquistadas
                     ? TrilhaCores.estrela
-                    : TrilhaCores.borda
+                    : "rgba(255,255,255,0.28)"
                 }
                 fill={
                   indice < estrelasConquistadas
@@ -195,33 +193,6 @@ export function NoTrilha({ licao, offset, onPress }: Props) {
                 }
               />
             ))}
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.selo,
-              atual
-                ? { backgroundColor: TrilhaCores.abaAtiva }
-                : { backgroundColor: "rgba(43, 6, 64, 0.72)" },
-            ]}
-          >
-            <Icone
-              size={13}
-              color={atual ? TrilhaCores.textoAbaAtiva : TrilhaCores.textoSecundario}
-            />
-            <Text
-              style={[
-                styles.textoSelo,
-                {
-                  color: atual
-                    ? TrilhaCores.textoAbaAtiva
-                    : TrilhaCores.textoSecundario,
-                  fontSize: fonte(13),
-                },
-              ]}
-            >
-              {rotulo}
-            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -244,38 +215,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pontoAtual: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: TrilhaCores.estrela,
-    marginTop: 3,
-  },
   rotulo: {
-    marginTop: 4,
+    marginTop: 2,
     textAlign: "center",
-    paddingHorizontal: 2,
+    paddingHorizontal: 4,
   },
   linhaEstrelas: {
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
-    marginTop: 3,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: "rgba(43, 6, 64, 0.62)",
-  },
-  selo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderRadius: 999,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    marginTop: 4,
-  },
-  textoSelo: {
-    fontFamily: "Poppins_600SemiBold",
+    marginTop: 2,
   },
 });

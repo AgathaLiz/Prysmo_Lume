@@ -2,12 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   HelpCircle,
   Lock,
-  Sparkles,
   Star,
   WifiOff,
 } from "lucide-react-native";
@@ -26,7 +24,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle } from "react-native-svg";
+import Svg, {
+  Circle,
+  Defs,
+  Path,
+  RadialGradient,
+  Stop,
+} from "react-native-svg";
 
 import { BarraNavegacao } from "@/components/BarraNavegacao";
 import { BotaoGrande } from "@/components/BotaoGrande";
@@ -53,28 +57,50 @@ import {
 } from "@/lib/trilha";
 
 const CHAVE_TUTORIAL = "lume_trilha_tutorial_visto";
+const MIMI_VOANDO = require("../assets/Lume/Mimi/Png/mimi-voando.png");
+const CAMINHO_TRILHA_NOVA = require("../assets/Lume/Outros elementos/Png/trilha-nova.png");
 
-const CAMINHO_TRILHA = require("../assets/images/Linha.png");
+// Linha central normalizada de trilha-nova.png (189x1691) em 33 pontos verticais.
+const CURVA_TRILHA_NOVA = [
+  0.013, -0.016, -0.026, -0.013, 0.048, 0.169, 0.196, 0.114, -0.05, -0.151,
+  -0.106, 0.048, 0.146, 0.095, -0.079, -0.254, -0.296, -0.225, -0.071, 0.122,
+  0.28, 0.32, 0.238, 0.016, -0.177, -0.22, -0.159, -0.024, 0.101, 0.161, 0.14,
+  -0.026, -0.148,
+];
 
-// A imagem do caminho tem 263x1419 px, com curvas a cada 240 px.
-// Esticamos na vertical para cada parada ficar sobre uma curva.
-const LARGURA_MAXIMA_CAMINHO = 200;
-const PROPORCAO_CURVA = 0.4325;
-const ALTURA_IMAGEM_CAMINHO = (1419 / 240) * ALTURA_NO;
+function amostraCurvaTrilha(fracaoY: number): number {
+  const f = Math.max(0, Math.min(1, fracaoY)) * (CURVA_TRILHA_NOVA.length - 1);
+  const i = Math.floor(f);
+  const t = f - i;
+  const a = CURVA_TRILHA_NOVA[i];
+  const b = CURVA_TRILHA_NOVA[Math.min(i + 1, CURVA_TRILHA_NOVA.length - 1)];
+  return a + (b - a) * t;
+}
 
 // Estrelinhas decorativas do céu (posição relativa à tela).
 const ESTRELAS_FUNDO = [
-  { x: 0.08, y: 0.06, r: 1.6, o: 0.55 },
-  { x: 0.22, y: 0.12, r: 1, o: 0.4 },
-  { x: 0.87, y: 0.08, r: 2, o: 0.5 },
-  { x: 0.68, y: 0.17, r: 1.2, o: 0.35 },
-  { x: 0.12, y: 0.3, r: 1.2, o: 0.35 },
-  { x: 0.92, y: 0.35, r: 1.6, o: 0.45 },
-  { x: 0.05, y: 0.55, r: 1.8, o: 0.4 },
-  { x: 0.8, y: 0.62, r: 1.1, o: 0.3 },
-  { x: 0.18, y: 0.78, r: 1.4, o: 0.35 },
-  { x: 0.94, y: 0.84, r: 1.2, o: 0.3 },
+  { x: 0.08, y: 0.05, r: 1.5, o: 0.65 },
+  { x: 0.24, y: 0.09, r: 1.0, o: 0.45 },
+  { x: 0.78, y: 0.05, r: 1.8, o: 0.6 },
+  { x: 0.91, y: 0.14, r: 1.2, o: 0.5 },
+  { x: 0.14, y: 0.28, r: 1.3, o: 0.4 },
+  { x: 0.88, y: 0.36, r: 1.6, o: 0.5 },
+  { x: 0.06, y: 0.54, r: 1.7, o: 0.45 },
+  { x: 0.82, y: 0.64, r: 1.1, o: 0.35 },
+  { x: 0.19, y: 0.79, r: 1.4, o: 0.4 },
+  { x: 0.93, y: 0.85, r: 1.3, o: 0.35 },
 ];
+
+const BRILHOS_QUATRO_PONTAS = [
+  { x: 0.76, y: 0.04, s: 7, o: 0.6 },
+  { x: 0.17, y: 0.38, s: 6, o: 0.45 },
+  { x: 0.89, y: 0.52, s: 5, o: 0.4 },
+];
+
+function estrelaQuatroPontas(cx: number, cy: number, s: number): string {
+  const i = s * 0.24;
+  return `M ${cx} ${cy - s} Q ${cx + i} ${cy - i} ${cx + s} ${cy} Q ${cx + i} ${cy + i} ${cx} ${cy + s} Q ${cx - i} ${cy + i} ${cx - s} ${cy} Q ${cx - i} ${cy - i} ${cx} ${cy - s} Z`;
+}
 
 export default function TrilhaScreen() {
   const router = useRouter();
@@ -83,12 +109,10 @@ export default function TrilhaScreen() {
   const { width: largura, height: altura } = useWindowDimensions();
 
   const [secoes, setSecoes] = useState<NivelTrilha[]>([]);
-  const [xp, setXp] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
-  const [exemplo, setExemplo] = useState(false);
   const [tutorialVisivel, setTutorialVisivel] = useState(false);
   const [guiaPrimeiroAcesso, setGuiaPrimeiroAcesso] = useState(false);
   const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(null);
@@ -142,14 +166,12 @@ export default function TrilhaScreen() {
                 resumo: "São 3 lições. Vamos começar?",
               },
             ]);
-            setExemplo(true);
             setCarregando(false);
           }
           return;
         }
 
-        // Níveis, aulas e lições + progresso + XP, tudo em paralelo.
-        const [respostaNiveis, respostaProgresso, respostaXp] = await Promise.all([
+        const [respostaNiveis, respostaProgresso] = await Promise.all([
           supabase
             .from("niveis")
             .select(
@@ -160,11 +182,6 @@ export default function TrilhaScreen() {
             .from("progresso_licao")
             .select("licoes_id, concluida, pontuacao")
             .eq("usuario_id", usuarioId),
-          supabase
-            .from("usuario_pontuacao")
-            .select("xp_total")
-            .eq("usuario_id", usuarioId)
-            .maybeSingle<{ xp_total: number | null }>(),
         ]);
 
         if (respostaNiveis.error || respostaProgresso.error) {
@@ -184,9 +201,6 @@ export default function TrilhaScreen() {
           (respostaProgresso.data ?? []) as ProgressoBanco[]
         );
 
-        // Banco sem nenhuma lição ainda: mostra a primeira lição de exemplo
-        // para dar para testar o fluxo completo. Quando houver conteúdo no
-        // banco, esta trilha deixa de ser usada sozinha.
         const semLicoes = trilhaBanco.every((nivel) => nivel.total === 0);
         const trilha = semLicoes ? trilhaExemplo() : trilhaBanco;
 
@@ -200,14 +214,7 @@ export default function TrilhaScreen() {
           : -1;
 
         setSecoes(trilha);
-        setExemplo(semLicoes);
-        setXp(respostaXp.data?.xp_total ?? 0);
 
-        /**
-         * Na primeira carga, abre a galáxia da lição atual.
-         * Depois, só troca sozinho quando a lição atual muda de nível
-         * (por exemplo, ao terminar a última lição de uma galáxia).
-         */
         setNivelSelecionado((selecionado) => {
           const mudouDeLicao = atual?.licoes_id !== licaoAtualAnterior.current;
           if (selecionado === null || mudouDeLicao) {
@@ -233,7 +240,6 @@ export default function TrilhaScreen() {
     []
   );
 
-  // Carrega ao entrar e de novo sempre que voltar para a tela.
   useFocusEffect(
     useCallback(() => {
       void carregar();
@@ -244,29 +250,16 @@ export default function TrilhaScreen() {
     }, [carregar, recarregar])
   );
 
-  // Primeira abertura: explica como funciona.
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_TUTORIAL)
       .then((visto) => {
         if (false && !visto && montado.current) setTutorialVisivel(true);
       })
-      .catch(() => {
-        // Se o armazenamento falhar, só não mostra o tutorial.
-      });
+      .catch(() => {});
   }, []);
 
   const resumo = useMemo(() => resumoGeral(secoes), [secoes]);
   const vazia = !carregando && !erro && resumo.total === 0;
-
-  const estrelasTotais = useMemo(
-    () =>
-      secoes.reduce(
-        (soma, nivel) =>
-          soma + nivel.licoes.reduce((total, licao) => total + licao.estrelas, 0),
-        0
-      ),
-    [secoes]
-  );
 
   const indiceSelecionado = Math.min(
     nivelSelecionado ?? 0,
@@ -274,15 +267,26 @@ export default function TrilhaScreen() {
   );
   const secaoSelecionada = secoes[indiceSelecionado] ?? null;
 
-  // O caminho é uma imagem; encolhemos a largura em telas pequenas para
-  // as estrelas (e os nomes) não encostarem nas bordas.
-  const larguraCaminho = useMemo(() => {
-    if (larguraTrilha <= 0) return 0;
-    const limitePeloRotulo = (larguraTrilha / 2 - 75) / PROPORCAO_CURVA;
-    return Math.max(120, Math.min(LARGURA_MAXIMA_CAMINHO, limitePeloRotulo));
-  }, [larguraTrilha]);
+  const larguraCaminho = useMemo(
+    () => Math.min(180, Math.max(130, larguraTrilha * 0.46)),
+    [larguraTrilha]
+  );
 
-  const deslocamentoCaminho = larguraCaminho * PROPORCAO_CURVA;
+  // Mantém a proporção original de trilha-nova.png (189x1691) sem espremer.
+  const alturaNaturalCaminho = useMemo(
+    () => larguraCaminho * (1691 / 189),
+    [larguraCaminho]
+  );
+
+  const alturaVisivelCaminho = useMemo(() => {
+    if (!secaoSelecionada || secaoSelecionada.licoes.length === 0) return 0;
+    return (secaoSelecionada.licoes.length - 1) * ALTURA_NO + 84;
+  }, [secaoSelecionada]);
+
+  const blocosCaminho = useMemo(() => {
+    if (alturaNaturalCaminho <= 0 || alturaVisivelCaminho <= 0) return 0;
+    return Math.ceil(alturaVisivelCaminho / alturaNaturalCaminho);
+  }, [alturaNaturalCaminho, alturaVisivelCaminho]);
 
   function rolarParaAtual() {
     if (!precisaRolar.current) return;
@@ -294,12 +298,11 @@ export default function TrilhaScreen() {
 
     precisaRolar.current = false;
     rolagemRef.current?.scrollTo({
-      y: Math.max(0, offsetLista.current + y - 170),
+      y: Math.max(0, offsetLista.current + y - 160),
       animated: true,
     });
   }
 
-  // Rola até a lição atual quando a lista e a galáxia já estão prontas.
   useEffect(() => {
     if (secoes.length === 0) return;
     const atual = licaoAtual(secoes);
@@ -367,6 +370,11 @@ export default function TrilhaScreen() {
       ? "Esta galáxia ainda não tem lições."
       : "";
 
+  const orbsAtivos =
+    !secaoSelecionada || secaoSelecionada.total === 0
+      ? 0
+      : Math.round((secaoSelecionada.concluidas / secaoSelecionada.total) * 4);
+
   return (
     <SafeAreaView
       style={[
@@ -379,23 +387,56 @@ export default function TrilhaScreen() {
       ]}
       edges={["top"]}
     >
-      {/* Fundo: céu roxo com estrelinhas e planetas suaves */}
+      {/* Fundo cósmico com nebulosas suaves e estrelinhas */}
       <LinearGradient
         colors={coresGradiente}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      <View style={styles.planetaGrande} pointerEvents="none" />
-      <View style={styles.planetaPequeno} pointerEvents="none" />
+
       <Svg
         width={largura}
         height={altura}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       >
+        <Defs>
+          <RadialGradient id="nebulaRoxa" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#9B37E1" stopOpacity={0.34} />
+            <Stop offset="100%" stopColor="#9B37E1" stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="nebulaQuente" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#E08B5A" stopOpacity={0.28} />
+            <Stop offset="100%" stopColor="#E08B5A" stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="nebulaMagenta" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#7A1FB8" stopOpacity={0.32} />
+            <Stop offset="100%" stopColor="#7A1FB8" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+
+        <Circle
+          cx={largura * 0.1}
+          cy={altura * 0.34}
+          r={largura * 0.55}
+          fill="url(#nebulaRoxa)"
+        />
+        <Circle
+          cx={largura * 0.92}
+          cy={altura * 0.56}
+          r={largura * 0.6}
+          fill="url(#nebulaQuente)"
+        />
+        <Circle
+          cx={largura * 0.16}
+          cy={altura * 0.88}
+          r={largura * 0.52}
+          fill="url(#nebulaMagenta)"
+        />
+
         {ESTRELAS_FUNDO.map((estrela, indice) => (
           <Circle
-            key={indice}
+            key={`dot-${indice}`}
             cx={largura * estrela.x}
             cy={altura * estrela.y}
             r={estrela.r}
@@ -403,33 +444,40 @@ export default function TrilhaScreen() {
             opacity={estrela.o}
           />
         ))}
+
+        {BRILHOS_QUATRO_PONTAS.map((b, indice) => (
+          <Path
+            key={`spark-${indice}`}
+            d={estrelaQuatroPontas(largura * b.x, altura * b.y, b.s)}
+            fill="#FFE169"
+            opacity={b.o}
+          />
+        ))}
       </Svg>
 
-      {/* Topo fixo: voltar, título e ajuda sempre à mão */}
+      {/* Topo limpo: "< Voltar" em amarelo */}
       <View style={styles.topo}>
         <TouchableOpacity
           onPress={voltar}
           accessibilityRole="button"
           accessibilityLabel="Voltar"
-          style={styles.botaoIcone}
+          style={styles.botaoVoltar}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 16 }}
         >
-          <ArrowLeft size={26} color={TrilhaCores.texto} />
+          <ChevronLeft size={26} color={TrilhaCores.estrela} strokeWidth={2.8} />
+          <Text style={[styles.textoVoltar, { fontSize: fonte(22) }]}>
+            Voltar
+          </Text>
         </TouchableOpacity>
-
-        <Text style={[styles.tituloTela, { fontSize: fonte(24) }]}>
-          Sua trilha
-        </Text>
 
         <TouchableOpacity
           onPress={() => setTutorialVisivel(true)}
           accessibilityRole="button"
           accessibilityLabel="Ajuda: como usar a trilha"
-          style={styles.botaoAjuda}
+          style={styles.botaoAjudaDiscreto}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <HelpCircle size={24} color={TrilhaCores.texto} />
-          <Text style={[styles.textoAjuda, { fontSize: fonte(13) }]}>
-            Ajuda
-          </Text>
+          <HelpCircle size={20} color="rgba(255, 214, 81, 0.72)" />
         </TouchableOpacity>
       </View>
 
@@ -453,9 +501,6 @@ export default function TrilhaScreen() {
       ) : (
         <ScrollView
           ref={rolagemRef}
-          // Sem cor de fundo aqui: o céu (gradiente, planetas e estrelas) fica
-          // atrás do conteúdo e continua visível enquanto a lista rola — igual ao
-          // que aparece na tela de carregamento.
           style={styles.rolagem}
           bounces={false}
           overScrollMode="never"
@@ -474,72 +519,6 @@ export default function TrilhaScreen() {
             />
           }
         >
-          {/* XP e estrelas: o resumo fica sempre no começo */}
-          <View style={styles.linhaResumo}>
-            <View style={styles.chipResumo}>
-              <Sparkles size={18} color={TrilhaCores.estrela} />
-              <Text style={[styles.textoChip, { fontSize: fonte(16) }]}>
-                {xp} XP
-              </Text>
-            </View>
-
-            <View style={styles.chipResumo}>
-              <Star
-                size={18}
-                color={TrilhaCores.estrela}
-                fill={TrilhaCores.estrela}
-              />
-              <Text style={[styles.textoChip, { fontSize: fonte(16) }]}>
-                {estrelasTotais} {estrelasTotais === 1 ? "estrela" : "estrelas"}
-              </Text>
-            </View>
-
-            {resumo.total > 0 && (
-              <View style={styles.chipResumo}>
-                <Text style={[styles.textoChip, { fontSize: fonte(14) }]}>
-                  {resumo.concluidas} de {resumo.total}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {secoes.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.seletorUnidades}
-            >
-              {secoes.map((secao, indice) => {
-                const ativa = indice === indiceSelecionado;
-                return (
-                  <TouchableOpacity
-                    key={secao.niveis_id}
-                    onPress={() => escolherNivel(indice)}
-                    activeOpacity={0.8}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: ativa }}
-                    accessibilityLabel={`Unidade ${indice + 1}: ${secao.nome}`}
-                    style={[
-                      styles.pilulaUnidade,
-                      ativa && styles.pilulaUnidadeAtiva,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.textoPilulaUnidade,
-                        ativa && styles.textoPilulaUnidadeAtiva,
-                        { fontSize: fonte(14) },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {indice + 1}. {secao.nome}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-
           {mensagemVazia !== "" && (
             <View style={styles.cartaoVazio}>
               <Star size={34} color={TrilhaCores.estrela} />
@@ -551,107 +530,125 @@ export default function TrilhaScreen() {
 
           {secaoSelecionada && secaoSelecionada.total > 0 && (
             <>
-              <View style={styles.cabecalhoNivel}>
-                <View style={styles.linhaTituloNivel}>
-                  {secoes.length > 1 ? (
-                    <TouchableOpacity
-                      onPress={() => escolherNivel(Math.max(0, indiceSelecionado - 1))}
-                      disabled={indiceSelecionado === 0}
-                      accessibilityRole="button"
-                      accessibilityLabel="Unidade anterior"
-                      style={[
-                        styles.setaNivel,
-                        indiceSelecionado === 0 && styles.setaNivelDesabilitada,
-                      ]}
-                    >
-                      <ChevronLeft size={22} color={TrilhaCores.texto} />
-                    </TouchableOpacity>
-                  ) : null}
-
-                  <Text style={[styles.rotuloGalaxia, { fontSize: fonte(13) }]}>
-                    GALÁXIA {indiceSelecionado + 1} DE {secoes.length}
-                  </Text>
-
-                  {secoes.length > 1 ? (
-                    <TouchableOpacity
-                      onPress={() =>
-                        escolherNivel(Math.min(secoes.length - 1, indiceSelecionado + 1))
-                      }
-                      disabled={indiceSelecionado >= secoes.length - 1}
-                      accessibilityRole="button"
-                      accessibilityLabel="Próxima unidade"
-                      style={[
-                        styles.setaNivel,
-                        indiceSelecionado >= secoes.length - 1 &&
-                          styles.setaNivelDesabilitada,
-                      ]}
-                    >
-                      <ChevronRight size={22} color={TrilhaCores.texto} />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-                <Text style={[styles.nomeNivel, { fontSize: fonte(26) }]}>
+              {/* Cartão da Galáxia */}
+              <View style={styles.cartaoGalaxia}>
+                <Text style={[styles.nomeNivel, { fontSize: fonte(25) }]}>
                   {secaoSelecionada.nome}
                 </Text>
-                <Text style={[styles.resumoNivel, { fontSize: fonte(15) }]}>
-                  {secaoSelecionada.resumo}
-                </Text>
 
-                <View style={styles.barra}>
+                <View style={styles.rodapeGalaxia}>
+                  <View style={styles.linhaTituloNivel}>
+                    {secoes.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          escolherNivel(Math.max(0, indiceSelecionado - 1))
+                        }
+                        disabled={indiceSelecionado === 0}
+                        accessibilityRole="button"
+                        accessibilityLabel="Galáxia anterior"
+                        style={[
+                          styles.setaDiscreta,
+                          indiceSelecionado === 0 && styles.setaDesabilitada,
+                        ]}
+                      >
+                        <ChevronLeft size={16} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    )}
+
+                    <Text style={[styles.rotuloGalaxia, { fontSize: fonte(14) }]}>
+                      GALÁXIA {indiceSelecionado + 1} DE {secoes.length}
+                    </Text>
+
+                    {secoes.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          escolherNivel(
+                            Math.min(secoes.length - 1, indiceSelecionado + 1)
+                          )
+                        }
+                        disabled={indiceSelecionado >= secoes.length - 1}
+                        accessibilityRole="button"
+                        accessibilityLabel="Próxima galáxia"
+                        style={[
+                          styles.setaDiscreta,
+                          indiceSelecionado >= secoes.length - 1 &&
+                            styles.setaDesabilitada,
+                        ]}
+                      >
+                        <ChevronRight size={16} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* 4 círculos de progresso da galáxia */}
                   <View
-                    style={[
-                      styles.barraPreenchida,
-                      {
-                        width: `${
-                          secaoSelecionada.total === 0
-                            ? 0
-                            : Math.round(
-                                (secaoSelecionada.concluidas /
-                                  secaoSelecionada.total) *
-                                  100
-                              )
-                        }%`,
-                      },
-                    ]}
-                  />
+                    style={styles.linhaOrbs}
+                    accessibilityLabel={`Progresso: ${secaoSelecionada.concluidas} de ${secaoSelecionada.total} lições concluídas`}
+                  >
+                    {Array.from({ length: 4 }).map((_, indice) => {
+                      const ativo = indice < orbsAtivos;
+                      return (
+                        <View
+                          key={indice}
+                          style={[
+                            styles.orbProgresso,
+                            ativo && styles.orbProgressoAtivo,
+                          ]}
+                        />
+                      );
+                    })}
+                  </View>
                 </View>
               </View>
 
+              {/* Área da Trilha com caminho S contínuo + Mimi voando + Estrelas */}
               <View
                 style={styles.areaTrilha}
                 onLayout={(evento) => {
                   offsetLista.current = evento.nativeEvent.layout.y;
                   setLarguraTrilha(evento.nativeEvent.layout.width);
-                  // Espera o layout das estrelas terminar antes de rolar.
                   if (precisaRolar.current) {
                     setTimeout(rolarParaAtual, 80);
                   }
                 }}
               >
-                {secaoSelecionada.licoes.length > 1 && larguraCaminho > 0 && (
+                {larguraTrilha > 0 && blocosCaminho > 0 && (
                   <View
                     style={[
                       styles.molduraCaminho,
                       {
-                        height:
-                          secaoSelecionada.licoes.length * ALTURA_NO + 150,
+                        top: Y_CENTRO,
+                        height: alturaVisivelCaminho,
                       },
                     ]}
                     pointerEvents="none"
                   >
-                    <Image
-                      source={CAMINHO_TRILHA}
-                      resizeMode="stretch"
-                      style={{
-                        position: "absolute",
-                        top: Y_CENTRO,
-                        left: (larguraTrilha - larguraCaminho) / 2,
-                        width: larguraCaminho,
-                        height: ALTURA_IMAGEM_CAMINHO,
-                      }}
-                    />
+                    {Array.from({ length: blocosCaminho }).map((_, bloco) => (
+                      <Image
+                        key={bloco}
+                        source={CAMINHO_TRILHA_NOVA}
+                        resizeMode="contain"
+                        style={{
+                          position: "absolute",
+                          top: bloco * alturaNaturalCaminho,
+                          left: (larguraTrilha - larguraCaminho) / 2,
+                          width: larguraCaminho,
+                          height: alturaNaturalCaminho,
+                        }}
+                      />
+                    ))}
                   </View>
                 )}
+
+                {/* Mimi flutuando ao lado do início da trilha */}
+                <View style={styles.mimiVoando} pointerEvents="none">
+                  <Image
+                    source={MIMI_VOANDO}
+                    resizeMode="contain"
+                    style={styles.mimiImagem}
+                    accessible={false}
+                  />
+                </View>
 
                 {secaoSelecionada.licoes.map((licao, indice) => (
                   <View
@@ -669,11 +666,10 @@ export default function TrilhaScreen() {
                     <NoTrilha
                       licao={licao}
                       offset={
-                        secaoSelecionada.licoes.length > 1
-                          ? indice % 2 === 0
-                            ? deslocamentoCaminho
-                            : -deslocamentoCaminho
-                          : 0
+                        amostraCurvaTrilha(
+                          ((indice * ALTURA_NO) % alturaNaturalCaminho) /
+                            alturaNaturalCaminho
+                        ) * larguraCaminho
                       }
                       onPress={aoTocarLicao}
                     />
@@ -736,7 +732,6 @@ export default function TrilhaScreen() {
         </Modal>
       )}
 
-      {/* Navegação flutuante: a mesma barra das demais telas do app */}
       <BarraNavegacao aba="inicio" />
 
       <TutorialTrilha visivel={tutorialVisivel} onFechar={fecharTutorial} />
@@ -761,74 +756,35 @@ export default function TrilhaScreen() {
 const styles = StyleSheet.create({
   tela: {
     flex: 1,
-    // Planetas e céus são posicionados para fora da tela (right: -110 etc.);
-    // sem recorte eles vazam da área roxa e ocupam o espaço do lado de fora,
-    // aumentando a página (rolagem horizontal) em web.
     overflow: "hidden",
   },
   rolagem: {
     flex: 1,
   },
-  planetaGrande: {
-    position: "absolute",
-    top: 30,
-    right: -110,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: "rgba(255, 214, 81, 0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-  },
-  planetaPequeno: {
-    position: "absolute",
-    bottom: 80,
-    left: -80,
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: "rgba(217, 135, 255, 0.09)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-  },
   topo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 10,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
-  botaoIcone: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: TrilhaCores.borda,
-    backgroundColor: TrilhaCores.cartao,
+  botaoVoltar: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  tituloTela: {
-    flex: 1,
-    fontFamily: "Poppins_800ExtraBold",
-    color: TrilhaCores.texto,
-  },
-  botaoAjuda: {
-    minHeight: 56,
-    minWidth: 58,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: TrilhaCores.borda,
-    backgroundColor: TrilhaCores.cartao,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
     gap: 2,
+    minHeight: 44,
   },
-  textoAjuda: {
-    fontFamily: "Poppins_600SemiBold",
-    color: TrilhaCores.texto,
+  textoVoltar: {
+    fontFamily: "Poppins_800ExtraBold",
+    color: TrilhaCores.estrela,
+  },
+  botaoAjudaDiscreto: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
   },
   centro: {
     flex: 1,
@@ -849,73 +805,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 4,
   },
-  linhaResumo: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 8,
-  },
-  chipResumo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
+  cartaoGalaxia: {
+    borderRadius: 18,
     backgroundColor: TrilhaCores.cartao,
     borderWidth: 1,
     borderColor: TrilhaCores.borda,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    gap: 10,
   },
-  textoChip: {
+  nomeNivel: {
+    fontFamily: "Poppins_800ExtraBold",
+    color: TrilhaCores.estrela,
+    lineHeight: 32,
+  },
+  rodapeGalaxia: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  linhaTituloNivel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  setaDiscreta: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  setaDesabilitada: {
+    opacity: 0.35,
+  },
+  rotuloGalaxia: {
     fontFamily: "Poppins_600SemiBold",
     color: TrilhaCores.texto,
+    letterSpacing: 0.6,
   },
-  cartaoExemplo: {
+  linhaOrbs: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 12,
-    borderRadius: 16,
+    gap: 7,
+  },
+  orbProgresso: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "rgba(85, 50, 125, 0.48)",
     borderWidth: 1,
-    borderColor: TrilhaCores.borda,
-    backgroundColor: TrilhaCores.cartao,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderColor: "rgba(255, 255, 255, 0.25)",
   },
-  textoExemplo: {
-    flex: 1,
-    fontFamily: "Poppins_600SemiBold",
-    color: TrilhaCores.textoSecundario,
-  },
-  linhaAbas: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 14,
-  },
-  abasRolagem: {
-    flex: 1,
-  },
-  abasConteudo: {
-    gap: 8,
-    paddingRight: 8,
-  },
-  aba: {
-    minHeight: 56,
-    borderRadius: 999,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  abaAtiva: {
-    backgroundColor: TrilhaCores.abaAtiva,
-  },
-  abaInativa: {
-    backgroundColor: TrilhaCores.abaInativa,
-  },
-  textoAba: {
-    fontFamily: "Poppins_600SemiBold",
+  orbProgressoAtivo: {
+    backgroundColor: TrilhaCores.estrela,
+    borderColor: TrilhaCores.estrelaBrilho,
   },
   cartaoVazio: {
     marginTop: 24,
@@ -932,90 +878,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: TrilhaCores.texto,
   },
-  cabecalhoNivel: {
-    marginTop: 20,
-    marginBottom: 2,
-    gap: 3,
-  },
-  seletorUnidades: {
-    gap: 8,
-    marginTop: 14,
-    paddingRight: 8,
-  },
-  pilulaUnidade: {
-    minHeight: 42,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: TrilhaCores.abaInativa,
-    borderWidth: 1,
-    borderColor: TrilhaCores.borda,
-    justifyContent: "center",
-  },
-  pilulaUnidadeAtiva: {
-    backgroundColor: TrilhaCores.abaAtiva,
-    borderColor: TrilhaCores.abaAtiva,
-  },
-  textoPilulaUnidade: {
-    fontFamily: "Poppins_600SemiBold",
-    color: TrilhaCores.texto,
-  },
-  textoPilulaUnidadeAtiva: {
-    color: "#32064F",
-  },
-  linhaTituloNivel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  setaNivel: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: TrilhaCores.cartao,
-    borderWidth: 1,
-    borderColor: TrilhaCores.borda,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  setaNivelDesabilitada: {
-    opacity: 0.35,
-  },
   areaTrilha: {
     position: "relative",
-    marginTop: 8,
+    marginTop: 6,
   },
   molduraCaminho: {
     position: "absolute",
-    top: 0,
     left: 0,
     right: 0,
     overflow: "hidden",
   },
-  rotuloGalaxia: {
-    fontFamily: "Poppins_800ExtraBold",
-    color: TrilhaCores.estrela,
-    letterSpacing: 1.2,
+  mimiVoando: {
+    position: "absolute",
+    top: 20,
+    right: 2,
+    width: 112,
+    height: 112,
+    zIndex: 2,
   },
-  nomeNivel: {
-    fontFamily: "Poppins_800ExtraBold",
-    color: TrilhaCores.texto,
-  },
-  resumoNivel: {
-    fontFamily: "Poppins_600SemiBold",
-    color: TrilhaCores.textoSecundario,
-  },
-  barra: {
-    height: 8,
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-  },
-  barraPreenchida: {
+  mimiImagem: {
+    width: "100%",
     height: "100%",
-    borderRadius: 4,
-    backgroundColor: TrilhaCores.estrela,
   },
   fundoAviso: {
     flex: 1,
