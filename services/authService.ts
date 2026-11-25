@@ -1,4 +1,5 @@
 import { ehEmailAdminTeste, ehPapelAdmin } from "@/lib/admins";
+import { deveMostrarBemVindo } from "@/lib/primeiro-acesso";
 import { supabase } from "@/lib/supabase";
 import { makeRedirectUri } from "expo-auth-session";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
@@ -46,7 +47,15 @@ export async function irParaProximaTela() {
     return;
   }
 
-  router.replace(data ? "/onboarding/bem_vindo" : ("/auth/completar_perfil" as any));
+  if (!data) {
+    router.replace("/auth/completar_perfil" as any);
+    return;
+  }
+
+  const mostrarBemVindo = await deveMostrarBemVindo();
+  router.replace(
+    (mostrarBemVindo ? "/onboarding/bem_vindo" : "/pages/tela_inicial") as any
+  );
 }
 
 async function entrarComProvedor(provider: "google" | "facebook") {

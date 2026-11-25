@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CHAVE_ESSENCIAL_CONCLUIDO = "lume_guia_essencial_concluido_v1";
 const CHAVE_TOUR_APP = "lume_guia_tour_app_v1";
+const CHAVE_BEM_VINDO_VISTO = "lume_bem_vindo_visto_v1";
 const PREFIXO_TELA_VISTA = "lume_guia_tela_v1_";
 
 export type EstadoTourApp = "pendente" | "oferecer" | "concluido";
@@ -11,6 +12,7 @@ export type TelaGuia =
   | "login"
   | "preferencias"
   | "inicio_essencial"
+  | "galaxias"
   | "trilha";
 
 /**
@@ -42,6 +44,25 @@ export async function ehPrimeiroAcesso(): Promise<boolean> {
   try {
     const valor = await AsyncStorage.getItem(CHAVE_ESSENCIAL_CONCLUIDO);
     return valor !== "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mostra a tela de boas-vindas apenas no primeiro login/acesso.
+ * Nas vezes seguintes, o usuário vai direto para a tela principal.
+ */
+export async function deveMostrarBemVindo(): Promise<boolean> {
+  try {
+    const [jaViu, primeiro] = await Promise.all([
+      AsyncStorage.getItem(CHAVE_BEM_VINDO_VISTO),
+      ehPrimeiroAcesso(),
+    ]);
+    if (jaViu === "1" || !primeiro) return false;
+
+    await AsyncStorage.setItem(CHAVE_BEM_VINDO_VISTO, "1");
+    return true;
   } catch {
     return false;
   }

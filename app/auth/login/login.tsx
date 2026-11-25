@@ -15,6 +15,7 @@ import {
 import { GuiaMimi, useAlvoGuia } from "../../../components/GuiaMimi";
 import {
   concluirFluxoEssencial,
+  deveMostrarBemVindo,
   deveMostrarGuiaTela,
 } from "../../../lib/primeiro-acesso";
 import { PageFlow } from "../../../components/PageFlow";
@@ -115,8 +116,10 @@ export default function LoginScreen() {
     // O administrador tem a área dele (perfil, permissões e criação de lição).
     router.replace("/admin" as any);
   } else {
-    // Já tem conta: vai direto para o bem-vindo 
-    router.replace("/onboarding/bem_vindo" as any);
+    const mostrarBemVindo = await deveMostrarBemVindo();
+    router.replace(
+      (mostrarBemVindo ? "/onboarding/bem_vindo" : "/pages/tela_inicial") as any
+    );
   }
 }
 
