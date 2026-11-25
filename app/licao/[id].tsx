@@ -54,6 +54,7 @@ import { obterUsuarioId, salvarResultadoLicao } from "@/lib/progresso";
 import { normalizarCenario, type CenarioSimulacao } from "@/lib/simulacao";
 import { cenarioParaLicao } from "@/lib/simulacoes-licao";
 import { tocarSom } from "@/lib/sons";
+import { videoDaLicao } from "@/lib/videos-licao";
 import { supabase } from "@/lib/supabase";
 import {
   AULA_EXEMPLO_ID,
@@ -310,7 +311,14 @@ export default function LicaoScreen() {
   const [conquistasNovas, setConquistasNovas] = useState<string[]>([]);
 
   const conteudo = normalizarUm(aula?.aulas_conteudo);
-  const temVideo = ehVideo(conteudo);
+  // Vídeo guardado no app para esta posição da trilha. Se existir, vale mais
+  // que o endereço salvo no banco; se não, continua usando o do banco.
+  const videoLocal = useMemo(
+    () => videoDaLicao(posicaoLicao),
+    [posicaoLicao]
+  );
+  const urlVideo = videoLocal ?? conteudo?.url_arquivo ?? null;
+  const temVideo = videoLocal !== null || ehVideo(conteudo);
   const semConteudo =
     !temVideo &&
     questoes.length === 0 &&
@@ -1162,7 +1170,7 @@ export default function LicaoScreen() {
       {etapa === "video" && (
         <VideoLicao
           titulo={conteudo?.titulo?.trim() || "Vídeo da lição"}
-          url={conteudo?.url_arquivo ?? null}
+          url={urlVideo}
           onFechar={pedirParaSair}
           onContinuar={() => irParaProximaEtapa("video")}
         />

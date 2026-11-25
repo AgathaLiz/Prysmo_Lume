@@ -24,7 +24,8 @@ import { useAcessibilidade } from "@/hooks/use-acessibilidade";
 type Props = {
   titulo: string;
   /** Sem URL, mostramos o desenho do player (controles e barra). */
-  url: string | null;
+  /** Endereço do vídeo ou arquivo local (require). */
+  url: string | number | null;
   onFechar: () => void;
   onContinuar: () => void;
 };
