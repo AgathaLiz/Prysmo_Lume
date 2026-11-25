@@ -4,7 +4,7 @@
     "slug": "Lume_TCC",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/lume/logo/logo-roxa.png",
     "scheme": "lumetcc",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,17 +13,15 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/icons/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/icons/android-icon-background.png",
-        "monochromeImage": "./assets/images/icons/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/lume/logo/logo-roxa.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/lume/logo/logo-roxa-round.png"
     },
     "plugins": [
       "expo-router",
