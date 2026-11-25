@@ -254,8 +254,8 @@ export default function TelaInicial() {
             corSubtitulo={texto}
             titulo="Trilhas"
             subtitulo="Ilumine seu próprio caminho"
-            rotuloAcessibilidade="Trilhas. Escolha uma trilha para começar"
-            aoPressionar={() => router.push("/trilha" as never)}
+            rotuloAcessibilidade="Trilhas. Escolha uma galáxia para começar"
+            aoPressionar={() => router.push("/galaxias" as never)}
             fonte={fonte}
           />
         </View>

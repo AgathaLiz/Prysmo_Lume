@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -104,6 +104,7 @@ function estrelaQuatroPontas(cx: number, cy: number, s: number): string {
 
 export default function TrilhaScreen() {
   const router = useRouter();
+  const { nivel: nivelParam } = useLocalSearchParams<{ nivel?: string }>();
   const { fonte, modoEscuro, recarregar, tema } = useAcessibilidade();
   const insets = useSafeAreaInsets();
   const { width: largura, height: altura } = useWindowDimensions();
@@ -216,6 +217,16 @@ export default function TrilhaScreen() {
         setSecoes(trilha);
 
         setNivelSelecionado((selecionado) => {
+          const indiceParam =
+            nivelParam !== undefined ? Number(nivelParam) : Number.NaN;
+          if (
+            selecionado === null &&
+            Number.isInteger(indiceParam) &&
+            indiceParam >= 0 &&
+            indiceParam < trilha.length
+          ) {
+            return indiceParam;
+          }
           const mudouDeLicao = atual?.licoes_id !== licaoAtualAnterior.current;
           if (selecionado === null || mudouDeLicao) {
             return indiceAtual >= 0 ? indiceAtual : selecionado ?? 0;
@@ -349,7 +360,7 @@ export default function TrilhaScreen() {
 
   function voltar() {
     if (router.canGoBack()) router.back();
-    else router.replace("/pages/tela_inicial" as any);
+    else router.replace("/galaxias" as any);
   }
 
   const coresGradiente = modoEscuro
