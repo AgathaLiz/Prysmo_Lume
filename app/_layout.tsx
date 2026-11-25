@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AcessibilidadeProvider } from "@/hooks/use-acessibilidade";
 import { WidgetLibras } from "@/components/WidgetLibras";
 import { supabase } from "../lib/supabase";
+import { PortaoTermos } from "@/components/PortaoTermos";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -88,6 +89,7 @@ export default function RootLayout() {
   return (
     <AcessibilidadeProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <PortaoTermos>
         <Stack screenOptions={{ headerShown: false }}>
           {/* A trilha tem fundo escuro próprio; evita qualquer faixa clara
               aparecendo atrás dela durante a navegação. */}
@@ -97,6 +99,7 @@ export default function RootLayout() {
           />
         </Stack>
         <WidgetLibras />
+        </PortaoTermos>
         <StatusBar style="auto" />
       </ThemeProvider>
     </AcessibilidadeProvider>
